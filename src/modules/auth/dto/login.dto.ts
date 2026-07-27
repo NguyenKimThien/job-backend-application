@@ -4,11 +4,11 @@ import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 export class LoginDto {
   @Transform(({ value }) => String(value ?? '').trim())
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
+  @IsNotEmpty({ message: 'Vui lòng nhập email, số điện thoại hoặc tên đăng nhập.' })
+  @MaxLength(255, { message: 'Thông tin đăng nhập không được vượt quá 255 ký tự.' })
   tendangnhap!: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'Mật khẩu không hợp lệ.' })
+  @IsNotEmpty({ message: 'Vui lòng nhập mật khẩu.' })
   matKhau!: string;
 }

@@ -74,7 +74,7 @@ export class RegisterWorkerDto {
 
   @IsString()
   @MatchPassword('matKhau', {
-    message: 'Mat khau xac nhan khong khop.',
+    message: 'Mật khẩu xác nhận không khớp.',
   })
   xacNhanMatKhau!: string;
 

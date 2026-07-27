@@ -17,6 +17,7 @@ import { RolesGuard } from '../../common/auth/roles.guard.js';
 import { AdminUsersService } from './admin-users.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
 
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,5 +42,14 @@ export class AdminUsersController {
     @Req() request: AuthenticatedRequest,
   ) {
     return this.service.updateStatus(id, dto, request.user.sub);
+  }
+
+  @Patch(':id/role')
+  updateRole(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateUserRoleDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.service.updateRole(id, dto.role, request.user.sub);
   }
 }

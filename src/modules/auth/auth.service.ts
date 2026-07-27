@@ -78,7 +78,7 @@ export class AuthService {
       this.throwLoginError(
         HttpStatus.UNAUTHORIZED,
         'INVALID_CREDENTIALS',
-        'Thong tin dang nhap khong chinh xac.',
+        'Thông tin đăng nhập hoặc mật khẩu không chính xác.',
       );
     }
 
@@ -91,7 +91,7 @@ export class AuthService {
       this.throwLoginError(
         HttpStatus.UNAUTHORIZED,
         'INVALID_CREDENTIALS',
-        'Thong tin dang nhap khong chinh xac.',
+        'Thông tin đăng nhập hoặc mật khẩu không chính xác.',
       );
     }
 
@@ -109,7 +109,7 @@ export class AuthService {
     if (normalized.matKhau !== normalized.xacNhanMatKhau) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'PASSWORD_CONFIRMATION_MISMATCH',
-        message: 'Mat khau xac nhan khong khop voi mat khau.',
+        message: 'Mật khẩu xác nhận không khớp với mật khẩu.',
       });
     }
 
@@ -138,7 +138,7 @@ export class AuthService {
     return {
       success: true,
       message:
-        'Dang ky thanh cong. Vui long kiem tra email de xac thuc tai khoan.',
+        'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.',
       data: {
         email: maskEmail(created.email),
         expiresIn: this.otpService.getTtlSeconds(),
@@ -161,7 +161,7 @@ export class AuthService {
     ) {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'EMAIL_ALREADY_VERIFIED',
-        message: 'Email da duoc xac thuc.',
+        message: 'Email đã được xác thực.',
       });
     }
 
@@ -172,7 +172,7 @@ export class AuthService {
     if (!latestOtp) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'OTP_NOT_FOUND',
-        message: 'Ma OTP khong hop le hoac da duoc su dung.',
+        message: 'Mã OTP không hợp lệ hoặc đã được sử dụng.',
       });
     }
 
@@ -180,7 +180,7 @@ export class AuthService {
       await this.authRepository.markOtpAsUsed(latestOtp.id);
       throw new ApiError(HttpStatus.GONE, {
         code: 'OTP_EXPIRED',
-        message: 'Ma OTP da het han. Vui long yeu cau gui lai OTP.',
+        message: 'Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại OTP.',
       });
     }
 
@@ -189,7 +189,7 @@ export class AuthService {
       throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
         code: 'OTP_MAX_ATTEMPTS_EXCEEDED',
         message:
-          'Ban da nhap sai OTP qua so lan cho phep. Vui long yeu cau ma moi.',
+          'Bạn đã nhập sai OTP quá số lần cho phép. Vui lòng yêu cầu mã mới.',
       });
     }
 
@@ -210,7 +210,7 @@ export class AuthService {
         throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
           code: 'OTP_MAX_ATTEMPTS_EXCEEDED',
           message:
-            'Ban da nhap sai OTP qua so lan cho phep. Vui long yeu cau ma moi.',
+            'Bạn đã nhập sai OTP quá số lần cho phép. Vui lòng yêu cầu mã mới.',
         });
       }
 
@@ -228,7 +228,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Xac thuc email thanh cong. Tai khoan da duoc kich hoat.',
+      message: 'Xác thực email thành công. Tài khoản đã được kích hoạt.',
       data: {
         id: verifiedAccount.id,
         tenDangNhap: verifiedAccount.tenDangNhap,
@@ -245,7 +245,7 @@ export class AuthService {
     const genericResponse = {
       success: true,
       message:
-        'Neu tai khoan dang cho xac thuc, ma OTP moi da duoc gui den email.',
+        'Nếu tài khoản đang chờ xác thực, mã OTP mới đã được gửi đến email.',
       data: {
         expiresIn,
       },
@@ -277,7 +277,7 @@ export class AuthService {
       throw new ApiError(HttpStatus.SERVICE_UNAVAILABLE, {
         code: 'VERIFICATION_EMAIL_SEND_FAILED',
         message:
-          'Tai khoan da duoc ghi nhan nhung chua the gui email xac thuc. Vui long thu lai chuc nang gui lai OTP.',
+          'Tài khoản đã được ghi nhận nhưng chưa thể gửi email xác thực. Vui lòng thử lại chức năng gửi lại OTP.',
       });
     }
 
@@ -296,7 +296,7 @@ export class AuthService {
     if (normalized.matKhau !== normalized.xacNhanMatKhau) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'PASSWORD_CONFIRMATION_MISMATCH',
-        message: 'Mat khau xac nhan khong khop voi mat khau.',
+        message: 'Mật khẩu xác nhận không khớp với mật khẩu.',
       });
     }
 
@@ -326,7 +326,7 @@ export class AuthService {
     return {
       success: true,
       message:
-        'Dang ky thanh cong. Vui long kiem tra email de xac thuc tai khoan.',
+        'Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản.',
       data: {
         email: maskEmail(created.email),
         tenDangNhap: created.tenDangNhap,
@@ -359,7 +359,7 @@ export class AuthService {
     ) {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'EMAIL_ALREADY_VERIFIED',
-        message: 'Email da duoc xac thuc.',
+        message: 'Email đã được xác thực.',
       });
     }
 
@@ -377,7 +377,7 @@ export class AuthService {
     if (!latestOtp) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'OTP_NOT_FOUND',
-        message: 'Ma OTP khong hop le hoac da duoc su dung.',
+        message: 'Mã OTP không hợp lệ hoặc đã được sử dụng.',
       });
     }
 
@@ -388,7 +388,7 @@ export class AuthService {
       });
       throw new ApiError(HttpStatus.GONE, {
         code: 'OTP_EXPIRED',
-        message: 'Ma OTP da het han. Vui long yeu cau gui lai OTP.',
+        message: 'Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại OTP.',
       });
     }
 
@@ -400,7 +400,7 @@ export class AuthService {
       throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
         code: 'OTP_MAX_ATTEMPTS_EXCEEDED',
         message:
-          'Ban da nhap sai OTP qua so lan cho phep. Vui long yeu cau ma moi.',
+          'Bạn đã nhập sai OTP quá số lần cho phép. Vui lòng yêu cầu mã mới.',
       });
     }
 
@@ -425,7 +425,7 @@ export class AuthService {
         throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
           code: 'OTP_MAX_ATTEMPTS_EXCEEDED',
           message:
-            'Ban da nhap sai OTP qua so lan cho phep. Vui long yeu cau ma moi.',
+            'Bạn đã nhập sai OTP quá số lần cho phép. Vui lòng yêu cầu mã mới.',
         });
       }
 
@@ -477,7 +477,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Xac thuc email thanh cong. Tai khoan da duoc kich hoat.',
+      message: 'Xác thực email thành công. Tài khoản đã được kích hoạt.',
       data: {
         id: verifiedAccount.id,
         tenDangNhap: verifiedAccount.tenDangNhap,
@@ -495,7 +495,7 @@ export class AuthService {
     const genericResponse = {
       success: true,
       message:
-        'Neu tai khoan dang cho xac thuc, ma OTP moi da duoc gui den email.',
+        'Nếu tài khoản đang chờ xác thực, mã OTP mới đã được gửi đến email.',
       data: {
         expiresIn,
       },
@@ -565,7 +565,7 @@ export class AuthService {
       throw new ApiError(HttpStatus.SERVICE_UNAVAILABLE, {
         code: 'VERIFICATION_EMAIL_SEND_FAILED',
         message:
-          'Tai khoan da duoc ghi nhan nhung chua the gui email xac thuc. Vui long thu lai chuc nang gui lai OTP.',
+          'Tài khoản đã được ghi nhận nhưng chưa thể gửi email xác thực. Vui lòng thử lại chức năng gửi lại OTP.',
       });
     }
 
@@ -589,6 +589,17 @@ export class AuthService {
   }
 
   private detectLoginIdentifierType(identifier: string): LoginIdentifierType {
+    if (
+      identifier.length <= 255 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)
+    ) {
+      return 'ADMIN_USERNAME';
+    }
+
+    if (/^\+84\d{9}$/.test(identifier)) {
+      return 'ADMIN_USERNAME';
+    }
+
     if (/^\d{12}$/.test(identifier)) {
       return 'WORKER_CCCD';
     }
@@ -597,12 +608,12 @@ export class AuthService {
       return 'EMPLOYER_TAX_CODE';
     }
 
-    if (/^[a-zA-Z0-9._@-]{4,255}$/.test(identifier)) {
+    if (/^[a-zA-Z0-9._-]{4,255}$/.test(identifier)) {
       return 'ADMIN_USERNAME';
     }
 
     this.throwLoginError(HttpStatus.BAD_REQUEST, 'INVALID_LOGIN_IDENTIFIER',
-      'Dinh danh dang nhap khong hop le.');
+      'Thông tin đăng nhập không hợp lệ.');
   }
 
   private findAccountByLoginIdentifier(
@@ -611,9 +622,19 @@ export class AuthService {
   ): Promise<LoginAccount | null> {
     const prisma = this.getPrismaService();
 
+    const phone =
+      /^0\d{9}$/.test(identifier)
+        ? `+84${identifier.slice(1)}`
+        : identifier;
     return prisma.taiKhoan.findFirst({
       where: {
-        tenDangNhap: identifier,
+        OR: [
+          { tenDangNhap: identifier },
+          { email: identifier },
+          { soDienThoai: identifier },
+          { soDienThoai: phone },
+          { hoSoNhaTuyenDung: { is: { maSoThue: identifier } } },
+        ],
       },
       include: {
         hoSoNguoiLaoDong: true,
@@ -630,7 +651,7 @@ export class AuthService {
       this.throwLoginError(
         HttpStatus.FORBIDDEN,
         'EMAIL_NOT_VERIFIED',
-        'Tai khoan chua xac thuc email.',
+        'Tài khoản chưa xác thực email. Vui lòng xác thực OTP trước khi đăng nhập.',
       );
     }
 
@@ -638,7 +659,7 @@ export class AuthService {
       this.throwLoginError(
         HttpStatus.FORBIDDEN,
         'ACCOUNT_TEMPORARILY_LOCKED',
-        'Tai khoan dang bi tam khoa.',
+        'Tài khoản đang bị tạm khóa.',
       );
     }
 
@@ -646,7 +667,7 @@ export class AuthService {
       this.throwLoginError(
         HttpStatus.FORBIDDEN,
         'ACCOUNT_LOCKED',
-        'Tai khoan da bi khoa.',
+        'Tài khoản đã bị khóa.',
       );
     }
 
@@ -654,7 +675,7 @@ export class AuthService {
       this.throwLoginError(
         HttpStatus.FORBIDDEN,
         'ACCOUNT_NOT_ACTIVE',
-        'Tai khoan chua duoc kich hoat.',
+        'Tài khoản chưa được kích hoạt.',
       );
     }
   }
@@ -699,7 +720,7 @@ export class AuthService {
     if (account.vaiTro === VaiTroTaiKhoan.NGUOI_LAO_DONG) {
       return {
         success: true,
-        message: 'Dang nhap thanh cong.',
+        message: 'Đăng nhập thành công.',
         data: {
           accessToken,
           tokenType: 'Bearer',
@@ -714,7 +735,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Dang nhap thanh cong.',
+      message: 'Đăng nhập thành công.',
       data: {
         accessToken,
         tokenType: 'Bearer',
@@ -798,28 +819,28 @@ export class AuthService {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'ACCOUNT_PENDING_VERIFICATION',
         message:
-          'Tai khoan da duoc dang ky nhung chua xac thuc. Vui long yeu cau gui lai OTP.',
+          'Tài khoản đã được đăng ký nhưng chưa xác thực. Vui lòng yêu cầu gửi lại OTP.',
       });
     }
 
     if (usernameAccount) {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'USERNAME_ALREADY_EXISTS',
-        message: 'Ten dang nhap da ton tai.',
+        message: 'Tên đăng nhập đã tồn tại.',
       });
     }
 
     if (emailAccount) {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'EMAIL_ALREADY_EXISTS',
-        message: 'Email da ton tai.',
+        message: 'Email đã tồn tại.',
       });
     }
 
     if (phoneAccount) {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'PHONE_ALREADY_EXISTS',
-        message: 'So dien thoai da ton tai.',
+        message: 'Số điện thoại đã tồn tại.',
       });
     }
   }
@@ -847,7 +868,7 @@ export class AuthService {
       this.throwEmployerError(
         HttpStatus.CONFLICT,
         'ACCOUNT_PENDING_VERIFICATION',
-        'Tai khoan da duoc dang ky nhung chua xac thuc. Vui long yeu cau gui lai OTP.',
+        'Tài khoản đã được đăng ký nhưng chưa xác thực. Vui lòng yêu cầu gửi lại OTP.',
       );
     }
 
@@ -855,7 +876,7 @@ export class AuthService {
       this.throwEmployerError(
         HttpStatus.CONFLICT,
         'TAX_CODE_ALREADY_EXISTS',
-        'Ma so thue da duoc su dung.',
+        'Mã số thuế đã được sử dụng.',
       );
     }
 
@@ -863,7 +884,7 @@ export class AuthService {
       this.throwEmployerError(
         HttpStatus.CONFLICT,
         'EMAIL_ALREADY_EXISTS',
-        'Email da ton tai.',
+        'Email đã tồn tại.',
       );
     }
 
@@ -871,7 +892,7 @@ export class AuthService {
       this.throwEmployerError(
         HttpStatus.CONFLICT,
         'PHONE_ALREADY_EXISTS',
-        'So dien thoai da ton tai.',
+        'Số điện thoại đã tồn tại.',
       );
     }
   }
@@ -886,21 +907,21 @@ export class AuthService {
       if (target.includes('tenDangNhap') || target.includes('ten_dang_nhap')) {
         throw new ApiError(HttpStatus.CONFLICT, {
           code: 'USERNAME_ALREADY_EXISTS',
-          message: 'Ten dang nhap da ton tai.',
+          message: 'Tên đăng nhập đã tồn tại.',
         });
       }
 
       if (target.includes('email')) {
         throw new ApiError(HttpStatus.CONFLICT, {
           code: 'EMAIL_ALREADY_EXISTS',
-          message: 'Email da ton tai.',
+          message: 'Email đã tồn tại.',
         });
       }
 
       if (target.includes('soDienThoai') || target.includes('so_dien_thoai')) {
         throw new ApiError(HttpStatus.CONFLICT, {
           code: 'PHONE_ALREADY_EXISTS',
-          message: 'So dien thoai da ton tai.',
+          message: 'Số điện thoại đã tồn tại.',
         });
       }
     }
@@ -924,7 +945,7 @@ export class AuthService {
         this.throwEmployerError(
           HttpStatus.CONFLICT,
           'TAX_CODE_ALREADY_EXISTS',
-          'Ma so thue da duoc su dung.',
+          'Mã số thuế đã được sử dụng.',
         );
       }
 
@@ -932,7 +953,7 @@ export class AuthService {
         this.throwEmployerError(
           HttpStatus.CONFLICT,
           'EMAIL_ALREADY_EXISTS',
-          'Email da ton tai.',
+          'Email đã tồn tại.',
         );
       }
 
@@ -940,7 +961,7 @@ export class AuthService {
         this.throwEmployerError(
           HttpStatus.CONFLICT,
           'PHONE_ALREADY_EXISTS',
-          'So dien thoai da ton tai.',
+          'Số điện thoại đã tồn tại.',
         );
       }
     }
@@ -1065,7 +1086,7 @@ export class AuthService {
       throw new ApiError(HttpStatus.SERVICE_UNAVAILABLE, {
         code: 'VERIFICATION_EMAIL_SEND_FAILED',
         message:
-          'Tai khoan da duoc ghi nhan nhung chua the gui email xac thuc. Vui long thu lai chuc nang gui lai OTP.',
+          'Tài khoản đã được ghi nhận nhưng chưa thể gửi email xác thực. Vui lòng thử lại chức năng gửi lại OTP.',
       });
     }
   }
@@ -1090,7 +1111,7 @@ export class AuthService {
       throw new ApiError(HttpStatus.SERVICE_UNAVAILABLE, {
         code: 'VERIFICATION_EMAIL_SEND_FAILED',
         message:
-          'Tai khoan da duoc ghi nhan nhung chua the gui email xac thuc. Vui long thu lai chuc nang gui lai OTP.',
+          'Tài khoản đã được ghi nhận nhưng chưa thể gửi email xác thực. Vui lòng thử lại chức năng gửi lại OTP.',
       });
     }
   }
@@ -1113,7 +1134,7 @@ export class AuthService {
       if (secondsSinceLastSend < cooldownSeconds) {
         throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
           code: 'OTP_RESEND_COOLDOWN',
-          message: 'Vui long cho truoc khi yeu cau ma OTP moi.',
+          message: 'Vui lòng chờ trước khi yêu cầu mã OTP mới.',
           retryAfter: cooldownSeconds - secondsSinceLastSend,
         });
       }
@@ -1128,7 +1149,7 @@ export class AuthService {
     if (sendCount >= this.otpService.getMaxSendsPerHour()) {
       throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
         code: 'OTP_RESEND_LIMIT_EXCEEDED',
-        message: 'Ban da yeu cau gui OTP qua so lan cho phep trong mot gio.',
+        message: 'Bạn đã yêu cầu gửi OTP quá số lần cho phép trong một giờ.',
       });
     }
   }
@@ -1155,7 +1176,7 @@ export class AuthService {
       if (secondsSinceLastSend < cooldownSeconds) {
         throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
           code: 'OTP_RESEND_COOLDOWN',
-          message: 'Vui long cho truoc khi yeu cau ma OTP moi.',
+          message: 'Vui lòng chờ trước khi yêu cầu mã OTP mới.',
           retryAfter: cooldownSeconds - secondsSinceLastSend,
         });
       }
@@ -1175,7 +1196,7 @@ export class AuthService {
     if (sendCount >= this.otpService.getMaxSendsPerHour()) {
       throw new ApiError(HttpStatus.TOO_MANY_REQUESTS, {
         code: 'OTP_RESEND_LIMIT_EXCEEDED',
-        message: 'Ban da yeu cau gui OTP qua so lan cho phep trong mot gio.',
+        message: 'Bạn đã yêu cầu gửi OTP quá số lần cho phép trong một giờ.',
       });
     }
   }
@@ -1183,7 +1204,7 @@ export class AuthService {
   private throwOtpInvalid(): never {
     throw new ApiError(HttpStatus.BAD_REQUEST, {
       code: 'OTP_INVALID',
-      message: 'Ma OTP khong hop le.',
+      message: 'Mã OTP không hợp lệ.',
     });
   }
 

@@ -191,6 +191,47 @@ export class AdminUsersService {
     };
   }
 
+  async updateRole(id: number, role: VaiTroTaiKhoan, currentAdminId: number) {
+    if (id === currentAdminId || role === VaiTroTaiKhoan.QUAN_TRI_VIEN) {
+      throw new ApiError(HttpStatus.FORBIDDEN, {
+        code: 'INVALID_ROLE_ASSIGNMENT',
+        message: 'Không được cấp quyền quản trị hoặc sửa vai trò của chính mình.',
+      });
+    }
+    const account = await this.prisma.taiKhoan.findUnique({
+      where: { id },
+      include: { hoSoNguoiLaoDong: true, hoSoNhaTuyenDung: true },
+    });
+    if (!account || account.vaiTro === VaiTroTaiKhoan.QUAN_TRI_VIEN) {
+      throw new ApiError(HttpStatus.NOT_FOUND, {
+        code: 'USER_NOT_FOUND',
+        message: 'Không tìm thấy tài khoản có thể phân quyền.',
+      });
+    }
+    if (
+      (role === VaiTroTaiKhoan.NGUOI_LAO_DONG && !account.hoSoNguoiLaoDong) ||
+      (role === VaiTroTaiKhoan.NHA_TUYEN_DUNG && !account.hoSoNhaTuyenDung)
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'ROLE_PROFILE_MISSING',
+        message: 'Tài khoản chưa có hồ sơ phù hợp với vai trò được chọn.',
+      });
+    }
+    await this.prisma.$transaction([
+      this.prisma.taiKhoan.update({ where: { id }, data: { vaiTro: role } }),
+      this.prisma.thongBao.create({
+        data: {
+          taiKhoanId: id,
+          tieuDe: 'Vai trò tài khoản đã thay đổi',
+          noiDung: `Tài khoản của bạn đã được chuyển sang vai trò ${role}.`,
+          loaiThongBao: 'TAI_KHOAN',
+          duongDanDich: '/',
+        },
+      }),
+    ]);
+    return { success: true, message: 'Đã cập nhật vai trò tài khoản.' };
+  }
+
   private toListItem(account: {
     id: number;
     tenDangNhap: string;

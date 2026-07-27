@@ -41,36 +41,43 @@ function MatchPassword(
 
 export class RegisterEmployerDto {
   @Transform(({ value }) => normalizeEmail(value))
-  @IsEmail()
+  @IsEmail({}, { message: 'Email không đúng định dạng.' })
   @MaxLength(255)
   email!: string;
 
   @Transform(({ value }) => normalizePhone(value))
   @IsOptional()
   @IsString()
-  @Matches(/^\+84\d{9}$/)
+  @Matches(/^\+84\d{9}$/, {
+    message: 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng số 0.',
+  })
   soDienThoai?: string;
 
   @IsString()
-  @Length(8, 64)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/)
+  @Length(8, 64, { message: 'Mật khẩu phải có từ 8 đến 64 ký tự.' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/, {
+    message:
+      'Mật khẩu phải gồm chữ hoa, chữ thường, số và ký tự đặc biệt.',
+  })
   matKhau!: string;
 
   @IsString()
   @MatchPassword('matKhau', {
-    message: 'Mat khau xac nhan khong khop.',
+    message: 'Mật khẩu xác nhận không khớp.',
   })
   xacNhanMatKhau!: string;
 
   @Transform(({ value }) => String(value ?? '').trim())
   @IsString()
   @IsNotEmpty()
-  @Length(2, 255)
+  @Length(2, 255, { message: 'Tên đơn vị phải có từ 2 đến 255 ký tự.' })
   tenDonVi!: string;
 
   @Transform(({ value }) => normalizeTaxCode(String(value ?? '')))
   @IsString()
-  @Matches(/^\d{10}(\d{3})?$/)
+  @Matches(/^\d{10}(\d{3})?$/, {
+    message: 'Mã số thuế phải gồm 10 chữ số hoặc 13 chữ số.',
+  })
   maSoThue!: string;
 
   @Transform(({ value }) => String(value ?? '').trim())

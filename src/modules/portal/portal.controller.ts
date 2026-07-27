@@ -9,8 +9,10 @@ import {
   Post,
   Query,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { VaiTroTaiKhoan } from '../../../generated/prisma/client.js';
 import type { AuthenticatedRequest } from '../../common/auth/jwt-auth.guard.js';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
@@ -148,6 +150,25 @@ export class ProtectedPortalController {
     return this.portal.createEmployerJob(request.user.sub, body);
   }
 
+  @Get('employer/jobs/:jobId')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  employerJob(
+    @Req() request: AuthenticatedRequest,
+    @Param('jobId', ParseIntPipe) jobId: number,
+  ) {
+    return this.portal.employerJob(request.user.sub, jobId);
+  }
+
+  @Patch('employer/jobs/:jobId')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  updateEmployerJob(
+    @Req() request: AuthenticatedRequest,
+    @Param('jobId', ParseIntPipe) jobId: number,
+    @Body() body: Record<string, any>,
+  ) {
+    return this.portal.updateEmployerJob(request.user.sub, jobId, body);
+  }
+
   @Get('employer/jobs/:jobId/applicants')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
   employerApplicants(
@@ -183,12 +204,22 @@ export class ProtectedPortalController {
     return this.portal.notifications(request.user.sub);
   }
 
+  @Patch('notifications/read-all')
+  readAllNotifications(@Req() request: AuthenticatedRequest) {
+    return this.portal.readAllNotifications(request.user.sub);
+  }
+
   @Patch('notifications/:id/read')
   readNotification(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
   ) {
     return this.portal.readNotification(request.user.sub, id);
+  }
+
+  @Post('account/logout')
+  logout() {
+    return { success: true, message: 'Đăng xuất thành công. Hãy xóa access token ở trình duyệt.' };
   }
 
   @Patch('account/password')
@@ -272,7 +303,21 @@ export class ProtectedPortalController {
 
   @Get('admin/statistics')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
-  statistics() {
-    return this.portal.statistics();
+  statistics(@Query() query: Record<string, string | undefined>) {
+    return this.portal.statistics(query);
+  }
+
+  @Get('admin/reports/export')
+  @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  async exportReport(
+    @Query() query: Record<string, string | undefined>,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="bao-cao-viec-lam-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
+    return this.portal.exportStatistics(query);
   }
 }

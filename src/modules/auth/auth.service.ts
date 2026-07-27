@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
 import {
   MucDichMaXacThuc,
@@ -11,6 +12,7 @@ import {
 import { ApiError } from '../../common/api-error.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { LoginDto } from './dto/login.dto.js';
 import { RegisterEmployerDto } from './dto/register-employer.dto.js';
 import { RegisterWorkerDto } from './dto/register-worker.dto.js';
 import { ResendEmployerRegistrationOtpDto } from './dto/resend-employer-registration-otp.dto.js';
@@ -39,6 +41,15 @@ type CreatedEmployerRegistration = CreatedRegistration & {
   trangThaiHoSo: TrangThaiKiemDuyet;
 };
 
+type LoginIdentifierType = 'WORKER_CCCD' | 'EMPLOYER_TAX_CODE';
+
+type LoginAccount = Prisma.TaiKhoanGetPayload<{
+  include: {
+    hoSoNguoiLaoDong: true;
+    hoSoNhaTuyenDung: true;
+  };
+}>;
+
 const REGISTRATION_PURPOSE = MucDichMaXacThuc.DANG_KY;
 
 @Injectable()
@@ -47,9 +58,47 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly otpService: OtpService,
     private readonly mailService: MailService,
+    private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     @Optional() private readonly prismaService?: PrismaService,
   ) {}
+
+  async login(dto: LoginDto) {
+    const identifier = this.normalizeLoginIdentifier(dto.tendangnhap);
+    const identifierType = this.detectLoginIdentifierType(identifier);
+    const account = await this.findAccountByLoginIdentifier(
+      identifier,
+      identifierType,
+    );
+
+    if (!account) {
+      this.throwLoginError(
+        HttpStatus.UNAUTHORIZED,
+        'INVALID_CREDENTIALS',
+        'Thong tin dang nhap khong chinh xac.',
+      );
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      dto.matKhau,
+      account.matKhauHash,
+    );
+
+    if (!passwordMatches) {
+      this.throwLoginError(
+        HttpStatus.UNAUTHORIZED,
+        'INVALID_CREDENTIALS',
+        'Thong tin dang nhap khong chinh xac.',
+      );
+    }
+
+    this.validateAccountStatus(account);
+
+    const accessToken = await this.generateAccessToken(account);
+    const loggedInAccount = await this.updateLastLogin(account.id);
+
+    return this.buildLoginResponse(loggedInAccount, accessToken);
+  }
 
   async registerWorker(dto: RegisterWorkerDto) {
     const normalized = this.normalizeRegisterWorkerDto(dto);
@@ -512,6 +561,175 @@ export class AuthService {
     return genericResponse;
   }
 
+  private normalizeLoginIdentifier(identifier: string): string {
+    return String(identifier ?? '')
+      .trim()
+      .replace(/[\s.-]/g, '');
+  }
+
+  private detectLoginIdentifierType(identifier: string): LoginIdentifierType {
+    if (/^\d{12}$/.test(identifier)) {
+      return 'WORKER_CCCD';
+    }
+
+    if (/^\d{10}$/.test(identifier) || /^\d{13}$/.test(identifier)) {
+      return 'EMPLOYER_TAX_CODE';
+    }
+
+    this.throwLoginError(
+      HttpStatus.BAD_REQUEST,
+      'INVALID_LOGIN_IDENTIFIER',
+      'Dinh danh dang nhap khong hop le.',
+    );
+  }
+
+  private findAccountByLoginIdentifier(
+    identifier: string,
+    identifierType: LoginIdentifierType,
+  ): Promise<LoginAccount | null> {
+    const prisma = this.getPrismaService();
+
+    return prisma.taiKhoan.findFirst({
+      where: {
+        tenDangNhap: identifier,
+        vaiTro:
+          identifierType === 'WORKER_CCCD'
+            ? VaiTroTaiKhoan.NGUOI_LAO_DONG
+            : VaiTroTaiKhoan.NHA_TUYEN_DUNG,
+      },
+      include: {
+        hoSoNguoiLaoDong: true,
+        hoSoNhaTuyenDung: true,
+      },
+    });
+  }
+
+  private validateAccountStatus(account: LoginAccount) {
+    if (
+      account.trangThaiTaiKhoan === TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL ||
+      !account.emailXacThucLuc
+    ) {
+      this.throwLoginError(
+        HttpStatus.FORBIDDEN,
+        'EMAIL_NOT_VERIFIED',
+        'Tai khoan chua xac thuc email.',
+      );
+    }
+
+    if (account.trangThaiTaiKhoan === TrangThaiTaiKhoan.TAM_KHOA) {
+      this.throwLoginError(
+        HttpStatus.FORBIDDEN,
+        'ACCOUNT_TEMPORARILY_LOCKED',
+        'Tai khoan dang bi tam khoa.',
+      );
+    }
+
+    if (account.trangThaiTaiKhoan === TrangThaiTaiKhoan.DA_KHOA) {
+      this.throwLoginError(
+        HttpStatus.FORBIDDEN,
+        'ACCOUNT_LOCKED',
+        'Tai khoan da bi khoa.',
+      );
+    }
+
+    if (account.trangThaiTaiKhoan !== TrangThaiTaiKhoan.HOAT_DONG) {
+      this.throwLoginError(
+        HttpStatus.FORBIDDEN,
+        'ACCOUNT_NOT_ACTIVE',
+        'Tai khoan chua duoc kich hoat.',
+      );
+    }
+  }
+
+  private generateAccessToken(account: LoginAccount): Promise<string> {
+    return this.jwtService.signAsync({
+      sub: account.id,
+      role: account.vaiTro,
+      email: account.email,
+    });
+  }
+
+  private async updateLastLogin(accountId: number): Promise<LoginAccount> {
+    const prisma = this.getPrismaService();
+
+    return prisma.taiKhoan.update({
+      where: { id: accountId },
+      data: {
+        lanDangNhapCuoi: new Date(),
+      },
+      include: {
+        hoSoNguoiLaoDong: true,
+        hoSoNhaTuyenDung: true,
+      },
+    });
+  }
+
+  private buildLoginResponse(account: LoginAccount, accessToken: string) {
+    const baseAccount = {
+      id: account.id,
+      email: account.email,
+      soDienThoai: account.soDienThoai,
+      vaiTro: account.vaiTro,
+      trangThaiTaiKhoan: account.trangThaiTaiKhoan,
+    };
+
+    if (account.vaiTro === VaiTroTaiKhoan.NGUOI_LAO_DONG) {
+      return {
+        success: true,
+        message: 'Dang nhap thanh cong.',
+        data: {
+          accessToken,
+          tokenType: 'Bearer',
+          expiresIn: this.getJwtExpiresInSeconds(),
+          taiKhoan: {
+            ...baseAccount,
+            daCoHoSo: Boolean(account.hoSoNguoiLaoDong),
+          },
+        },
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Dang nhap thanh cong.',
+      data: {
+        accessToken,
+        tokenType: 'Bearer',
+        expiresIn: this.getJwtExpiresInSeconds(),
+        taiKhoan: {
+          ...baseAccount,
+          trangThaiHoSo: account.hoSoNhaTuyenDung?.trangThaiDuyet ?? null,
+          daHoanThienHoSo: this.isEmployerProfileComplete(account),
+        },
+      },
+    };
+  }
+
+  private isEmployerProfileComplete(account: LoginAccount): boolean {
+    const profile = account.hoSoNhaTuyenDung;
+
+    return Boolean(
+      profile?.tenDonVi &&
+      profile.maSoThue &&
+      profile.diaChiTruSo &&
+      profile.linhVucId &&
+      profile.nguoiDaiDien &&
+      profile.chucVuNguoiDaiDien &&
+      profile.soDienThoaiLienHe &&
+      profile.emailLienHe &&
+      profile.moTaDonVi &&
+      profile.tepGiayPhepUrl,
+    );
+  }
+
+  private getJwtExpiresInSeconds(): number {
+    const expiresIn = Number(
+      this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_IN_SECONDS') ?? 900,
+    );
+
+    return Number.isInteger(expiresIn) && expiresIn > 0 ? expiresIn : 900;
+  }
+
   private normalizeRegisterWorkerDto(
     dto: RegisterWorkerDto,
   ): RegisterWorkerDto {
@@ -967,6 +1185,18 @@ export class AuthService {
   }
 
   private throwEmployerError(
+    status: HttpStatus,
+    code: string,
+    message: string,
+  ): never {
+    throw new ApiError(status, {
+      success: false,
+      code,
+      message,
+    } as never);
+  }
+
+  private throwLoginError(
     status: HttpStatus,
     code: string,
     message: string,

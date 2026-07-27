@@ -115,3 +115,46 @@ Mặc định `.env.example` đặt `SMTP_ENABLED=false`, vì vậy mã OTP th�
 đổi thành `SMTP_ENABLED=true` để gửi OTP qua email thật.
 
 Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` như các câu lệnh trên.
+
+## Backend API đã triển khai
+
+Backend NestJS chạy tại `http://localhost:3001`. Các API riêng tư dùng header:
+
+```text
+Authorization: Bearer <accessToken>
+```
+
+Các nhóm chức năng chính:
+
+- `/auth/*`: đăng ký người lao động/nhà tuyển dụng, OTP, gửi lại OTP, đăng nhập.
+- `/auth/forgot-password`, `/auth/reset-password`, `/account/password`,
+  `/account/logout`: quên, đặt lại, đổi mật khẩu và đăng xuất.
+- `/jobs`, `/jobs/:id`, `/companies/:id`, `/categories`, `/fields`: dữ liệu
+  công khai; danh sách việc hỗ trợ lọc `keyword`, `category`, `location`,
+  `type`, `salaryMin`, `salaryMax`, `experienceMax`.
+- `/worker/profile`, `/worker/applications`, `/worker/saved-jobs`: hồ sơ,
+  ứng tuyển, lịch sử ứng tuyển và tin đã lưu của người lao động.
+- `/employer/profile`, `/employer/jobs`: hồ sơ nhà tuyển dụng, tạo tin, xem
+  tin và sửa/gửi lại tin bị từ chối (tối đa 3 lần).
+- `/employer/jobs/:jobId/applicants/*`: danh sách, chi tiết và cập nhật quy
+  trình ứng viên theo từng tin thuộc doanh nghiệp.
+- `/admin/users/*`: tìm kiếm, xem chi tiết, khóa/mở khóa và phân quyền tài khoản.
+- `/admin/employers/*`, `/admin/jobs/*`: kiểm duyệt nhà tuyển dụng và tin,
+  lưu lịch sử kiểm duyệt, gửi thông báo kết quả.
+- `/admin/categories/*`: thêm, sửa, ẩn/hiện danh mục; thao tác xóa chỉ ẩn để
+  không làm mất dữ liệu liên kết.
+- `/notifications`, `/notifications/read-all`, `/notifications/:id/read`:
+  thông báo riêng của từng tài khoản.
+- `/admin/statistics?from=YYYY-MM-DD&to=YYYY-MM-DD`: bảng số liệu tài khoản,
+  tin và ứng tuyển theo trạng thái.
+- `/admin/reports/export?from=YYYY-MM-DD&to=YYYY-MM-DD`: tải báo cáo CSV.
+
+Sau khi cập nhật bản này trên cơ sở dữ liệu đã có, chạy:
+
+```powershell
+npm.cmd run db:push
+npm.cmd run prisma:generate
+npm.cmd run dev
+```
+
+`db:push` bổ sung cột đếm số lần chỉnh sửa tin và không xóa dữ liệu hiện có.

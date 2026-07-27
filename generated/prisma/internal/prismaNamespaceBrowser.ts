@@ -255,6 +255,7 @@ export const TinTuyenDungScalarFieldEnum = {
   trangThaiKiemDuyet: 'trangThaiKiemDuyet',
   trangThaiHienThi: 'trangThaiHienThi',
   lyDoTuChoi: 'lyDoTuChoi',
+  soLanChinhSua: 'soLanChinhSua',
   ngayGuiDuyet: 'ngayGuiDuyet',
   ngayDuyet: 'ngayDuyet',
   ngayDang: 'ngayDang',

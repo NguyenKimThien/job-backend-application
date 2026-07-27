@@ -359,6 +359,7 @@ footer a:hover { color: #fff; }
 .site-header .employer-cta{align-self:auto;min-width:auto;height:46px;margin-left:0;padding:0 23px;border-radius:999px;color:#263648;background:#f1f3f5}
 .site-header .employer-cta strong{font-size:14px;font-weight:700}
 .site-header .employer-cta:hover{color:#17283b;background:#e5e8eb}
+.public-account{position:relative;display:flex;align-items:center;gap:12px}.public-account-trigger{gap:9px;border:1px solid var(--blue);background:#fff;cursor:pointer}.public-account-trigger span{font-size:11px}.public-account-menu{position:absolute;z-index:80;right:0;top:54px;width:230px;overflow:hidden;border:1px solid #d9e4ef;border-radius:12px;background:#fff;box-shadow:0 18px 42px rgba(9,42,78,.18)}.public-account-menu a{display:block;padding:13px 16px;border-bottom:1px solid #edf2f7;color:#34495f;font-size:13px;font-weight:600}.public-account-menu a:last-child{border-bottom:0}.public-account-menu a:hover{color:var(--blue);background:#f2f7ff}
 @media(max-width:1200px){.site-header .nav-actions{gap:7px}.site-header .nav-pill{padding:0 15px}.site-header .employer-cta{min-width:auto;padding:0 17px}}
 
 /* Danh sách việc làm */

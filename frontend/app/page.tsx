@@ -154,6 +154,7 @@ export default function Home() {
   const [filters, setFilters] = useState({ keyword: "", category, salary, experience });
   const [saved, setSaved] = useState<number[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [account, setAccount] = useState<any>(null);
 
@@ -300,14 +301,43 @@ export default function Home() {
           </div>
           <div className="nav-actions">
             {account ? (
-              <>
-                <Link className="nav-pill nav-register" href={accountArea}>
+              <div className="public-account">
+                <button
+                  className="nav-pill nav-register public-account-trigger"
+                  type="button"
+                  onClick={() => setAccountMenuOpen((value) => !value)}
+                  aria-expanded={accountMenuOpen}
+                >
                   {account.tenHienThi ?? account.tenDangNhap ?? account.email}
-                </Link>
+                  <span>⌄</span>
+                </button>
                 <button className="nav-pill nav-login" type="button" onClick={logout}>
                   Đăng xuất
                 </button>
-              </>
+                {accountMenuOpen && (
+                  <div className="public-account-menu">
+                    {account.vaiTro === "NGUOI_LAO_DONG" && (
+                      <>
+                        <Link href="/ho-so">Hồ sơ người lao động</Link>
+                        <Link href="/viec-lam-da-luu">Việc làm đã lưu</Link>
+                        <Link href="/viec-lam-da-ung-tuyen">Việc đã ứng tuyển</Link>
+                      </>
+                    )}
+                    {account.vaiTro === "NHA_TUYEN_DUNG" && (
+                      <>
+                        <Link href="/nha-tuyen-dung/ho-so">Hồ sơ nhà tuyển dụng</Link>
+                        <Link href="/nha-tuyen-dung/tin-tuyen-dung">Quản lý tin tuyển dụng</Link>
+                        <Link href="/nha-tuyen-dung/tin-tuyen-dung/tao-moi">Đăng tin mới</Link>
+                      </>
+                    )}
+                    {account.vaiTro === "QUAN_TRI_VIEN" && (
+                      <Link href="/quan-tri/thong-ke">Trang quản trị</Link>
+                    )}
+                    <Link href="/thong-bao">Thông báo</Link>
+                    <Link href="/doi-mat-khau">Đổi mật khẩu</Link>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link className="nav-pill nav-register" href="/dang-ky">Đăng ký</Link>

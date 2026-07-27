@@ -18,11 +18,13 @@ type Props = {
 const menus = {
   worker: [
     ["/", "Tìm việc"],
+    ["/ho-so", "Hồ sơ"],
     ["/viec-lam-da-luu", "Việc làm đã lưu"],
     ["/viec-lam-da-ung-tuyen", "Việc đã ứng tuyển"],
     ["/thong-bao", "Thông báo"],
   ],
   employer: [
+    ["/nha-tuyen-dung/ho-so", "Hồ sơ doanh nghiệp"],
     ["/nha-tuyen-dung/tin-tuyen-dung", "Tin tuyển dụng"],
     ["/thong-bao", "Thông báo"],
   ],

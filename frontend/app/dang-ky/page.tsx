@@ -28,6 +28,17 @@ export function RegisterPageContent({ initialRole = "NGUOI_LAO_DONG", lockRole =
     const phone = String(form.get("soDienThoai") ?? "").replace(/\D/g, "");
     const password = String(form.get("matKhau") ?? "");
     const passwordConfirmation = String(form.get("xacNhanMatKhau") ?? "");
+    const taxCode = String(form.get("maSoThue") ?? "").replace(/\D/g, "");
+
+    if (
+      role === "NHA_TUYEN_DUNG" &&
+      !/^\d{10}(\d{3})?$/.test(taxCode)
+    ) {
+      setMessage("Mã số thuế phải gồm 10 chữ số hoặc 13 chữ số.");
+      setErrors({ maSoThue: ["Mã số thuế phải gồm 10 chữ số hoặc 13 chữ số."] });
+      setLoading(false);
+      return;
+    }
 
     if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,64}$/.test(password)) {
       setMessage("Mật khẩu phải có 8–64 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.");
@@ -62,7 +73,7 @@ export function RegisterPageContent({ initialRole = "NGUOI_LAO_DONG", lockRole =
           ...(role === "NHA_TUYEN_DUNG"
             ? {
                 tenDonVi: form.get("tenDonVi"),
-                maSoThue: form.get("maSoThue"),
+                maSoThue: taxCode,
                 diaChiTruSo: form.get("diaChiTruSo"),
               }
             : {}),

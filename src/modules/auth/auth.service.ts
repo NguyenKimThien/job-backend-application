@@ -41,7 +41,10 @@ type CreatedEmployerRegistration = CreatedRegistration & {
   trangThaiHoSo: TrangThaiKiemDuyet;
 };
 
-type LoginIdentifierType = 'WORKER_CCCD' | 'EMPLOYER_TAX_CODE';
+type LoginIdentifierType =
+  | 'WORKER_CCCD'
+  | 'EMPLOYER_TAX_CODE'
+  | 'ADMIN_USERNAME';
 
 type LoginAccount = Prisma.TaiKhoanGetPayload<{
   include: {
@@ -139,6 +142,7 @@ export class AuthService {
       data: {
         email: maskEmail(created.email),
         expiresIn: this.otpService.getTtlSeconds(),
+        ...(!this.isSmtpEnabled() ? { developmentOtp: created.otp } : {}),
       },
     };
   }
@@ -277,7 +281,13 @@ export class AuthService {
       });
     }
 
-    return genericResponse;
+    return {
+      ...genericResponse,
+      data: {
+        ...genericResponse.data,
+        ...(!this.isSmtpEnabled() ? { developmentOtp: otp } : {}),
+      },
+    };
   }
 
   async registerEmployer(dto: RegisterEmployerDto) {
@@ -324,6 +334,7 @@ export class AuthService {
         expiresIn: this.otpService.getTtlSeconds(),
         trangThaiTaiKhoan: created.trangThaiTaiKhoan,
         trangThaiHoSo: created.trangThaiHoSo,
+        ...(!this.isSmtpEnabled() ? { developmentOtp: created.otp } : {}),
       },
     };
   }
@@ -558,13 +569,23 @@ export class AuthService {
       });
     }
 
-    return genericResponse;
+    return {
+      ...genericResponse,
+      data: {
+        ...genericResponse.data,
+        ...(!this.isSmtpEnabled() ? { developmentOtp: otp } : {}),
+      },
+    };
   }
 
   private normalizeLoginIdentifier(identifier: string): string {
     return String(identifier ?? '')
       .trim()
-      .replace(/[\s.-]/g, '');
+      .toLowerCase();
+  }
+
+  private isSmtpEnabled(): boolean {
+    return this.configService.get<boolean>('SMTP_ENABLED') === true;
   }
 
   private detectLoginIdentifierType(identifier: string): LoginIdentifierType {
@@ -576,26 +597,23 @@ export class AuthService {
       return 'EMPLOYER_TAX_CODE';
     }
 
-    this.throwLoginError(
-      HttpStatus.BAD_REQUEST,
-      'INVALID_LOGIN_IDENTIFIER',
-      'Dinh danh dang nhap khong hop le.',
-    );
+    if (/^[a-zA-Z0-9._@-]{4,255}$/.test(identifier)) {
+      return 'ADMIN_USERNAME';
+    }
+
+    this.throwLoginError(HttpStatus.BAD_REQUEST, 'INVALID_LOGIN_IDENTIFIER',
+      'Dinh danh dang nhap khong hop le.');
   }
 
   private findAccountByLoginIdentifier(
     identifier: string,
-    identifierType: LoginIdentifierType,
+    _identifierType: LoginIdentifierType,
   ): Promise<LoginAccount | null> {
     const prisma = this.getPrismaService();
 
     return prisma.taiKhoan.findFirst({
       where: {
         tenDangNhap: identifier,
-        vaiTro:
-          identifierType === 'WORKER_CCCD'
-            ? VaiTroTaiKhoan.NGUOI_LAO_DONG
-            : VaiTroTaiKhoan.NHA_TUYEN_DUNG,
       },
       include: {
         hoSoNguoiLaoDong: true,
@@ -667,6 +685,11 @@ export class AuthService {
   private buildLoginResponse(account: LoginAccount, accessToken: string) {
     const baseAccount = {
       id: account.id,
+      tenDangNhap: account.tenDangNhap,
+      tenHienThi:
+        account.hoSoNguoiLaoDong?.hoTen ??
+        account.hoSoNhaTuyenDung?.tenDonVi ??
+        account.tenDangNhap,
       email: account.email,
       soDienThoai: account.soDienThoai,
       vaiTro: account.vaiTro,
@@ -818,14 +841,6 @@ export class AuthService {
           : Promise.resolve(null),
       ]);
 
-    if (usernameAccount || employerProfile) {
-      this.throwEmployerError(
-        HttpStatus.CONFLICT,
-        'TAX_CODE_ALREADY_EXISTS',
-        'Ma so thue da duoc su dung.',
-      );
-    }
-
     if (
       emailAccount?.trangThaiTaiKhoan === TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL
     ) {
@@ -833,6 +848,14 @@ export class AuthService {
         HttpStatus.CONFLICT,
         'ACCOUNT_PENDING_VERIFICATION',
         'Tai khoan da duoc dang ky nhung chua xac thuc. Vui long yeu cau gui lai OTP.',
+      );
+    }
+
+    if (usernameAccount || employerProfile) {
+      this.throwEmployerError(
+        HttpStatus.CONFLICT,
+        'TAX_CODE_ALREADY_EXISTS',
+        'Ma so thue da duoc su dung.',
       );
     }
 

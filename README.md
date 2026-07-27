@@ -1,98 +1,117 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Việc làm Thanh niên Hà Nội — bản chạy một lệnh
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Đây là dự án full-stack đã gom thư viện frontend và backend vào **một**
+`package.json` và **một** thư mục `node_modules`.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Cấu trúc
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ npm install
+```text
+viec-lam-thanh-nien-one-command/
+├── src/                 Backend NestJS
+├── prisma/              Prisma và PostgreSQL
+├── frontend/            Frontend Next.js
+├── scripts/             Chạy đồng thời hai máy chủ
+├── .env.example
+└── package.json         Toàn bộ thư viện của dự án
 ```
 
-## Compile and run the project
+Không chạy `npm install` trong `frontend`. Thư mục này không còn
+`package.json` riêng.
 
-```bash
-# development
-$ npm run start
+## Bước 1: tạo database
 
-# watch mode
-$ npm run start:dev
+Trong pgAdmin, tạo database tên `jobconnect`, hoặc chạy:
 
-# production mode
-$ npm run start:prod
+```sql
+CREATE DATABASE jobconnect;
 ```
 
-## Run tests
+## Bước 2: cấu hình
 
-```bash
-# unit tests
-$ npm run test
+Mở PowerShell tại thư mục dự án:
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+```powershell
+Copy-Item .env.example .env
 ```
 
-## Deployment
+Mở `.env` và thay mật khẩu PostgreSQL trong `DATABASE_URL`:
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+```env
+DATABASE_URL="postgresql://postgres:MAT_KHAU_CUA_BAN@localhost:5432/jobconnect?schema=public"
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Bước 3: cài và tạo dữ liệu
 
-## Resources
+Chỉ thực hiện một lần:
 
-Check out a few resources that may come in handy when working with NestJS:
+```powershell
+npm.cmd install
+npm.cmd run setup
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Tài khoản quản trị mẫu:
 
-## Support
+- Tên đăng nhập: `admin`
+- Mật khẩu mặc định: `Admin@123456`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Bước 4: chạy toàn bộ dự án
 
-## Stay in touch
+```powershell
+npm.cmd run dev
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Một lệnh trên tự chạy:
 
-## License
+- Website: `http://localhost:3000`
+- Backend API: `http://localhost:3001`
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Giữ cửa sổ PowerShell đang chạy. Nhấn `Ctrl + C` để dừng cả hai.
+
+## Các lệnh riêng
+
+```powershell
+npm.cmd run dev:frontend
+npm.cmd run dev:backend
+npm.cmd run prisma:studio
+npm.cmd run build
+```
+
+## Quản lý người dùng
+
+Sau khi đăng nhập quản trị, truy cập:
+
+```text
+http://localhost:3000/quan-tri/tai-khoan
+```
+
+Đã có tìm kiếm, lọc, phân trang, xem chi tiết hồ sơ, tạm khóa, khóa và mở
+khóa tài khoản. API được bảo vệ bằng JWT và quyền `QUAN_TRI_VIEN`.
+
+## Các chức năng đã kết nối frontend với backend
+
+- Đăng ký, xác thực OTP, đăng nhập, quên và đổi mật khẩu.
+- Danh mục ngành nghề, danh sách/chi tiết việc làm và thông tin công ty.
+- Hồ sơ người lao động: học vấn, kinh nghiệm, kỹ năng, nguyện vọng và CV.
+- Nộp hồ sơ, theo dõi việc đã ứng tuyển, lưu và bỏ lưu tin.
+- Hồ sơ nhà tuyển dụng, tạo tin và xem/xử lý ứng viên theo từng tin.
+- Quản trị tài khoản, ngành nghề, duyệt nhà tuyển dụng, duyệt tin và thống kê.
+- Thông báo được lấy riêng theo tài khoản đang đăng nhập.
+
+Frontend gọi backend tại `http://localhost:3001` thông qua
+`NEXT_PUBLIC_API_URL` trong `.env`.
+
+Sau khi nhận phiên bản mới có thay đổi Prisma, luôn chạy:
+
+```powershell
+npm.cmd run setup
+```
+
+Lệnh này tạo/cập nhật các bảng, sinh Prisma Client và nạp dữ liệu mẫu.
+
+## OTP khi chạy thử
+
+Mặc định `.env.example` đặt `SMTP_ENABLED=false`, vì vậy mã OTP thử nghiệm
+được hiển thị ngay trên trang xác thực. Khi đã cấu hình đúng tài khoản SMTP,
+đổi thành `SMTP_ENABLED=true` để gửi OTP qua email thật.
+
+Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` như các câu lệnh trên.

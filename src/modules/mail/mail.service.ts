@@ -40,6 +40,10 @@ export class MailService {
   }
 
   async sendRegistrationOtp(params: SendRegistrationOtpParams): Promise<void> {
+    if (!this.configService.get<boolean>('SMTP_ENABLED')) {
+      return;
+    }
+
     const fromName = this.configService.getOrThrow<string>('SMTP_FROM_NAME');
     const fromEmail = this.configService.getOrThrow<string>('SMTP_FROM_EMAIL');
     const subject = 'Mã OTP xác thực đăng ký tài khoản Người lao động';

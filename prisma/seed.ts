@@ -263,7 +263,7 @@ async function main() {
   }
 
   const nhaTuyenDungAccount = await upsertTaiKhoan({
-    tenDangNhap: 'cong-ty-tre-ha-noi',
+    tenDangNhap: '0109999001',
     email: 'nhatuyendung@example.com',
     soDienThoai: '0902000002',
     matKhauHash: demoPasswordHash,

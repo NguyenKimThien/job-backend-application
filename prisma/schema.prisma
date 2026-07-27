@@ -155,6 +155,7 @@ model HoSoNguoiLaoDong {
   kinhNghiemLamViecs  KinhNghiemLamViec[]
   hoSoKyNangs         HoSoKyNang[]
   ungTuyens           UngTuyen[]
+  tinTuyenDungDaLuu   TinTuyenDungDaLuu[]
 
   @@index([trangThaiTimViec], map: "idx_ho_so_nguoi_lao_dong_trang_thai")
   @@map("ho_so_nguoi_lao_dong")
@@ -298,6 +299,7 @@ model TinTuyenDung {
   tinTuyenDungKyNangs     TinTuyenDungKyNang[]
   ungTuyens               UngTuyen[]
   lichSuKiemDuyets        LichSuKiemDuyet[]
+  nguoiLaoDongDaLuu       TinTuyenDungDaLuu[]
 
   @@index([nhaTuyenDungId], map: "idx_tin_tuyen_dung_nha_tuyen_dung_id")
   @@index([nganhNgheId], map: "idx_tin_tuyen_dung_nganh_nghe_id")
@@ -345,6 +347,18 @@ model UngTuyen {
   @@index([tinTuyenDungId, trangThaiHienTai], map: "idx_ung_tuyen_tin_trang_thai")
   @@index([ngayNop], map: "idx_ung_tuyen_ngay_nop")
   @@map("ung_tuyen")
+}
+
+model TinTuyenDungDaLuu {
+  hoSoNguoiLaoDongId Int              @map("ho_so_nguoi_lao_dong_id")
+  tinTuyenDungId     Int              @map("tin_tuyen_dung_id")
+  ngayLuu            DateTime         @default(now()) @map("ngay_luu") @db.Timestamptz(6)
+  hoSoNguoiLaoDong   HoSoNguoiLaoDong @relation(fields: [hoSoNguoiLaoDongId], references: [id], onDelete: Cascade)
+  tinTuyenDung       TinTuyenDung     @relation(fields: [tinTuyenDungId], references: [id], onDelete: Cascade)
+
+  @@id([hoSoNguoiLaoDongId, tinTuyenDungId])
+  @@index([tinTuyenDungId], map: "idx_tin_da_luu_tin_tuyen_dung_id")
+  @@map("tin_tuyen_dung_da_luu")
 }
 
 model LichSuTrangThaiUngTuyen {

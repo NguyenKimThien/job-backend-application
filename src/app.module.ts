@@ -5,6 +5,8 @@ import { AppService } from './app.service.js';
 import { validateEnv } from './config/env.validation.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
+import { AdminUsersModule } from './modules/admin-users/admin-users.module.js';
+import { PortalModule } from './modules/portal/portal.module.js';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { PrismaModule } from './prisma/prisma.module.js';
     }),
     PrismaModule,
     AuthModule,
+    AdminUsersModule,
+    PortalModule,
   ],
   controllers: [AppController],
   providers: [AppService],

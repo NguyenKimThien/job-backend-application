@@ -26,6 +26,7 @@ const defaultValues: Record<string, string> = {
   OTP_MAX_SENDS_PER_HOUR: '5',
   BCRYPT_SALT_ROUNDS: '12',
   SMTP_PORT: '587',
+  SMTP_ENABLED: 'false',
   SMTP_SECURE: 'false',
   SMTP_FORCE_IPV4: 'false',
 };
@@ -48,6 +49,14 @@ export function validateEnv(config: Env): Env {
 
     validated[key] = value;
   }
+
+  const smtpEnabled = String(validated.SMTP_ENABLED).toLowerCase();
+
+  if (!['true', 'false'].includes(smtpEnabled)) {
+    throw new Error('SMTP_ENABLED must be true or false');
+  }
+
+  validated.SMTP_ENABLED = smtpEnabled === 'true';
 
   const smtpSecure = String(validated.SMTP_SECURE).toLowerCase();
 

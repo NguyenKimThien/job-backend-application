@@ -289,6 +289,7 @@ model TinTuyenDung {
   trangThaiKiemDuyet      TrangThaiKiemDuyet   @default(BAN_NHAP) @map("trang_thai_kiem_duyet")
   trangThaiHienThi        TrangThaiHienThiTin  @default(CHUA_DANG) @map("trang_thai_hien_thi")
   lyDoTuChoi              String?              @map("ly_do_tu_choi") @db.Text
+  soLanChinhSua           Int                  @default(0) @map("so_lan_chinh_sua")
   ngayGuiDuyet            DateTime?            @map("ngay_gui_duyet") @db.Timestamptz(6)
   ngayDuyet               DateTime?            @map("ngay_duyet") @db.Timestamptz(6)
   ngayDang                DateTime?            @map("ngay_dang") @db.Timestamptz(6)

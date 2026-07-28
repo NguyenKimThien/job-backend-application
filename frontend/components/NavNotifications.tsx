@@ -7,6 +7,8 @@ import { portalFetch } from '@/lib/portal-api';
 
 export type NotificationRole = 'worker' | 'employer' | 'admin';
 
+export const NOTIFICATIONS_UPDATED_EVENT = 'portal-notifications-updated';
+
 type Props = {
   className?: string;
   role?: NotificationRole;
@@ -20,6 +22,10 @@ type Notice = {
   ngayTao: string;
   daDoc?: boolean;
 };
+
+type NotificationsUpdatedEvent = CustomEvent<{
+  notifications?: Notice[];
+}>;
 
 export default function NavNotifications({
   className,
@@ -39,6 +45,25 @@ export default function NavNotifications({
     portalFetch<Notice[]>('/notifications')
       .then(setNotices)
       .catch(() => setNotices([]));
+  }, []);
+
+  useEffect(() => {
+    function handleNotificationsUpdated(event: Event) {
+      const detail = (event as NotificationsUpdatedEvent).detail;
+      if (Array.isArray(detail?.notifications)) {
+        setNotices(detail.notifications);
+      }
+    }
+
+    window.addEventListener(
+      NOTIFICATIONS_UPDATED_EVENT,
+      handleNotificationsUpdated,
+    );
+    return () =>
+      window.removeEventListener(
+        NOTIFICATIONS_UPDATED_EVENT,
+        handleNotificationsUpdated,
+      );
   }, []);
 
   useEffect(() => {
@@ -62,7 +87,7 @@ export default function NavNotifications({
 
   const unreadCount = notices.filter((item) => !item.daDoc).length;
   const notificationLabel = unreadCount
-    ? `${unreadCount} thông báo chưa đọc`
+    ? `${unreadCount.toLocaleString('vi-VN')} thông báo chưa đọc`
     : 'Mở thông báo';
   const notificationHref = `/thong-bao?role=${role}`;
   const loginHref = `/dang-nhap?redirect=${encodeURIComponent(notificationHref)}`;
@@ -86,7 +111,9 @@ export default function NavNotifications({
         type="button"
       >
         <NotificationIcon name="bell" />
-        {unreadCount > 0 && <b>{unreadCount}</b>}
+        {unreadCount > 0 && (
+          <b aria-hidden="true">{unreadCount.toLocaleString('vi-VN')}</b>
+        )}
       </button>
 
       {open && (

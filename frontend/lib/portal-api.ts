@@ -3,7 +3,7 @@ import {
   getApiMessage,
   getAuthHeaders,
   handleUnauthorizedResponse,
-} from "./backend-api";
+} from './backend-api';
 
 export async function portalFetch<T>(
   path: string,
@@ -18,22 +18,41 @@ export async function portalFetch<T>(
         ...getAuthHeaders(),
         ...(init.headers ?? {}),
       },
-      cache: init.cache ?? "no-store",
+      cache: init.cache ?? 'no-store',
     });
   } catch {
     throw new Error(
-      "Không thể kết nối đến backend. Vui lòng kiểm tra máy chủ API đang chạy ở http://localhost:3001.",
+      'Không thể kết nối đến backend. Vui lòng kiểm tra máy chủ API đang chạy ở http://localhost:3001.',
     );
   }
 
   handleUnauthorizedResponse(response);
 
-  const payload = await response.json();
+  const payload = (await response.json()) as ApiResponsePayload<T>;
   if (!response.ok) {
-    throw new Error(getApiMessage(payload, "Không thể tải dữ liệu."));
+    throw new Error(getApiMessage(payload, 'Không thể tải dữ liệu.'));
   }
   return payload.data as T;
 }
+
+type ApiResponsePayload<T> = {
+  data?: T;
+  code?: string;
+  message?: string | string[];
+  error?: { code?: string; message?: string | string[] };
+};
+
+export type ApiEmployerSummary = {
+  id?: number;
+  tenDonVi?: string | null;
+  linhVuc?: { tenLinhVuc?: string | null } | null;
+  diaChiTruSo?: string | null;
+  website?: string | null;
+  logoUrl?: string | null;
+  moTaDonVi?: string | null;
+  trangThaiDuyet?: string | null;
+  _count?: { tinTuyenDungs?: number };
+};
 
 export type ApiJob = {
   id: number;
@@ -59,27 +78,34 @@ export type ApiJob = {
   postedAt: string;
   skills: string[];
   applicantCount?: number;
-  employer?: Record<string, unknown>;
+  editCount?: number;
+  employer?: ApiEmployerSummary;
 };
 
 const workTypeLabels: Record<string, string> = {
-  TOAN_THOI_GIAN: "Toàn thời gian",
-  BAN_THOI_GIAN: "Bán thời gian",
-  THUC_TAP: "Thực tập",
-  THOI_VU: "Thời vụ",
-  TU_XA: "Từ xa",
+  TOAN_THOI_GIAN: 'Toàn thời gian',
+  BAN_THOI_GIAN: 'Bán thời gian',
+  THUC_TAP: 'Thực tập',
+  THOI_VU: 'Thời vụ',
+  TU_XA: 'Từ xa',
 };
 
 export function salaryLabel(job: ApiJob) {
-  if (job.negotiable) return "Thỏa thuận";
+  if (job.negotiable) return 'Thỏa thuận';
   const from = Number(job.salaryFrom ?? 0) / 1_000_000;
   const to = Number(job.salaryTo ?? 0) / 1_000_000;
-  if (from && to) return `${from} - ${to} triệu`;
-  if (from) return `Từ ${from} triệu`;
-  if (to) return `Đến ${to} triệu`;
-  return "Thỏa thuận";
+  if (from && to) return `${formatMillion(from)}–${formatMillion(to)} triệu`;
+  if (from) return `Từ ${formatMillion(from)} triệu`;
+  if (to) return `Đến ${formatMillion(to)} triệu`;
+  return 'Thỏa thuận';
 }
 
 export function jobTypeLabel(type: string) {
   return workTypeLabels[type] ?? type;
+}
+
+function formatMillion(value: number) {
+  return Number.isInteger(value)
+    ? value.toLocaleString('vi-VN')
+    : value.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
 }

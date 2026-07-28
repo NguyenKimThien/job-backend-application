@@ -18,7 +18,8 @@ type Props = {
   pageClassName?: string;
 };
 
-type AccountRole = 'NGUOI_LAO_DONG' | 'NHA_TUYEN_DUNG' | 'QUAN_TRI_VIEN';
+type AccountRole =
+  'NGUOI_LAO_DONG' | 'NHA_TUYEN_DUNG' | 'QUAN_TRI' | 'QUAN_TRI_VIEN';
 
 type StoredAccount = {
   email?: string;
@@ -69,7 +70,7 @@ export default function SiteShell({
   breadcrumb,
   title,
   subtitle,
-  role = 'worker',
+  role,
   action,
   pageClassName,
 }: Props) {
@@ -101,16 +102,17 @@ export default function SiteShell({
     router.refresh();
   }
 
+  const shellRole = role ?? shellRoleFromAccount(user?.vaiTro) ?? 'worker';
   const displayName =
     user?.tenHienThi ??
     user?.hoTen ??
     user?.tenDangNhap ??
     user?.email ??
-    roleFallback(role);
+    roleFallback(shellRole);
   const initials = getInitials(displayName);
 
   return (
-    <main className={`portal-page ${pageClassName ?? ''}`}>
+    <main className={`portal-page ${pageClassName ?? ''}`.trim()}>
       <header className="portal-header">
         <div className="portal-utility">
           <div className="container portal-utility-inner">
@@ -136,13 +138,17 @@ export default function SiteShell({
             <ShellIcon name="menu" />
           </button>
           <nav className={open ? 'portal-links open' : 'portal-links'}>
-            {menus[role].map(([href, label]) => {
-              const active = pathname === href;
+            {menus[shellRole].map(([href, label]) => {
+              const active =
+                pathname === href ||
+                (href !== '/' && pathname.startsWith(`${href}/`));
               return (
                 <Link
                   aria-current={active ? 'page' : undefined}
                   className={active ? 'active' : ''}
-                  href={href === '/thong-bao' ? `${href}?role=${role}` : href}
+                  href={
+                    href === '/thong-bao' ? `${href}?role=${shellRole}` : href
+                  }
                   key={href}
                 >
                   {label}
@@ -152,7 +158,7 @@ export default function SiteShell({
           </nav>
           <div className="portal-account">
             <NavNotifications
-              role={role}
+              role={shellRole}
               onOpen={() => setAccountOpen(false)}
             />
             <button
@@ -166,7 +172,9 @@ export default function SiteShell({
               <span className="account-avatar">{initials || 'TK'}</span>
               <span>
                 <strong title={displayName}>{displayName}</strong>
-                <small>{user ? roleLabel(role) : 'Chưa đăng nhập'}</small>
+                <small>
+                  {user ? accountRoleLabel(user.vaiTro) : 'Chưa đăng nhập'}
+                </small>
               </span>
               <ShellIcon name="chevronDown" />
             </button>
@@ -178,10 +186,10 @@ export default function SiteShell({
                       {displayName}
                       {user.email ? ` · ${user.email}` : ''}
                     </span>
-                    {role !== 'admin' && (
+                    {shellRole !== 'admin' && (
                       <Link
                         href={
-                          role === 'employer'
+                          shellRole === 'employer'
                             ? '/nha-tuyen-dung/ho-so'
                             : '/ho-so'
                         }
@@ -258,6 +266,18 @@ function roleLabel(role: ShellRole) {
   if (role === 'admin') return 'Cán bộ quản trị';
   if (role === 'employer') return 'Nhà tuyển dụng';
   return 'Người lao động';
+}
+
+function shellRoleFromAccount(role?: AccountRole): ShellRole | null {
+  if (role === 'NHA_TUYEN_DUNG') return 'employer';
+  if (role === 'QUAN_TRI' || role === 'QUAN_TRI_VIEN') return 'admin';
+  if (role === 'NGUOI_LAO_DONG') return 'worker';
+  return null;
+}
+
+function accountRoleLabel(role?: AccountRole) {
+  const shellRole = shellRoleFromAccount(role);
+  return shellRole ? roleLabel(shellRole) : 'Tài khoản';
 }
 
 function getInitials(value: string) {

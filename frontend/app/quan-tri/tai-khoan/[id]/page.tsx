@@ -82,6 +82,13 @@ export default function AccountDetailPage() {
   const [account, setAccount] = useState<Detail | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [role, setRole] = useState('');
+  const [savingRole, setSavingRole] = useState(false);
+  const [roleMessage, setRoleMessage] = useState('');
+  const [workerName, setWorkerName] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [taxCode, setTaxCode] = useState('');
+  const [headOfficeAddress, setHeadOfficeAddress] = useState('');
 
   useEffect(() => {
     void loadAccount();
@@ -93,6 +100,11 @@ export default function AccountDetailPage() {
     try {
       const data = await portalFetch<Detail>(`/admin/users/${params.id}`);
       setAccount(data);
+      setRole(data.vaiTro);
+      setWorkerName(data.hoSoNguoiLaoDong?.hoTen ?? '');
+      setCompanyName(data.hoSoNhaTuyenDung?.tenDonVi ?? '');
+      setTaxCode(data.hoSoNhaTuyenDung?.maSoThue ?? '');
+      setHeadOfficeAddress(data.hoSoNhaTuyenDung?.diaChiTruSo ?? '');
     } catch (error) {
       setAccount(null);
       setMessage(
@@ -108,6 +120,47 @@ export default function AccountDetailPage() {
     account?.hoSoNhaTuyenDung?.tenDonVi ??
     account?.tenDangNhap ??
     '';
+
+  async function updateRole() {
+    if (!account || !role || role === account.vaiTro) return;
+    const targetLabel = roleLabels[role] ?? role;
+    if (
+      !window.confirm(
+        `Bạn chắc chắn muốn chuyển tài khoản sang ${targetLabel}? Hồ sơ hiện tại và toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn.`,
+      )
+    ) {
+      return;
+    }
+    setSavingRole(true);
+    setRoleMessage('');
+    try {
+      await portalFetch(`/admin/users/${account.id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          role,
+          ...(role === 'NGUOI_LAO_DONG'
+            ? { hoTen: workerName.trim() }
+            : {
+                tenDonVi: companyName.trim(),
+                maSoThue: taxCode.trim(),
+                diaChiTruSo: headOfficeAddress.trim(),
+              }),
+        }),
+      });
+      await loadAccount();
+      setRoleMessage(
+        'Đã đổi vai trò, xóa hồ sơ cũ và tạo hồ sơ mới thành công.',
+      );
+    } catch (error) {
+      setRoleMessage(
+        error instanceof Error
+          ? error.message
+          : 'Không thể cập nhật quyền tài khoản.',
+      );
+    } finally {
+      setSavingRole(false);
+    }
+  }
 
   return (
     <SiteShell
@@ -140,7 +193,9 @@ export default function AccountDetailPage() {
           <>
             <article className="content-card account-detail-card">
               <div className="account-detail-head">
-                <span>{displayName.slice(0, 1).toUpperCase()}</span>
+                <span className="account-detail-avatar">
+                  {displayName.slice(0, 1).toUpperCase()}
+                </span>
                 <div>
                   <small>MÃ TÀI KHOẢN #{account.id}</small>
                   <h2>{displayName}</h2>
@@ -181,6 +236,103 @@ export default function AccountDetailPage() {
                       : 'Chưa đăng nhập'
                   }
                 />
+              </div>
+            </article>
+
+            <article className="content-card account-detail-card">
+              <h3>Phân quyền tài khoản</h3>
+              <p>
+                Khi đổi vai trò, hệ thống sẽ xóa hồ sơ hiện tại cùng toàn bộ dữ
+                liệu liên quan và tạo một hồ sơ mới theo vai trò được chọn.
+                Thao tác này không thể hoàn tác.
+              </p>
+              {roleMessage && (
+                <div
+                  className={`admin-inline-message ${
+                    roleMessage.startsWith('Đã') ? 'success' : 'error'
+                  }`}
+                >
+                  {roleMessage}
+                </div>
+              )}
+              <div className="admin-role-editor">
+                <label className="form-group">
+                  <span>Vai trò sử dụng hệ thống</span>
+                  <select
+                    onChange={(event) => setRole(event.target.value)}
+                    value={role}
+                  >
+                    <option value="NGUOI_LAO_DONG">
+                      Người lao động
+                    </option>
+                    <option value="NHA_TUYEN_DUNG">
+                      Nhà tuyển dụng
+                    </option>
+                  </select>
+                </label>
+                {role === 'NGUOI_LAO_DONG' &&
+                  role !== account.vaiTro && (
+                    <label className="form-group">
+                      <span>Họ và tên hồ sơ mới *</span>
+                      <input
+                        onChange={(event) => setWorkerName(event.target.value)}
+                        required
+                        value={workerName}
+                      />
+                    </label>
+                  )}
+                {role === 'NHA_TUYEN_DUNG' &&
+                  role !== account.vaiTro && (
+                    <>
+                      <label className="form-group">
+                        <span>Tên đơn vị mới *</span>
+                        <input
+                          onChange={(event) =>
+                            setCompanyName(event.target.value)
+                          }
+                          required
+                          value={companyName}
+                        />
+                      </label>
+                      <label className="form-group">
+                        <span>Mã số thuế mới *</span>
+                        <input
+                          inputMode="numeric"
+                          onChange={(event) => setTaxCode(event.target.value)}
+                          pattern="(?:[0-9]{10}|[0-9]{13})"
+                          required
+                          value={taxCode}
+                        />
+                      </label>
+                      <label className="form-group role-address-field">
+                        <span>Địa chỉ trụ sở mới *</span>
+                        <input
+                          onChange={(event) =>
+                            setHeadOfficeAddress(event.target.value)
+                          }
+                          required
+                          value={headOfficeAddress}
+                        />
+                      </label>
+                    </>
+                  )}
+                <button
+                  className="btn btn-primary"
+                  disabled={
+                    savingRole ||
+                    !role ||
+                    role === account.vaiTro ||
+                    (role === 'NGUOI_LAO_DONG' && !workerName.trim()) ||
+                    (role === 'NHA_TUYEN_DUNG' &&
+                      (!companyName.trim() ||
+                        !taxCode.trim() ||
+                        !headOfficeAddress.trim()))
+                  }
+                  onClick={() => void updateRole()}
+                  type="button"
+                >
+                  {savingRole ? 'Đang lưu...' : 'Cập nhật quyền'}
+                </button>
               </div>
             </article>
 

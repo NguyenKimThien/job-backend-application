@@ -67,6 +67,8 @@ export type ApiJob = {
   salaryTo?: string | number | null;
   negotiable: boolean;
   experience?: string | number | null;
+  requiredEducation?: string | null;
+  quantity?: number;
   type: string;
   description: string;
   requirements: string;

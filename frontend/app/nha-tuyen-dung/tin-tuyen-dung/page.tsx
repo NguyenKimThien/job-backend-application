@@ -557,6 +557,7 @@ function JobPostTableRow({ job }: { job: EmployerJob }) {
           {job.rejectionReason && (
             <p className="employer-job-reason">Lý do: {job.rejectionReason}</p>
           )}
+          <EditQuota job={job} />
         </div>
       </td>
       <td>
@@ -633,6 +634,14 @@ function JobPostActions({
         </button>
         {open && (
           <div role="menu">
+            {canEditJob(job) && (
+              <Link
+                href={`/nha-tuyen-dung/tin-tuyen-dung/${job.id}/chinh-sua`}
+                role="menuitem"
+              >
+                Chỉnh sửa tin
+              </Link>
+            )}
             {hasApplicants ? (
               <Link href={`/viec-lam/${job.id}`} role="menuitem">
                 Xem tin tuyển dụng
@@ -649,6 +658,25 @@ function JobPostActions({
         )}
       </div>
     </div>
+  );
+}
+
+function canEditJob(job: EmployerJob) {
+  return job.status !== 'CHO_DUYET' && (job.editCount ?? 0) < 3;
+}
+
+function EditQuota({ job }: { job: EmployerJob }) {
+  const remaining = Math.max(0, 3 - (job.editCount ?? 0));
+  return (
+    <small
+      className={`employer-job-edit-quota ${
+        remaining === 0 ? 'exhausted' : ''
+      }`}
+    >
+      {remaining > 0
+        ? `Còn ${remaining}/3 lượt chỉnh sửa`
+        : 'Đã hết 3 lượt chỉnh sửa'}
+    </small>
   );
 }
 

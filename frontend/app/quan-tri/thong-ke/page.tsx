@@ -12,6 +12,12 @@ import {
   formatAdminDateTime,
 } from '@/components/admin/AdminUI';
 import SiteShell from '@/components/SiteShell';
+import {
+  BACKEND_API_URL,
+  getApiMessage,
+  getAuthHeaders,
+  handleUnauthorizedResponse,
+} from '@/lib/backend-api';
 import { portalFetch } from '@/lib/portal-api';
 import { useEffect, useState } from 'react';
 
@@ -72,7 +78,10 @@ export default function StatisticsPage() {
   const [data, setData] = useState<StatisticsData | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
 
   useEffect(() => {
     void loadStatistics();
@@ -82,7 +91,9 @@ export default function StatisticsPage() {
     setLoading(true);
     setMessage('');
     try {
-      const result = await portalFetch<StatisticsData>('/admin/statistics');
+      const result = await portalFetch<StatisticsData>(
+        `/admin/statistics${reportQuery(from, to)}`,
+      );
       setData(result);
       setUpdatedAt(new Date().toISOString());
     } catch (error) {
@@ -96,6 +107,39 @@ export default function StatisticsPage() {
   }
 
   const rows = data ? buildRows(data) : [];
+
+  async function exportReport() {
+    setExporting(true);
+    setMessage('');
+    try {
+      const response = await fetch(
+        `${BACKEND_API_URL}/admin/reports/export${reportQuery(from, to)}`,
+        { headers: getAuthHeaders() },
+      );
+      handleUnauthorizedResponse(response);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(getApiMessage(payload, 'Không thể xuất báo cáo.'));
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `bao-cao-viec-lam-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : 'Không thể xuất báo cáo.',
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <SiteShell
@@ -191,6 +235,41 @@ export default function StatisticsPage() {
                     .
                   </p>
                 </div>
+                <div className="admin-report-actions">
+                  <label>
+                    <span>Từ ngày</span>
+                    <input
+                      max={to || undefined}
+                      onChange={(event) => setFrom(event.target.value)}
+                      type="date"
+                      value={from}
+                    />
+                  </label>
+                  <label>
+                    <span>Đến ngày</span>
+                    <input
+                      min={from || undefined}
+                      onChange={(event) => setTo(event.target.value)}
+                      type="date"
+                      value={to}
+                    />
+                  </label>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => void loadStatistics()}
+                    type="button"
+                  >
+                    Lọc số liệu
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={exporting}
+                    onClick={() => void exportReport()}
+                    type="button"
+                  >
+                    {exporting ? 'Đang xuất...' : 'Xuất báo cáo CSV'}
+                  </button>
+                </div>
               </header>
 
               {rows.length ? (
@@ -231,6 +310,14 @@ export default function StatisticsPage() {
       </section>
     </SiteShell>
   );
+}
+
+function reportQuery(from: string, to: string) {
+  const params = new URLSearchParams();
+  if (from) params.set('from', from);
+  if (to) params.set('to', to);
+  const query = params.toString();
+  return query ? `?${query}` : '';
 }
 
 function buildRows(data: StatisticsData): ReportRow[] {

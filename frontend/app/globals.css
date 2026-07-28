@@ -10940,7 +10940,7 @@ td small {
   padding-bottom: 20px;
   border-bottom: 1px solid var(--line);
 }
-.account-detail-head > span {
+.account-detail-head > .account-detail-avatar {
   width: 54px;
   height: 54px;
   display: grid;
@@ -15467,5 +15467,131 @@ td small {
   .admin-data-table td {
     grid-template-columns: 1fr;
     gap: 5px;
+  }
+}
+.route-guard-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: #52657f;
+  background: #f4f7fb;
+  font-weight: 700;
+}
+
+.admin-report-actions {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-report-actions label {
+  display: grid;
+  gap: 5px;
+  color: #60718a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.admin-report-actions input {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #d5dfec;
+  border-radius: 8px;
+  background: #fff;
+  color: #102a4f;
+}
+
+.checkbox-line {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox-line input {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-role-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  align-items: end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.admin-role-editor .form-group {
+  min-width: 0;
+  margin: 0;
+}
+
+.admin-role-editor .role-address-field {
+  grid-column: 1 / -1;
+}
+
+.admin-role-editor > .btn {
+  width: max-content;
+}
+
+@media (max-width: 760px) {
+  .admin-role-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-role-editor .role-address-field {
+    grid-column: auto;
+  }
+}
+
+.employer-job-edit-quota {
+  width: max-content;
+  margin-top: 7px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: #0f67cf !important;
+  background: #eaf3ff;
+  font-size: 11px !important;
+  font-weight: 750;
+}
+
+.employer-job-edit-quota.exhausted {
+  color: #b4232f !important;
+  background: #fff1f2;
+}
+
+.form-message.info {
+  color: #0b579f;
+  border-color: #b8d8f7;
+  background: #eef7ff;
+}
+
+.employer-edit-quota-message strong {
+  color: #084d9f;
+}
+
+.employer-edit-limit-message {
+  max-width: 720px;
+  padding: 32px;
+  border: 1px solid #f2c4ca;
+}
+
+.employer-edit-limit-message > strong {
+  display: block;
+  color: #a71927;
+  font-size: 22px;
+}
+
+.employer-edit-limit-message p {
+  margin: 12px 0 22px;
+  color: #52657f;
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .admin-report-actions {
+    justify-content: flex-start;
+    width: 100%;
   }
 }

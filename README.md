@@ -135,7 +135,8 @@ Các nhóm chức năng chính:
 - `/worker/profile`, `/worker/applications`, `/worker/saved-jobs`: hồ sơ,
   ứng tuyển, lịch sử ứng tuyển và tin đã lưu của người lao động.
 - `/employer/profile`, `/employer/jobs`: hồ sơ nhà tuyển dụng, tạo tin, xem
-  tin và sửa/gửi lại tin bị từ chối (tối đa 3 lần).
+  tin và sửa/gửi lại tin để kiểm duyệt (tối đa 3 lần; tin đang chờ duyệt
+  không thể sửa).
 - `/employer/jobs/:jobId/applicants/*`: danh sách, chi tiết và cập nhật quy
   trình ứng viên theo từng tin thuộc doanh nghiệp.
 - `/admin/users/*`: tìm kiếm, xem chi tiết, khóa/mở khóa và phân quyền tài khoản.
@@ -148,6 +149,31 @@ Các nhóm chức năng chính:
 - `/admin/statistics?from=YYYY-MM-DD&to=YYYY-MM-DD`: bảng số liệu tài khoản,
   tin và ứng tuyển theo trạng thái.
 - `/admin/reports/export?from=YYYY-MM-DD&to=YYYY-MM-DD`: tải báo cáo CSV.
+
+## Ba chức năng bổ sung
+
+### Phân quyền
+
+- Backend kiểm tra JWT và vai trò ở từng nhóm API; không chỉ ẩn nút trên giao
+  diện.
+- Frontend tự chuyển người dùng ra khỏi khu vực `/quan-tri` hoặc
+  `/nha-tuyen-dung` nếu vai trò không phù hợp.
+- Quản trị viên đổi vai trò tại **Quản trị → Tài khoản → Chi tiết tài khoản →
+  Phân quyền tài khoản**. Chỉ chuyển được khi tài khoản có hồ sơ tương ứng;
+  không thể tự cấp quyền quản trị.
+
+### Chỉnh sửa tin tuyển dụng
+
+Tại **Nhà tuyển dụng → Tin tuyển dụng**, mở nút ba chấm của tin và chọn
+**Chỉnh sửa tin**. Hệ thống nạp sẵn nội dung cũ, kiểm tra tin có thuộc đúng nhà
+tuyển dụng đang đăng nhập và gửi phiên bản cập nhật về trạng thái chờ kiểm
+duyệt. Tin đang chờ duyệt và tin đã đủ ba lần sửa sẽ không hiện thao tác sửa.
+
+### Xuất báo cáo
+
+Tại **Quản trị → Thống kê và báo cáo**, chọn **Từ ngày**, **Đến ngày**, bấm
+**Lọc số liệu**, sau đó chọn **Xuất báo cáo CSV**. File dùng UTF-8 có BOM để
+Excel hiển thị đúng tiếng Việt và chỉ chứa dữ liệu trong khoảng ngày đã chọn.
 
 Sau khi cập nhật bản này trên cơ sở dữ liệu đã có, chạy:
 

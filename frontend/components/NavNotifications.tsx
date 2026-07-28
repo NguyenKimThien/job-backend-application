@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ReactNode, SVGProps, useEffect, useRef, useState } from 'react';
 import { ACCESS_TOKEN_KEY } from '@/lib/backend-api';
+import { formatPortalNotificationText } from '@/lib/notification-format';
 import { portalFetch } from '@/lib/portal-api';
 
 export type NotificationRole = 'worker' | 'employer' | 'admin';
@@ -134,27 +135,32 @@ export default function NavNotifications({
 
           {hasSession ? (
             <div className="notification-popover-list">
-              {notices.slice(0, 3).map((item) => (
-                <Link
-                  className={
-                    !item.daDoc ? 'popover-notice unread' : 'popover-notice'
-                  }
-                  href={notificationHref}
-                  key={item.id}
-                >
-                  <span>
-                    <NotificationIcon name="bell" />
-                  </span>
-                  <div>
-                    <strong>{item.tieuDe}</strong>
-                    <p>{item.noiDung}</p>
-                    <small>
-                      {new Date(item.ngayTao).toLocaleDateString('vi-VN')}
-                    </small>
-                  </div>
-                  {!item.daDoc && <i />}
-                </Link>
-              ))}
+              {notices.slice(0, 3).map((item) => {
+                const title = formatPortalNotificationText(item.tieuDe);
+                const content = formatPortalNotificationText(item.noiDung);
+
+                return (
+                  <Link
+                    className={
+                      !item.daDoc ? 'popover-notice unread' : 'popover-notice'
+                    }
+                    href={notificationHref}
+                    key={item.id}
+                  >
+                    <span>
+                      <NotificationIcon name="bell" />
+                    </span>
+                    <div>
+                      <strong>{title}</strong>
+                      <p>{content}</p>
+                      <small>
+                        {new Date(item.ngayTao).toLocaleDateString('vi-VN')}
+                      </small>
+                    </div>
+                    {!item.daDoc && <i />}
+                  </Link>
+                );
+              })}
               {notices.length === 0 && (
                 <div className="notification-popover-empty">
                   Chưa có thông báo

@@ -2,6 +2,7 @@
 
 import SiteShell from '@/components/SiteShell';
 import { NOTIFICATIONS_UPDATED_EVENT } from '@/components/NavNotifications';
+import { formatPortalNotificationText } from '@/lib/notification-format';
 import { portalFetch } from '@/lib/portal-api';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -461,6 +462,8 @@ function NotificationItem({
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const timeLabel = formatNotificationTime(item.ngayTao);
   const fullTime = formatFullDateTime(item.ngayTao);
+  const title = formatPortalNotificationText(item.tieuDe);
+  const content = formatPortalNotificationText(item.noiDung);
 
   function closeMenu() {
     setMenuOpen(false);
@@ -478,7 +481,7 @@ function NotificationItem({
   return (
     <article
       aria-label={`${item.daDoc ? 'Thông báo đã đọc' : 'Thông báo chưa đọc'}: ${
-        item.tieuDe
+        title
       }`}
       className={item.daDoc ? 'notification-row' : 'notification-row unread'}
       onClick={handleArticleClick}
@@ -493,8 +496,8 @@ function NotificationItem({
             {timeLabel}
           </time>
         </div>
-        <h3>{item.tieuDe}</h3>
-        <p>{item.noiDung}</p>
+        <h3>{title}</h3>
+        <p>{content}</p>
         {action ? (
           <Link
             className="notification-row-action"
@@ -524,7 +527,7 @@ function NotificationItem({
         <button
           aria-expanded={menuOpen}
           aria-haspopup="menu"
-          aria-label={`Mở menu thao tác cho thông báo ${item.tieuDe}`}
+          aria-label={`Mở menu thao tác cho thông báo ${title}`}
           onClick={() => setMenuOpen((value) => !value)}
           ref={menuButtonRef}
           type="button"

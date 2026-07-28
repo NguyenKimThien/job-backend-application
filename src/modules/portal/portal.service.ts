@@ -452,13 +452,10 @@ export class PortalService {
       include: { nhaTuyenDung: true },
     });
     if (!current) this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
-    if (
-      current.trangThaiKiemDuyet !== TrangThaiKiemDuyet.TU_CHOI &&
-      current.trangThaiKiemDuyet !== TrangThaiKiemDuyet.YEU_CAU_BO_SUNG
-    ) {
+    if (current.trangThaiKiemDuyet === TrangThaiKiemDuyet.CHO_DUYET) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_EDITABLE',
-        message: 'Chỉ được sửa tin bị từ chối hoặc được yêu cầu bổ sung.',
+        message: 'Tin đang chờ kiểm duyệt nên chưa thể chỉnh sửa.',
       });
     }
     if (current.soLanChinhSua >= 3) {
@@ -964,6 +961,8 @@ export class PortalService {
       salaryTo: item.mucLuongDen,
       negotiable: item.coTheThoaThuan,
       experience: item.soNamKinhNghiemToiThieu,
+      requiredEducation: item.trinhDoYeuCau,
+      quantity: item.soLuongTuyen,
       type: item.hinhThucLamViec,
       description: item.moTaCongViec,
       requirements: item.yeuCauUngVien,

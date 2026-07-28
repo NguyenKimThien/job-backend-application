@@ -50,6 +50,6 @@ export class AdminUsersController {
     @Body() dto: UpdateUserRoleDto,
     @Req() request: AuthenticatedRequest,
   ) {
-    return this.service.updateRole(id, dto.role, request.user.sub);
+    return this.service.updateRole(id, dto, request.user.sub);
   }
 }

@@ -8,6 +8,7 @@ import { ApiError } from '../../common/api-error.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
 
 @Injectable()
 export class AdminUsersService {
@@ -191,7 +192,12 @@ export class AdminUsersService {
     };
   }
 
-  async updateRole(id: number, role: VaiTroTaiKhoan, currentAdminId: number) {
+  async updateRole(
+    id: number,
+    dto: UpdateUserRoleDto,
+    currentAdminId: number,
+  ) {
+    const role = dto.role;
     if (id === currentAdminId || role === VaiTroTaiKhoan.QUAN_TRI_VIEN) {
       throw new ApiError(HttpStatus.FORBIDDEN, {
         code: 'INVALID_ROLE_ASSIGNMENT',
@@ -208,28 +214,144 @@ export class AdminUsersService {
         message: 'Không tìm thấy tài khoản có thể phân quyền.',
       });
     }
-    if (
-      (role === VaiTroTaiKhoan.NGUOI_LAO_DONG && !account.hoSoNguoiLaoDong) ||
-      (role === VaiTroTaiKhoan.NHA_TUYEN_DUNG && !account.hoSoNhaTuyenDung)
-    ) {
+    if (role === account.vaiTro) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
-        code: 'ROLE_PROFILE_MISSING',
-        message: 'Tài khoản chưa có hồ sơ phù hợp với vai trò được chọn.',
+        code: 'ROLE_UNCHANGED',
+        message: 'Tài khoản đang sử dụng vai trò này.',
       });
     }
-    await this.prisma.$transaction([
-      this.prisma.taiKhoan.update({ where: { id }, data: { vaiTro: role } }),
-      this.prisma.thongBao.create({
+
+    const hoTen = dto.hoTen?.trim();
+    const tenDonVi = dto.tenDonVi?.trim();
+    const maSoThue = dto.maSoThue?.trim();
+    const diaChiTruSo = dto.diaChiTruSo?.trim();
+    if (role === VaiTroTaiKhoan.NGUOI_LAO_DONG && !hoTen) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'WORKER_PROFILE_REQUIRED',
+        message: 'Vui lòng nhập họ tên để tạo hồ sơ người lao động mới.',
+      });
+    }
+    if (
+      role === VaiTroTaiKhoan.NHA_TUYEN_DUNG &&
+      (!tenDonVi || !maSoThue || !diaChiTruSo)
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'EMPLOYER_PROFILE_REQUIRED',
+        message:
+          'Vui lòng nhập tên đơn vị, mã số thuế và địa chỉ trụ sở để tạo hồ sơ nhà tuyển dụng mới.',
+      });
+    }
+    if (
+      role === VaiTroTaiKhoan.NHA_TUYEN_DUNG &&
+      !/^(?:\d{10}|\d{13})$/.test(maSoThue!)
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_TAX_CODE',
+        message: 'Mã số thuế phải gồm 10 hoặc 13 chữ số.',
+      });
+    }
+    if (role === VaiTroTaiKhoan.NHA_TUYEN_DUNG) {
+      const duplicateTaxCode = await this.prisma.hoSoNhaTuyenDung.findUnique({
+        where: { maSoThue: maSoThue! },
+        select: { id: true },
+      });
+      if (duplicateTaxCode) {
+        throw new ApiError(HttpStatus.CONFLICT, {
+          code: 'TAX_CODE_EXISTS',
+          message: 'Mã số thuế đã được sử dụng bởi nhà tuyển dụng khác.',
+        });
+      }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      if (account.hoSoNguoiLaoDong) {
+        const applicationIds = (
+          await tx.ungTuyen.findMany({
+            where: { hoSoNguoiLaoDongId: account.hoSoNguoiLaoDong.id },
+            select: { id: true },
+          })
+        ).map((item) => item.id);
+        if (applicationIds.length) {
+          await tx.lichSuTrangThaiUngTuyen.deleteMany({
+            where: { ungTuyenId: { in: applicationIds } },
+          });
+          await tx.ungTuyen.deleteMany({
+            where: { id: { in: applicationIds } },
+          });
+        }
+        await tx.hoSoNguoiLaoDong.delete({
+          where: { id: account.hoSoNguoiLaoDong.id },
+        });
+      }
+
+      if (account.hoSoNhaTuyenDung) {
+        const jobIds = (
+          await tx.tinTuyenDung.findMany({
+            where: { nhaTuyenDungId: account.hoSoNhaTuyenDung.id },
+            select: { id: true },
+          })
+        ).map((item) => item.id);
+        if (jobIds.length) {
+          const applicationIds = (
+            await tx.ungTuyen.findMany({
+              where: { tinTuyenDungId: { in: jobIds } },
+              select: { id: true },
+            })
+          ).map((item) => item.id);
+          if (applicationIds.length) {
+            await tx.lichSuTrangThaiUngTuyen.deleteMany({
+              where: { ungTuyenId: { in: applicationIds } },
+            });
+            await tx.ungTuyen.deleteMany({
+              where: { id: { in: applicationIds } },
+            });
+          }
+          await tx.lichSuKiemDuyet.deleteMany({
+            where: { tinTuyenDungId: { in: jobIds } },
+          });
+          await tx.tinTuyenDung.deleteMany({
+            where: { id: { in: jobIds } },
+          });
+        }
+        await tx.lichSuKiemDuyet.deleteMany({
+          where: { hoSoNhaTuyenDungId: account.hoSoNhaTuyenDung.id },
+        });
+        await tx.hoSoNhaTuyenDung.delete({
+          where: { id: account.hoSoNhaTuyenDung.id },
+        });
+      }
+
+      if (role === VaiTroTaiKhoan.NGUOI_LAO_DONG) {
+        await tx.hoSoNguoiLaoDong.create({
+          data: { taiKhoanId: id, hoTen: hoTen! },
+        });
+      } else {
+        await tx.hoSoNhaTuyenDung.create({
+          data: {
+            taiKhoanId: id,
+            tenDonVi: tenDonVi!,
+            maSoThue: maSoThue!,
+            diaChiTruSo: diaChiTruSo!,
+          },
+        });
+      }
+
+      await tx.taiKhoan.update({ where: { id }, data: { vaiTro: role } });
+      await tx.thongBao.create({
         data: {
           taiKhoanId: id,
           tieuDe: 'Vai trò tài khoản đã thay đổi',
-          noiDung: `Tài khoản của bạn đã được chuyển sang vai trò ${role}.`,
+          noiDung:
+            'Quản trị viên đã thay đổi vai trò và tạo hồ sơ mới cho tài khoản của bạn. Vui lòng đăng nhập lại để sử dụng.',
           loaiThongBao: 'TAI_KHOAN',
           duongDanDich: '/',
         },
-      }),
-    ]);
-    return { success: true, message: 'Đã cập nhật vai trò tài khoản.' };
+      });
+    });
+    return {
+      success: true,
+      message: 'Đã đổi vai trò, xóa hồ sơ cũ và tạo hồ sơ mới.',
+    };
   }
 
   private toListItem(account: {

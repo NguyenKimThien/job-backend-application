@@ -24,7 +24,7 @@ export function formatPortalNotificationText(value: string) {
     (content, [code, label]) =>
       content.replace(
         new RegExp(`(^|[^A-Z0-9_])${code}(?=$|[^A-Z0-9_])`, 'g'),
-        `$1(${label})`,
+        `$1"${label}"`,
       ),
     value,
   );

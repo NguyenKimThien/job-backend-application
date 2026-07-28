@@ -1,12 +1,18 @@
 'use client';
 
+import NavNotifications from '@/components/NavNotifications';
+import { ACCESS_TOKEN_KEY, ACCOUNT_KEY } from '@/lib/backend-api';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, SVGProps, useEffect, useState } from 'react';
-import NavNotifications from '@/components/NavNotifications';
-import { ACCESS_TOKEN_KEY, ACCOUNT_KEY } from '@/lib/backend-api';
 
 type ShellRole = 'worker' | 'employer' | 'admin';
+
+type MenuItem = {
+  href: string;
+  label: string;
+  title?: string;
+};
 
 type Props = {
   children: ReactNode;
@@ -30,26 +36,42 @@ type StoredAccount = {
   vaiTro?: AccountRole;
 };
 
-const menus: Record<ShellRole, Array<[string, string]>> = {
+const menus: Record<ShellRole, MenuItem[]> = {
   worker: [
-    ['/', 'Tìm việc'],
-    ['/ho-so', 'Hồ sơ'],
-    ['/viec-lam-da-luu', 'Việc làm đã lưu'],
-    ['/viec-lam-da-ung-tuyen', 'Việc đã ứng tuyển'],
-    ['/thong-bao', 'Thông báo'],
+    { href: '/', label: 'Tìm việc' },
+    { href: '/ho-so', label: 'Hồ sơ' },
+    { href: '/viec-lam-da-luu', label: 'Việc làm đã lưu' },
+    { href: '/viec-lam-da-ung-tuyen', label: 'Việc đã ứng tuyển' },
+    { href: '/thong-bao', label: 'Thông báo' },
   ],
   employer: [
-    ['/nha-tuyen-dung/ho-so', 'Hồ sơ doanh nghiệp'],
-    ['/nha-tuyen-dung/tin-tuyen-dung', 'Tin tuyển dụng'],
-    ['/thong-bao', 'Thông báo'],
+    { href: '/nha-tuyen-dung/ho-so', label: 'Hồ sơ doanh nghiệp' },
+    { href: '/nha-tuyen-dung/tin-tuyen-dung', label: 'Tin tuyển dụng' },
+    { href: '/thong-bao', label: 'Thông báo' },
   ],
   admin: [
-    ['/quan-tri/tai-khoan', 'Tài khoản'],
-    ['/quan-tri/nha-tuyen-dung', 'Duyệt nhà tuyển dụng'],
-    ['/quan-tri/kiem-duyet', 'Kiểm duyệt tin'],
-    ['/quan-tri/danh-muc-nghe', 'Danh mục nghề'],
-    ['/quan-tri/thong-ke', 'Thống kê & báo cáo'],
-    ['/thong-bao', 'Thông báo'],
+    { href: '/quan-tri/tai-khoan', label: 'Tài khoản' },
+    {
+      href: '/quan-tri/nha-tuyen-dung',
+      label: 'Nhà tuyển dụng',
+      title: 'Kiểm duyệt nhà tuyển dụng',
+    },
+    {
+      href: '/quan-tri/kiem-duyet',
+      label: 'Tin tuyển dụng',
+      title: 'Kiểm duyệt tin tuyển dụng',
+    },
+    {
+      href: '/quan-tri/danh-muc-nghe',
+      label: 'Ngành nghề',
+      title: 'Danh mục ngành nghề',
+    },
+    {
+      href: '/quan-tri/thong-ke',
+      label: 'Báo cáo',
+      title: 'Thống kê và báo cáo',
+    },
+    { href: '/thong-bao', label: 'Thông báo' },
   ],
 };
 
@@ -95,6 +117,17 @@ export default function SiteShell({
     }
   }, []);
 
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return;
+      setOpen(false);
+      setAccountOpen(false);
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
+
   function logout() {
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(ACCOUNT_KEY);
@@ -110,9 +143,14 @@ export default function SiteShell({
     user?.email ??
     roleFallback(shellRole);
   const initials = getInitials(displayName);
+  const shellClassName = uniqueClassNames(
+    'portal-page',
+    shellRole === 'admin' ? 'admin-page' : '',
+    pageClassName,
+  );
 
   return (
-    <main className={`portal-page ${pageClassName ?? ''}`.trim()}>
+    <main className={shellClassName}>
       <header className="portal-header">
         <div className="portal-utility">
           <div className="container portal-utility-inner">
@@ -129,32 +167,45 @@ export default function SiteShell({
         <div className="container portal-nav">
           <Logo />
           <button
-            className="portal-menu"
-            onClick={() => setOpen((value) => !value)}
             aria-label={open ? 'Đóng menu' : 'Mở menu'}
             aria-expanded={open}
+            className="portal-menu"
+            onClick={() => setOpen((value) => !value)}
             type="button"
           >
             <ShellIcon name="menu" />
           </button>
-          <nav className={open ? 'portal-links open' : 'portal-links'}>
-            {menus[shellRole].map(([href, label]) => {
-              const active =
-                pathname === href ||
-                (href !== '/' && pathname.startsWith(`${href}/`));
-              return (
-                <Link
-                  aria-current={active ? 'page' : undefined}
-                  className={active ? 'active' : ''}
-                  href={
-                    href === '/thong-bao' ? `${href}?role=${shellRole}` : href
-                  }
-                  key={href}
-                >
-                  {label}
-                </Link>
-              );
-            })}
+          <nav
+            aria-label={
+              shellRole === 'admin' ? 'Điều hướng quản trị' : 'Điều hướng chính'
+            }
+            className={open ? 'portal-links open' : 'portal-links'}
+          >
+            <ul>
+              {menus[shellRole].map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== '/' && pathname.startsWith(`${item.href}/`));
+                const href =
+                  item.href === '/thong-bao'
+                    ? `${item.href}?role=${shellRole}`
+                    : item.href;
+
+                return (
+                  <li key={item.href}>
+                    <Link
+                      aria-current={active ? 'page' : undefined}
+                      aria-label={item.title ?? item.label}
+                      className={active ? 'active' : ''}
+                      href={href}
+                      title={item.title ?? item.label}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </nav>
           <div className="portal-account">
             <NavNotifications
@@ -162,10 +213,10 @@ export default function SiteShell({
               onOpen={() => setAccountOpen(false)}
             />
             <button
-              className="account-trigger"
-              onClick={() => setAccountOpen((value) => !value)}
               aria-haspopup="menu"
               aria-expanded={accountOpen}
+              className="account-trigger"
+              onClick={() => setAccountOpen((value) => !value)}
               title={displayName}
               type="button"
             >
@@ -208,8 +259,8 @@ export default function SiteShell({
                     </Link>
                     <button
                       onClick={() => logout()}
-                      type="button"
                       role="menuitem"
+                      type="button"
                     >
                       Đăng xuất
                     </button>
@@ -280,6 +331,18 @@ function accountRoleLabel(role?: AccountRole) {
   return shellRole ? roleLabel(shellRole) : 'Tài khoản';
 }
 
+function uniqueClassNames(...values: Array<string | undefined>) {
+  return Array.from(
+    new Set(
+      values
+        .join(' ')
+        .split(/\s+/)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  ).join(' ');
+}
+
 function getInitials(value: string) {
   return value
     .trim()
@@ -295,6 +358,8 @@ type ShellIconName = 'chevronDown' | 'mail' | 'menu' | 'phone';
 
 function ShellIcon({
   name,
+  height = 18,
+  width = 18,
   ...props
 }: { name: ShellIconName } & SVGProps<SVGSVGElement>) {
   const paths: Record<ShellIconName, ReactNode> = {
@@ -311,11 +376,13 @@ function ShellIcon({
       aria-hidden="true"
       fill="none"
       focusable="false"
+      height={height}
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
+      width={width}
       {...props}
     >
       {paths[name]}

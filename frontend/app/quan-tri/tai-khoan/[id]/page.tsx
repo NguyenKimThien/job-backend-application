@@ -1,10 +1,17 @@
-"use client";
+'use client';
 
-import SiteShell from "@/components/SiteShell";
-import { portalFetch } from "@/lib/portal-api";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import {
+  AdminErrorState,
+  AdminLinkButton,
+  AdminStatusBadge,
+  BadgeTone,
+  formatAdminDate,
+  formatAdminDateTime,
+} from '@/components/admin/AdminUI';
+import SiteShell from '@/components/SiteShell';
+import { portalFetch } from '@/lib/portal-api';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 type Detail = {
   id: number;
@@ -24,8 +31,15 @@ type Detail = {
     mucLuongMongMuonTu: string | number | null;
     mucLuongMongMuonDen: string | number | null;
     diaDiemMongMuon: string | null;
-    hocVans: Array<{ tenCoSoDaoTao: string; chuyenNganh: string | null; trinhDo: string }>;
-    kinhNghiemLamViecs: Array<{ tenDonVi: string; viTriCongViec: string }>;
+    hocVans: Array<{
+      tenCoSoDaoTao: string;
+      chuyenNganh: string | null;
+      trinhDo: string;
+    }>;
+    kinhNghiemLamViecs: Array<{
+      tenDonVi: string;
+      viTriCongViec: string;
+    }>;
     hoSoKyNangs: Array<{ kyNang: { tenKyNang: string } }>;
   } | null;
   hoSoNhaTuyenDung?: {
@@ -39,71 +53,289 @@ type Detail = {
   } | null;
 };
 
-const value = (data: unknown) => data === null || data === undefined || data === "" ? "Chưa cập nhật" : String(data);
+const accountStatusLabels: Record<string, { label: string; tone: BadgeTone }> =
+  {
+    CHO_XAC_THUC_EMAIL: { label: 'Chờ xác thực', tone: 'warning' },
+    DA_KHOA: { label: 'Đã khóa', tone: 'danger' },
+    HOAT_DONG: { label: 'Hoạt động', tone: 'success' },
+    TAM_KHOA: { label: 'Tạm khóa', tone: 'warning' },
+  };
+
+const approvalStatusLabels: Record<string, { label: string; tone: BadgeTone }> =
+  {
+    BAN_NHAP: { label: 'Bản nháp', tone: 'neutral' },
+    CHO_DUYET: { label: 'Chờ duyệt', tone: 'warning' },
+    DA_DUYET: { label: 'Đã duyệt', tone: 'success' },
+    TU_CHOI: { label: 'Từ chối', tone: 'danger' },
+    YEU_CAU_BO_SUNG: { label: 'Cần bổ sung', tone: 'info' },
+  };
+
+const roleLabels: Record<string, string> = {
+  NGUOI_LAO_DONG: 'Người lao động',
+  NHA_TUYEN_DUNG: 'Nhà tuyển dụng',
+  QUAN_TRI: 'Quản trị',
+  QUAN_TRI_VIEN: 'Quản trị viên',
+};
 
 export default function AccountDetailPage() {
   const params = useParams<{ id: string }>();
   const [account, setAccount] = useState<Detail | null>(null);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    portalFetch<Detail>(`/admin/users/${params.id}`)
-      .then(setAccount)
-      .catch((error) => setMessage(error instanceof Error ? error.message : "Không thể kết nối máy chủ."));
+    void loadAccount();
   }, [params.id]);
 
+  async function loadAccount() {
+    setLoading(true);
+    setMessage('');
+    try {
+      const data = await portalFetch<Detail>(`/admin/users/${params.id}`);
+      setAccount(data);
+    } catch (error) {
+      setAccount(null);
+      setMessage(
+        error instanceof Error ? error.message : 'Không thể tải dữ liệu.',
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const displayName =
+    account?.hoSoNguoiLaoDong?.hoTen ??
+    account?.hoSoNhaTuyenDung?.tenDonVi ??
+    account?.tenDangNhap ??
+    '';
+
   return (
-    <SiteShell role="admin" title="Chi tiết tài khoản" subtitle="Thông tin tài khoản và hồ sơ liên quan trong hệ thống.">
-      <section className="container portal-content">
-        <Link className="back-link" href="/quan-tri/tai-khoan">← Quay lại danh sách tài khoản</Link>
-        {message && <div className="admin-message">{message}</div>}
-        {!account && !message && <div className="content-card detail-loading">Đang tải dữ liệu...</div>}
-        {account && <>
-          <article className="content-card account-detail-card">
-            <div className="account-detail-head">
-              <span>{(account.hoSoNguoiLaoDong?.hoTen ?? account.hoSoNhaTuyenDung?.tenDonVi ?? account.tenDangNhap).slice(0, 1)}</span>
-              <div><small>MÃ TÀI KHOẢN #{account.id}</small><h2>{account.hoSoNguoiLaoDong?.hoTen ?? account.hoSoNhaTuyenDung?.tenDonVi ?? account.tenDangNhap}</h2><p>{account.email}</p></div>
-              <i className={`status ${account.trangThaiTaiKhoan === "HOAT_DONG" ? "success" : "danger"}`}>{account.trangThaiTaiKhoan}</i>
-            </div>
-            <div className="detail-info-grid">
-              <div><small>Tên đăng nhập</small><strong>{account.tenDangNhap}</strong></div>
-              <div><small>Vai trò</small><strong>{account.vaiTro}</strong></div>
-              <div><small>Số điện thoại</small><strong>{value(account.soDienThoai)}</strong></div>
-              <div><small>Ngày tạo</small><strong>{new Date(account.ngayTao).toLocaleString("vi-VN")}</strong></div>
-              <div><small>Xác thực email lúc</small><strong>{account.emailXacThucLuc ? new Date(account.emailXacThucLuc).toLocaleString("vi-VN") : "Chưa xác thực"}</strong></div>
-              <div><small>Đăng nhập cuối</small><strong>{account.lanDangNhapCuoi ? new Date(account.lanDangNhapCuoi).toLocaleString("vi-VN") : "Chưa đăng nhập"}</strong></div>
-            </div>
-          </article>
+    <SiteShell
+      action={
+        <AdminLinkButton href="/quan-tri/tai-khoan" icon="chevronLeft">
+          Quay lại
+        </AdminLinkButton>
+      }
+      breadcrumb="Trang chủ / Quản lý tài khoản / Chi tiết"
+      pageClassName="admin-page"
+      role="admin"
+      subtitle="Thông tin tài khoản và hồ sơ liên quan trong hệ thống."
+      title="Chi tiết tài khoản"
+    >
+      <section className="container portal-content admin-content">
+        {loading && (
+          <div className="content-card detail-loading">Đang tải dữ liệu...</div>
+        )}
+        {!loading && message && (
+          <div className="content-card admin-table-card">
+            <AdminErrorState
+              message={message}
+              onRetry={() => {
+                void loadAccount();
+              }}
+            />
+          </div>
+        )}
+        {account && (
+          <>
+            <article className="content-card account-detail-card">
+              <div className="account-detail-head">
+                <span>{displayName.slice(0, 1).toUpperCase()}</span>
+                <div>
+                  <small>MÃ TÀI KHOẢN #{account.id}</small>
+                  <h2>{displayName}</h2>
+                  <p>{account.email}</p>
+                </div>
+                <StatusBadge
+                  meta={accountStatusLabels[account.trangThaiTaiKhoan]}
+                  fallback={account.trangThaiTaiKhoan}
+                />
+              </div>
+              <div className="detail-info-grid">
+                <Info label="Tên đăng nhập" value={account.tenDangNhap} />
+                <Info
+                  label="Vai trò"
+                  value={roleLabels[account.vaiTro] ?? account.vaiTro}
+                />
+                <Info
+                  label="Số điện thoại"
+                  value={value(account.soDienThoai)}
+                />
+                <Info
+                  label="Ngày tạo"
+                  value={formatAdminDateTime(account.ngayTao)}
+                />
+                <Info
+                  label="Xác thực email lúc"
+                  value={
+                    account.emailXacThucLuc
+                      ? formatAdminDateTime(account.emailXacThucLuc)
+                      : 'Chưa xác thực'
+                  }
+                />
+                <Info
+                  label="Đăng nhập cuối"
+                  value={
+                    account.lanDangNhapCuoi
+                      ? formatAdminDateTime(account.lanDangNhapCuoi)
+                      : 'Chưa đăng nhập'
+                  }
+                />
+              </div>
+            </article>
 
-          {account.hoSoNguoiLaoDong && <article className="content-card account-detail-card">
-            <h3>Hồ sơ người lao động</h3>
-            <div className="detail-info-grid">
-              <div><small>Họ tên</small><strong>{account.hoSoNguoiLaoDong.hoTen}</strong></div>
-              <div><small>Ngày sinh</small><strong>{value(account.hoSoNguoiLaoDong.ngaySinh)}</strong></div>
-              <div><small>Giới tính</small><strong>{value(account.hoSoNguoiLaoDong.gioiTinh)}</strong></div>
-              <div><small>Địa chỉ</small><strong>{value(account.hoSoNguoiLaoDong.diaChi)}</strong></div>
-              <div><small>Mức lương mong muốn</small><strong>{value(account.hoSoNguoiLaoDong.mucLuongMongMuonTu)} - {value(account.hoSoNguoiLaoDong.mucLuongMongMuonDen)}</strong></div>
-              <div><small>Địa điểm mong muốn</small><strong>{value(account.hoSoNguoiLaoDong.diaDiemMongMuon)}</strong></div>
-              <div className="wide"><small>Kỹ năng</small><strong>{account.hoSoNguoiLaoDong.hoSoKyNangs.map((item) => item.kyNang.tenKyNang).join(", ") || "Chưa cập nhật"}</strong></div>
-              <div className="wide"><small>Học vấn</small><strong>{account.hoSoNguoiLaoDong.hocVans.map((item) => `${item.trinhDo} - ${item.chuyenNganh ?? "Chưa ghi chuyên ngành"}, ${item.tenCoSoDaoTao}`).join("; ") || "Chưa cập nhật"}</strong></div>
-              <div className="wide"><small>Kinh nghiệm</small><strong>{account.hoSoNguoiLaoDong.kinhNghiemLamViecs.map((item) => `${item.viTriCongViec} tại ${item.tenDonVi}`).join("; ") || "Chưa cập nhật"}</strong></div>
-            </div>
-          </article>}
+            {account.hoSoNguoiLaoDong && (
+              <article className="content-card account-detail-card">
+                <h3>Hồ sơ người lao động</h3>
+                <div className="detail-info-grid">
+                  <Info label="Họ tên" value={account.hoSoNguoiLaoDong.hoTen} />
+                  <Info
+                    label="Ngày sinh"
+                    value={formatAdminDate(account.hoSoNguoiLaoDong.ngaySinh)}
+                  />
+                  <Info
+                    label="Giới tính"
+                    value={value(account.hoSoNguoiLaoDong.gioiTinh)}
+                  />
+                  <Info
+                    label="Địa chỉ"
+                    value={value(account.hoSoNguoiLaoDong.diaChi)}
+                  />
+                  <Info
+                    label="Mức lương mong muốn"
+                    value={`${value(account.hoSoNguoiLaoDong.mucLuongMongMuonTu)} - ${value(
+                      account.hoSoNguoiLaoDong.mucLuongMongMuonDen,
+                    )}`}
+                  />
+                  <Info
+                    label="Địa điểm mong muốn"
+                    value={value(account.hoSoNguoiLaoDong.diaDiemMongMuon)}
+                  />
+                  <Info
+                    className="wide"
+                    label="Kỹ năng"
+                    value={
+                      account.hoSoNguoiLaoDong.hoSoKyNangs
+                        .map((item) => item.kyNang.tenKyNang)
+                        .join(', ') || 'Chưa cập nhật'
+                    }
+                  />
+                  <Info
+                    className="wide"
+                    label="Học vấn"
+                    value={
+                      account.hoSoNguoiLaoDong.hocVans
+                        .map(
+                          (item) =>
+                            `${item.trinhDo} - ${
+                              item.chuyenNganh ?? 'Chưa ghi chuyên ngành'
+                            }, ${item.tenCoSoDaoTao}`,
+                        )
+                        .join('; ') || 'Chưa cập nhật'
+                    }
+                  />
+                  <Info
+                    className="wide"
+                    label="Kinh nghiệm"
+                    value={
+                      account.hoSoNguoiLaoDong.kinhNghiemLamViecs
+                        .map(
+                          (item) =>
+                            `${item.viTriCongViec} tại ${item.tenDonVi}`,
+                        )
+                        .join('; ') || 'Chưa cập nhật'
+                    }
+                  />
+                </div>
+              </article>
+            )}
 
-          {account.hoSoNhaTuyenDung && <article className="content-card account-detail-card">
-            <h3>Hồ sơ nhà tuyển dụng</h3>
-            <div className="detail-info-grid">
-              <div><small>Tên đơn vị</small><strong>{account.hoSoNhaTuyenDung.tenDonVi}</strong></div>
-              <div><small>Mã số thuế / tên đăng nhập</small><strong>{account.hoSoNhaTuyenDung.maSoThue}</strong></div>
-              <div className="wide"><small>Địa chỉ trụ sở</small><strong>{account.hoSoNhaTuyenDung.diaChiTruSo}</strong></div>
-              <div><small>Lĩnh vực</small><strong>{value(account.hoSoNhaTuyenDung.linhVuc?.tenLinhVuc)}</strong></div>
-              <div><small>Trạng thái duyệt</small><strong>{account.hoSoNhaTuyenDung.trangThaiDuyet}</strong></div>
-              <div><small>Người đại diện</small><strong>{value(account.hoSoNhaTuyenDung.nguoiDaiDien)}</strong></div>
-              <div><small>Chức vụ</small><strong>{value(account.hoSoNhaTuyenDung.chucVuNguoiDaiDien)}</strong></div>
-            </div>
-          </article>}
-        </>}
+            {account.hoSoNhaTuyenDung && (
+              <article className="content-card account-detail-card">
+                <h3>Hồ sơ nhà tuyển dụng</h3>
+                <div className="detail-info-grid">
+                  <Info
+                    label="Tên đơn vị"
+                    value={account.hoSoNhaTuyenDung.tenDonVi}
+                  />
+                  <Info
+                    label="Mã số thuế"
+                    value={account.hoSoNhaTuyenDung.maSoThue}
+                  />
+                  <Info
+                    className="wide"
+                    label="Địa chỉ trụ sở"
+                    value={account.hoSoNhaTuyenDung.diaChiTruSo}
+                  />
+                  <Info
+                    label="Lĩnh vực"
+                    value={value(account.hoSoNhaTuyenDung.linhVuc?.tenLinhVuc)}
+                  />
+                  <div>
+                    <small>Trạng thái duyệt</small>
+                    <strong>
+                      <StatusBadge
+                        meta={
+                          approvalStatusLabels[
+                            account.hoSoNhaTuyenDung.trangThaiDuyet
+                          ]
+                        }
+                        fallback={account.hoSoNhaTuyenDung.trangThaiDuyet}
+                      />
+                    </strong>
+                  </div>
+                  <Info
+                    label="Người đại diện"
+                    value={value(account.hoSoNhaTuyenDung.nguoiDaiDien)}
+                  />
+                  <Info
+                    label="Chức vụ"
+                    value={value(account.hoSoNhaTuyenDung.chucVuNguoiDaiDien)}
+                  />
+                </div>
+              </article>
+            )}
+          </>
+        )}
       </section>
     </SiteShell>
   );
+}
+
+function Info({
+  className,
+  label,
+  value,
+}: {
+  className?: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className={className}>
+      <small>{label}</small>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function StatusBadge({
+  fallback,
+  meta,
+}: {
+  fallback: string;
+  meta?: { label: string; tone: BadgeTone };
+}) {
+  return (
+    <AdminStatusBadge tone={meta?.tone ?? 'neutral'}>
+      {meta?.label ?? fallback}
+    </AdminStatusBadge>
+  );
+}
+
+function value(data: unknown) {
+  if (data === null || data === undefined || data === '')
+    return 'Chưa cập nhật';
+  if (typeof data === 'string' || typeof data === 'number') return String(data);
+  return 'Chưa cập nhật';
 }

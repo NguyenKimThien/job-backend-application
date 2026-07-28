@@ -61,6 +61,9 @@ export default function NavNotifications({
   }, []);
 
   const unreadCount = notices.filter((item) => !item.daDoc).length;
+  const notificationLabel = unreadCount
+    ? `${unreadCount} thông báo chưa đọc`
+    : 'Mở thông báo';
   const notificationHref = `/thong-bao?role=${role}`;
   const loginHref = `/dang-nhap?redirect=${encodeURIComponent(notificationHref)}`;
 
@@ -78,7 +81,7 @@ export default function NavNotifications({
             return next;
           });
         }}
-        aria-label="Mở thông báo"
+        aria-label={notificationLabel}
         aria-expanded={open}
         type="button"
       >

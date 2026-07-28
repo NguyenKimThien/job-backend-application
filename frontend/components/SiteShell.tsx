@@ -160,11 +160,12 @@ export default function SiteShell({
               onClick={() => setAccountOpen((value) => !value)}
               aria-haspopup="menu"
               aria-expanded={accountOpen}
+              title={displayName}
               type="button"
             >
               <span className="account-avatar">{initials || 'TK'}</span>
               <span>
-                <strong>{displayName}</strong>
+                <strong title={displayName}>{displayName}</strong>
                 <small>{user ? roleLabel(role) : 'Chưa đăng nhập'}</small>
               </span>
               <ShellIcon name="chevronDown" />
@@ -173,6 +174,10 @@ export default function SiteShell({
               <div className="account-menu" role="menu">
                 {user ? (
                   <>
+                    <span className="account-menu-note">
+                      {displayName}
+                      {user.email ? ` · ${user.email}` : ''}
+                    </span>
                     {role !== 'admin' && (
                       <Link
                         href={

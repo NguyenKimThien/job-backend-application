@@ -10,6 +10,7 @@ type ShellRole = 'worker' | 'employer' | 'admin';
 
 type Props = {
   children: ReactNode;
+  breadcrumb?: string;
   title?: string;
   subtitle?: string;
   role?: ShellRole;
@@ -65,6 +66,7 @@ export function Logo() {
 
 export default function SiteShell({
   children,
+  breadcrumb,
   title,
   subtitle,
   role = 'worker',
@@ -219,7 +221,9 @@ export default function SiteShell({
         <section className="page-heading">
           <div className="container page-heading-inner">
             <div>
-              <span className="breadcrumb">Trang chủ / {title}</span>
+              <span className="breadcrumb">
+                {breadcrumb ?? `Trang chủ / ${title}`}
+              </span>
               <h1>{title}</h1>
               {subtitle && <p>{subtitle}</p>}
             </div>

@@ -17,10 +17,6 @@ function smtpIsConfigured() {
 
 export async function sendOtpEmail({ email, hoTen, otp }: OtpEmail) {
   if (!smtpIsConfigured()) {
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[OTP thử nghiệm] ${email}: ${otp}`);
-      return { developmentMode: true };
-    }
     throw new Error("Chưa cấu hình máy chủ SMTP");
   }
 
@@ -51,5 +47,5 @@ export async function sendOtpEmail({ email, hoTen, otp }: OtpEmail) {
     `,
   });
 
-  return { developmentMode: false };
+  return { sent: true };
 }

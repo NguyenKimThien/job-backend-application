@@ -142,7 +142,6 @@ export class AuthService {
       data: {
         email: maskEmail(created.email),
         expiresIn: this.otpService.getTtlSeconds(),
-        ...(!this.isSmtpEnabled() ? { developmentOtp: created.otp } : {}),
       },
     };
   }
@@ -283,10 +282,7 @@ export class AuthService {
 
     return {
       ...genericResponse,
-      data: {
-        ...genericResponse.data,
-        ...(!this.isSmtpEnabled() ? { developmentOtp: otp } : {}),
-      },
+      data: genericResponse.data,
     };
   }
 
@@ -334,7 +330,6 @@ export class AuthService {
         expiresIn: this.otpService.getTtlSeconds(),
         trangThaiTaiKhoan: created.trangThaiTaiKhoan,
         trangThaiHoSo: created.trangThaiHoSo,
-        ...(!this.isSmtpEnabled() ? { developmentOtp: created.otp } : {}),
       },
     };
   }
@@ -571,10 +566,7 @@ export class AuthService {
 
     return {
       ...genericResponse,
-      data: {
-        ...genericResponse.data,
-        ...(!this.isSmtpEnabled() ? { developmentOtp: otp } : {}),
-      },
+      data: genericResponse.data,
     };
   }
 
@@ -582,10 +574,6 @@ export class AuthService {
     return String(identifier ?? '')
       .trim()
       .toLowerCase();
-  }
-
-  private isSmtpEnabled(): boolean {
-    return this.configService.get<boolean>('SMTP_ENABLED') === true;
   }
 
   private detectLoginIdentifierType(identifier: string): LoginIdentifierType {

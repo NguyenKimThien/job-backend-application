@@ -13,7 +13,31 @@ export default function JobDetailPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    portalFetch<ApiJob>(`/jobs/${params.id}`).then(setJob).catch((error) => setMessage(error.message));
+    let ignore = false;
+
+    setJob(null);
+    setSaved(false);
+    setMessage("");
+
+    portalFetch<ApiJob>(`/jobs/${params.id}`)
+      .then((item) => {
+        if (!ignore) setJob(item);
+      })
+      .catch((error) => {
+        if (!ignore) setMessage(error.message);
+      });
+
+    portalFetch<ApiJob[]>("/worker/saved-jobs")
+      .then((items) => {
+        if (!ignore) {
+          setSaved(items.some((item) => String(item.id) === params.id));
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      ignore = true;
+    };
   }, [params.id]);
 
   async function toggleSave() {

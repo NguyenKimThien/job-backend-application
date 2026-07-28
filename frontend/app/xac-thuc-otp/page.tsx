@@ -14,17 +14,11 @@ export default function VerifyOtpPage() {
   const [resending, setResending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [message, setMessage] = useState("");
-  const [developmentOtp, setDevelopmentOtp] = useState(() =>
-    typeof window === "undefined"
-      ? ""
-      : sessionStorage.getItem("developmentOtp") ?? "",
-  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setEmail(params.get("email")?.trim().toLowerCase() ?? "");
     setAccountType(params.get("loai") ?? "");
-    setDevelopmentOtp(sessionStorage.getItem("developmentOtp") ?? "");
   }, []);
 
   async function handleVerify(event: FormEvent) {
@@ -34,6 +28,7 @@ export default function VerifyOtpPage() {
       return;
     }
     setLoading(true);
+    setSuccess(false);
     setMessage("");
     try {
       const endpoint =
@@ -64,6 +59,7 @@ export default function VerifyOtpPage() {
       return;
     }
     setResending(true);
+    setSuccess(false);
     setMessage("");
     try {
       const endpoint =
@@ -76,11 +72,11 @@ export default function VerifyOtpPage() {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
-      setMessage(getApiMessage(data, "Không thể gửi lại OTP."));
-      if (data.developmentOtp ?? data.data?.developmentOtp) {
-        const nextOtp = data.developmentOtp ?? data.data.developmentOtp;
-        setDevelopmentOtp(nextOtp);
-        sessionStorage.setItem("developmentOtp", nextOtp);
+      const message = getApiMessage(data, "Không thể gửi lại OTP.");
+      setMessage(message);
+      setSuccess(response.ok);
+      if (response.ok) {
+        setOtp('');
       }
     } catch {
       setMessage("Không thể gửi lại OTP");
@@ -117,11 +113,6 @@ export default function VerifyOtpPage() {
             Mã xác thực đã được gửi tới <strong>{email || "email của bạn"}</strong>.
           </p>
 
-          {developmentOtp && (
-            <div className="dev-otp">
-              Chế độ thử nghiệm - OTP: <strong>{developmentOtp}</strong>
-            </div>
-          )}
           {message && (
             <div className={`form-message ${success ? "success" : "error"}`}>{message}</div>
           )}

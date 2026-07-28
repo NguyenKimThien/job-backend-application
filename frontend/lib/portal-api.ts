@@ -2,20 +2,32 @@ import {
   BACKEND_API_URL,
   getApiMessage,
   getAuthHeaders,
+  handleUnauthorizedResponse,
 } from "./backend-api";
 
 export async function portalFetch<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${BACKEND_API_URL}${path}`, {
-    ...init,
-    headers: {
-      ...getAuthHeaders(),
-      ...(init.headers ?? {}),
-    },
-    cache: init.cache ?? "no-store",
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${BACKEND_API_URL}${path}`, {
+      ...init,
+      headers: {
+        ...getAuthHeaders(),
+        ...(init.headers ?? {}),
+      },
+      cache: init.cache ?? "no-store",
+    });
+  } catch {
+    throw new Error(
+      "Không thể kết nối đến backend. Vui lòng kiểm tra máy chủ API đang chạy ở http://localhost:3001.",
+    );
+  }
+
+  handleUnauthorizedResponse(response);
+
   const payload = await response.json();
   if (!response.ok) {
     throw new Error(getApiMessage(payload, "Không thể tải dữ liệu."));

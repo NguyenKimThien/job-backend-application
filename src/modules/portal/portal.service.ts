@@ -5,6 +5,7 @@ import {
   HinhThucLamViec,
   LoaiDoiTuongKiemDuyet,
   LoaiThongBao,
+  MucDichMaXacThuc,
   Prisma,
   TrangThaiHienThiTin,
   TrangThaiKiemDuyet,
@@ -12,11 +13,15 @@ import {
   VaiTroTaiKhoan,
 } from '../../../generated/prisma/client.js';
 import { ApiError } from '../../common/api-error.js';
+import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 
 @Injectable()
 export class PortalService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {}
 
   async categories(onlyVisible = true) {
     const items = await this.prisma.nganhNghe.findMany({
@@ -878,22 +883,42 @@ export class PortalService {
   async forgotPassword(body: Record<string, any>) {
     const email = String(body.email ?? '').trim().toLowerCase();
     const account = await this.prisma.taiKhoan.findUnique({ where: { email } });
-    const generic = { success: true, message: 'Nếu email tồn tại, mã OTP đã được tạo.' };
+    const expiresIn = 600;
+    const generic = { success: true, message: 'Nếu email tồn tại, mã OTP đã được gửi.' };
     if (!account) return generic;
     const otp = String(randomInt(100000, 1000000));
     await this.prisma.maXacThuc.updateMany({
-      where: { taiKhoanId: account.id, mucDich: 'QUEN_MAT_KHAU', daSuDung: false },
+      where: { taiKhoanId: account.id, mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU, daSuDung: false },
       data: { daSuDung: true },
     });
-    await this.prisma.maXacThuc.create({
+    const otpRecord = await this.prisma.maXacThuc.create({
       data: {
         taiKhoanId: account.id,
-        mucDich: 'QUEN_MAT_KHAU',
+        mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU,
         maXacThucHash: await bcrypt.hash(otp, 10),
-        hanSuDung: new Date(Date.now() + 10 * 60 * 1000),
+        hanSuDung: new Date(Date.now() + expiresIn * 1000),
       },
     });
-    return { ...generic, data: { developmentOtp: otp, expiresIn: 600 } };
+
+    try {
+      await this.mailService.sendPasswordResetOtp({
+        email: account.email,
+        hoTen: account.tenDangNhap,
+        otp,
+        expiresInMinutes: Math.ceil(expiresIn / 60),
+      });
+    } catch {
+      await this.prisma.maXacThuc.update({
+        where: { id: otpRecord.id },
+        data: { daSuDung: true },
+      });
+      throw new ApiError(HttpStatus.SERVICE_UNAVAILABLE, {
+        code: 'PASSWORD_RESET_EMAIL_SEND_FAILED',
+        message: 'Chưa thể gửi email OTP. Vui lòng thử lại sau.',
+      });
+    }
+
+    return { ...generic, data: { expiresIn } };
   }
 
   async resetPassword(body: Record<string, any>) {
@@ -904,7 +929,7 @@ export class PortalService {
     const account = await this.prisma.taiKhoan.findUnique({ where: { email } });
     if (!account) this.notFound('Mã OTP không hợp lệ.');
     const record = await this.prisma.maXacThuc.findFirst({
-      where: { taiKhoanId: account.id, mucDich: 'QUEN_MAT_KHAU', daSuDung: false, hanSuDung: { gt: new Date() } },
+      where: { taiKhoanId: account.id, mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU, daSuDung: false, hanSuDung: { gt: new Date() } },
       orderBy: { ngayTao: 'desc' },
     });
     if (!record || !(await bcrypt.compare(String(body.otp), record.maXacThucHash))) {

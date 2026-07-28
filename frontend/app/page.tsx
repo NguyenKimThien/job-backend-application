@@ -24,107 +24,6 @@ type Job = {
   tags: string[];
 };
 
-const fallbackJobs: Job[] = [
-  {
-    id: 1,
-    title: "Chuyên viên Marketing",
-    company: "Công ty Cổ phần Truyền thông Sáng Tạo",
-    location: "Cầu Giấy, Hà Nội",
-    salary: "12 - 18 triệu",
-    salaryBand: "10-20",
-    experience: "1-2 năm",
-    category: "Marketing",
-    type: "Toàn thời gian",
-    posted: "2 giờ trước",
-    deadline: "Còn 12 ngày",
-    featured: true,
-    color: "#f97316",
-    initials: "ST",
-    tags: ["Content Marketing", "Facebook Ads"],
-  },
-  {
-    id: 2,
-    title: "Lập trình viên Front-end",
-    company: "Công ty TNHH Công nghệ Bluewave",
-    location: "Nam Từ Liêm, Hà Nội",
-    salary: "18 - 28 triệu",
-    salaryBand: "20-30",
-    experience: "1-2 năm",
-    category: "Công nghệ thông tin",
-    type: "Toàn thời gian",
-    posted: "5 giờ trước",
-    deadline: "Còn 18 ngày",
-    featured: true,
-    color: "#2563eb",
-    initials: "BW",
-    tags: ["ReactJS", "TypeScript"],
-  },
-  {
-    id: 3,
-    title: "Thực tập sinh Nhân sự",
-    company: "Tập đoàn Giáo dục Ánh Dương",
-    location: "Đống Đa, Hà Nội",
-    salary: "3 - 5 triệu",
-    salaryBand: "Dưới 10",
-    experience: "Không yêu cầu",
-    category: "Nhân sự",
-    type: "Thực tập",
-    posted: "Hôm nay",
-    deadline: "Còn 20 ngày",
-    color: "#7c3aed",
-    initials: "AD",
-    tags: ["Tuyển dụng", "Đào tạo"],
-  },
-  {
-    id: 4,
-    title: "Nhân viên Kinh doanh",
-    company: "Công ty Cổ phần Green House",
-    location: "Hai Bà Trưng, Hà Nội",
-    salary: "10 - 25 triệu",
-    salaryBand: "10-20",
-    experience: "Dưới 1 năm",
-    category: "Kinh doanh",
-    type: "Toàn thời gian",
-    posted: "1 ngày trước",
-    deadline: "Còn 9 ngày",
-    color: "#16a34a",
-    initials: "GH",
-    tags: ["B2B", "Tư vấn khách hàng"],
-  },
-  {
-    id: 5,
-    title: "Nhân viên Thiết kế đồ họa",
-    company: "Hanoi Creative Studio",
-    location: "Ba Đình, Hà Nội",
-    salary: "10 - 15 triệu",
-    salaryBand: "10-20",
-    experience: "1-2 năm",
-    category: "Thiết kế",
-    type: "Toàn thời gian",
-    posted: "1 ngày trước",
-    deadline: "Còn 15 ngày",
-    color: "#db2777",
-    initials: "HC",
-    tags: ["Figma", "Adobe Illustrator"],
-  },
-  {
-    id: 6,
-    title: "Cộng tác viên Tư vấn tuyển sinh",
-    company: "Trung tâm Ngoại ngữ Horizon",
-    location: "Hà Nội",
-    salary: "6 - 10 triệu",
-    salaryBand: "Dưới 10",
-    experience: "Không yêu cầu",
-    category: "Giáo dục",
-    type: "Bán thời gian",
-    posted: "2 ngày trước",
-    deadline: "Còn 7 ngày",
-    color: "#0891b2",
-    initials: "HZ",
-    tags: ["Part-time", "Giao tiếp"],
-  },
-];
-
 const categories = [
   { icon: "💻", name: "Công nghệ thông tin", count: 286, tone: "blue" },
   { icon: "📣", name: "Marketing", count: 194, tone: "orange" },
@@ -199,7 +98,7 @@ export default function Home() {
         initials: job.company.slice(0, 2).toUpperCase(),
         tags: job.skills,
       }))))
-      .catch(() => setJobs(fallbackJobs));
+      .catch(() => setJobs([]));
   }, []);
 
   const filteredJobs = useMemo(() => {
@@ -220,6 +119,7 @@ export default function Home() {
       return matchesText && matchesCategory && matchesSalary && matchesExperience;
     });
   }, [filters]);
+  const latestJobs = useMemo(() => jobs.slice(0, 4), [jobs]);
 
   function handleSearch(event: FormEvent) {
     event.preventDefault();
@@ -478,7 +378,9 @@ export default function Home() {
           <div className="jobs-layout">
             <div className="job-list">
               <div className="results-bar">
-                <span>Tìm thấy <strong>{filteredJobs.length}</strong> việc làm phù hợp</span>
+                {filteredJobs.length > 0 && (
+                  <span>Tìm thấy <strong>{filteredJobs.length}</strong> việc làm phù hợp</span>
+                )}
                 {(filters.keyword || filters.category !== "Tất cả ngành nghề" || filters.salary !== "Tất cả mức lương" || filters.experience !== "Tất cả kinh nghiệm") && (
                   <button onClick={() => {
                     setKeyword("");
@@ -499,13 +401,19 @@ export default function Home() {
                         <h3><Link href={`/viec-lam/${job.id}`}>{job.title}</Link></h3>
                         <p className="company-name">{job.company} <span title="Doanh nghiệp đã xác thực">✓</span></p>
                       </div>
-                      <button
-                        className={`save-button ${saved.includes(job.id) ? "saved" : ""}`}
-                        onClick={() => toggleSave(job.id)}
-                        aria-label={saved.includes(job.id) ? "Bỏ lưu việc làm" : "Lưu việc làm"}
-                      >
-                        {saved.includes(job.id) ? "♥" : "♡"}
-                      </button>
+                      <div className="job-title-actions">
+                        <div className="job-card-actions">
+                          <Link className="btn btn-primary" href={`/nop-ho-so/${job.id}`}>Ứng tuyển ngay</Link>
+                          <Link className="btn btn-ghost" href={`/viec-lam/${job.id}`}>Xem chi tiết</Link>
+                        </div>
+                        <button
+                          className={`save-button ${saved.includes(job.id) ? "saved" : ""}`}
+                          onClick={() => toggleSave(job.id)}
+                          aria-label={saved.includes(job.id) ? "Bỏ lưu việc làm" : "Lưu việc làm"}
+                        >
+                          {saved.includes(job.id) ? "♥" : "♡"}
+                        </button>
+                      </div>
                     </div>
                     <div className="job-meta">
                       <span>⌖ {job.location}</span>
@@ -519,10 +427,47 @@ export default function Home() {
                   </div>
                 </article>
               )) : (
-                <div className="empty-state">
+                <div className="empty-state latest-jobs-empty">
                   <span>⌕</span>
-                  <h3>Chưa tìm thấy việc làm phù hợp</h3>
-                  <p>Hãy thử thay đổi từ khóa hoặc mở rộng bộ lọc của bạn.</p>
+                  <p>Mời bạn tham khảo các tin tuyển dụng mới nhất.</p>
+                  <div className="latest-jobs-fallback">
+                    {latestJobs.map((job) => (
+                      <article className="job-card" key={job.id}>
+                        {job.featured && <span className="verified-ribbon">✓ Nổi bật</span>}
+                        <div className="company-logo" style={{ background: job.color }}>{job.initials}</div>
+                        <div className="job-main">
+                          <div className="job-title-row">
+                            <div>
+                              <h3><Link href={`/viec-lam/${job.id}`}>{job.title}</Link></h3>
+                              <p className="company-name">{job.company} <span title="Doanh nghiệp đã xác thực">✓</span></p>
+                            </div>
+                            <div className="job-title-actions">
+                              <div className="job-card-actions">
+                                <Link className="btn btn-primary" href={`/nop-ho-so/${job.id}`}>Ứng tuyển ngay</Link>
+                                <Link className="btn btn-ghost" href={`/viec-lam/${job.id}`}>Xem chi tiết</Link>
+                              </div>
+                              <button
+                                className={`save-button ${saved.includes(job.id) ? "saved" : ""}`}
+                                onClick={() => toggleSave(job.id)}
+                                aria-label={saved.includes(job.id) ? "Bỏ lưu việc làm" : "Lưu việc làm"}
+                              >
+                                {saved.includes(job.id) ? "♥" : "♡"}
+                              </button>
+                            </div>
+                          </div>
+                          <div className="job-meta">
+                            <span>⌖ {job.location}</span>
+                            <span className="salary">₫ {job.salary}</span>
+                            <span>◷ {job.experience}</span>
+                          </div>
+                          <div className="job-footer">
+                            <div>{job.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+                            <small>{job.posted} · <b>{job.deadline}</b></small>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
                 </div>
               )}
               <Link className="load-more" href="/viec-lam">

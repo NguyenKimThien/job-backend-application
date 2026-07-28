@@ -108,11 +108,11 @@ npm.cmd run setup
 
 Lệnh này tạo/cập nhật các bảng, sinh Prisma Client và nạp dữ liệu mẫu.
 
-## OTP khi chạy thử
+## Email OTP
 
-Mặc định `.env.example` đặt `SMTP_ENABLED=false`, vì vậy mã OTP thử nghiệm
-được hiển thị ngay trên trang xác thực. Khi đã cấu hình đúng tài khoản SMTP,
-đổi thành `SMTP_ENABLED=true` để gửi OTP qua email thật.
+OTP xác thực tài khoản và đặt lại mật khẩu luôn được gửi qua SMTP. Cần cấu hình
+đúng `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_NAME`
+và `SMTP_FROM_EMAIL` trong `.env` trước khi đăng ký hoặc gửi lại OTP.
 
 Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` như các câu lệnh trên.
 

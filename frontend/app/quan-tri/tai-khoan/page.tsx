@@ -1,11 +1,7 @@
 "use client";
 
 import SiteShell from "@/components/SiteShell";
-import {
-  BACKEND_API_URL,
-  getApiMessage,
-  getAuthHeaders,
-} from "@/lib/backend-api";
+import { portalFetch } from "@/lib/portal-api";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -23,6 +19,11 @@ type Account = {
 };
 type Summary = Record<Status, number> & { total: number };
 type Pagination = { page: number; limit: number; total: number; totalPages: number };
+type AccountListData = {
+  items: Account[];
+  summary: Summary;
+  pagination: Pagination;
+};
 
 const roleLabels: Record<Role, string> = {
   NGUOI_LAO_DONG: "Người lao động",
@@ -71,17 +72,10 @@ export default function AccountManagementPage() {
     if (status) params.set("status", status);
 
     try {
-      const response = await fetch(`${BACKEND_API_URL}/admin/users?${params}`, {
-        headers: getAuthHeaders(),
-        cache: "no-store",
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        throw new Error(getApiMessage(payload, "Không thể tải danh sách tài khoản."));
-      }
-      setItems(payload.data.items);
-      setSummary(payload.data.summary);
-      setPagination(payload.data.pagination);
+      const data = await portalFetch<AccountListData>(`/admin/users?${params}`);
+      setItems(data.items);
+      setSummary(data.summary);
+      setPagination(data.pagination);
     } catch (error) {
       setItems([]);
       setMessage(error instanceof Error ? error.message : "Không thể kết nối máy chủ.");
@@ -99,14 +93,11 @@ export default function AccountManagementPage() {
     if (!window.confirm(`Bạn chắc chắn muốn ${action} tài khoản này?`)) return;
     setMessage("");
     try {
-      const response = await fetch(`${BACKEND_API_URL}/admin/users/${id}/status`, {
+      await portalFetch(`/admin/users/${id}/status`, {
         method: "PATCH",
-        headers: getAuthHeaders(),
         body: JSON.stringify({ status: nextStatus }),
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(getApiMessage(payload, "Cập nhật thất bại."));
-      setMessage(payload.message ?? "Cập nhật tài khoản thành công.");
+      setMessage("Cập nhật tài khoản thành công.");
       await loadAccounts();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Không thể kết nối máy chủ.");

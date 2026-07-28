@@ -18,7 +18,7 @@ export default function ForgotPasswordPage() {
       if (step === 1) {
         const response = await fetch(`${BACKEND_API_URL}/auth/forgot-password`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: identity }) });
         const payload = await response.json(); if (!response.ok) throw new Error(getApiMessage(payload, "Không thể gửi OTP."));
-        setMessage(payload.data?.developmentOtp ? `Mã OTP dùng khi phát triển: ${payload.data.developmentOtp}` : payload.message);
+        setMessage(payload.message);
         setStep(2);
       } else if (step === 2) setStep(3);
       else {

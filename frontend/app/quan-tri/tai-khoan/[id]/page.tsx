@@ -1,7 +1,7 @@
 "use client";
 
 import SiteShell from "@/components/SiteShell";
-import { BACKEND_API_URL, getApiMessage, getAuthHeaders } from "@/lib/backend-api";
+import { portalFetch } from "@/lib/portal-api";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -47,15 +47,7 @@ export default function AccountDetailPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch(`${BACKEND_API_URL}/admin/users/${params.id}`, {
-      headers: getAuthHeaders(),
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok) throw new Error(getApiMessage(payload, "Không thể tải tài khoản."));
-        return payload.data;
-      })
+    portalFetch<Detail>(`/admin/users/${params.id}`)
       .then(setAccount)
       .catch((error) => setMessage(error instanceof Error ? error.message : "Không thể kết nối máy chủ."));
   }, [params.id]);

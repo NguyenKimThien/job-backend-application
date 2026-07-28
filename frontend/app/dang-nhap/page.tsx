@@ -41,12 +41,7 @@ export default function LoginPage() {
       const account = data.data?.taiKhoan;
       window.localStorage.setItem(ACCESS_TOKEN_KEY, data.data.accessToken);
       window.localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
-      const destination =
-        account?.vaiTro === "QUAN_TRI_VIEN"
-          ? "/quan-tri/thong-ke"
-          : account?.vaiTro === "NHA_TUYEN_DUNG"
-            ? "/nha-tuyen-dung/tin-tuyen-dung"
-            : "/";
+      const destination = getDestinationAfterLogin(account?.vaiTro);
       router.push(destination);
       router.refresh();
     } catch {
@@ -135,4 +130,36 @@ export default function LoginPage() {
       </section>
     </main>
   );
+}
+
+function getDestinationAfterLogin(role?: string) {
+  const fallback =
+    role === "QUAN_TRI_VIEN"
+      ? "/quan-tri/thong-ke"
+      : role === "NHA_TUYEN_DUNG"
+        ? "/nha-tuyen-dung/tin-tuyen-dung"
+        : "/";
+
+  const redirect = new URLSearchParams(window.location.search).get("redirect");
+  if (!redirect || !isSafeRedirect(redirect)) return fallback;
+  if (!canAccessRedirect(role, redirect)) return fallback;
+  return redirect;
+}
+
+function isSafeRedirect(value: string) {
+  return value.startsWith("/") && !value.startsWith("//") && value !== "/dang-nhap";
+}
+
+function canAccessRedirect(role: string | undefined, path: string) {
+  if (path.startsWith("/quan-tri")) return role === "QUAN_TRI_VIEN";
+  if (path.startsWith("/nha-tuyen-dung")) return role === "NHA_TUYEN_DUNG";
+  if (
+    path.startsWith("/ho-so") ||
+    path.startsWith("/viec-lam-da-luu") ||
+    path.startsWith("/viec-lam-da-ung-tuyen") ||
+    path.startsWith("/nop-ho-so")
+  ) {
+    return role === "NGUOI_LAO_DONG";
+  }
+  return true;
 }

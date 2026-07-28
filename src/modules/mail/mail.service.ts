@@ -11,6 +11,8 @@ type SendRegistrationOtpParams = {
   expiresInMinutes: number;
 };
 
+type SendPasswordResetOtpParams = SendRegistrationOtpParams;
+
 @Injectable()
 export class MailService {
   private readonly transporter: Transporter;
@@ -40,13 +42,9 @@ export class MailService {
   }
 
   async sendRegistrationOtp(params: SendRegistrationOtpParams): Promise<void> {
-    if (!this.configService.get<boolean>('SMTP_ENABLED')) {
-      return;
-    }
-
     const fromName = this.configService.getOrThrow<string>('SMTP_FROM_NAME');
     const fromEmail = this.configService.getOrThrow<string>('SMTP_FROM_EMAIL');
-    const subject = 'Mã OTP xác thực đăng ký tài khoản Người lao động';
+    const subject = 'Mã OTP xác thực đăng ký tài khoản';
     const text = [
       `Xin chào ${params.hoTen},`,
       '',
@@ -57,6 +55,36 @@ export class MailService {
     const html = `
       <p>Xin chào ${this.escapeHtml(params.hoTen)},</p>
       <p>Mã OTP xác thực đăng ký của bạn là:</p>
+      <p style="font-size: 24px; font-weight: 700; letter-spacing: 4px;">${params.otp}</p>
+      <p>Mã OTP hết hạn sau ${params.expiresInMinutes} phút.</p>
+      <p>Vui lòng không chia sẻ mã OTP này cho bất kỳ ai.</p>
+    `;
+
+    await this.transporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to: params.email,
+      subject,
+      text,
+      html,
+    });
+  }
+
+  async sendPasswordResetOtp(
+    params: SendPasswordResetOtpParams,
+  ): Promise<void> {
+    const fromName = this.configService.getOrThrow<string>('SMTP_FROM_NAME');
+    const fromEmail = this.configService.getOrThrow<string>('SMTP_FROM_EMAIL');
+    const subject = 'Mã OTP đặt lại mật khẩu';
+    const text = [
+      `Xin chào ${params.hoTen},`,
+      '',
+      `Mã OTP đặt lại mật khẩu của bạn là: ${params.otp}`,
+      `Mã OTP hết hạn sau ${params.expiresInMinutes} phút.`,
+      'Vui lòng không chia sẻ mã OTP này cho bất kỳ ai.',
+    ].join('\n');
+    const html = `
+      <p>Xin chào ${this.escapeHtml(params.hoTen)},</p>
+      <p>Mã OTP đặt lại mật khẩu của bạn là:</p>
       <p style="font-size: 24px; font-weight: 700; letter-spacing: 4px;">${params.otp}</p>
       <p>Mã OTP hết hạn sau ${params.expiresInMinutes} phút.</p>
       <p>Vui lòng không chia sẻ mã OTP này cho bất kỳ ai.</p>

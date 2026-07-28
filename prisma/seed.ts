@@ -59,6 +59,66 @@ async function upsertTaiKhoan(data: {
   });
 }
 
+async function upsertLinhVuc(tenLinhVuc: string, legacyNames: string[] = []) {
+  const existing =
+    (await prisma.linhVuc.findUnique({ where: { tenLinhVuc } })) ??
+    (await prisma.linhVuc.findFirst({
+      where: { tenLinhVuc: { in: legacyNames } },
+    }));
+
+  if (existing) {
+    return prisma.linhVuc.update({
+      where: { id: existing.id },
+      data: { tenLinhVuc, trangThaiHienThi: true },
+    });
+  }
+
+  return prisma.linhVuc.create({
+    data: { tenLinhVuc, trangThaiHienThi: true },
+  });
+}
+
+async function upsertNganhNghe(
+  tenNganhNghe: string,
+  legacyNames: string[] = [],
+) {
+  const existing =
+    (await prisma.nganhNghe.findUnique({ where: { tenNganhNghe } })) ??
+    (await prisma.nganhNghe.findFirst({
+      where: { tenNganhNghe: { in: legacyNames } },
+    }));
+
+  if (existing) {
+    return prisma.nganhNghe.update({
+      where: { id: existing.id },
+      data: { tenNganhNghe, trangThaiHienThi: true },
+    });
+  }
+
+  return prisma.nganhNghe.create({
+    data: { tenNganhNghe, trangThaiHienThi: true },
+  });
+}
+
+async function upsertKyNang(tenKyNang: string, legacyNames: string[] = []) {
+  const existing =
+    (await prisma.kyNang.findUnique({ where: { tenKyNang } })) ??
+    (await prisma.kyNang.findFirst({
+      where: { tenKyNang: { in: legacyNames } },
+    }));
+
+  if (existing) {
+    return prisma.kyNang.update({
+      where: { id: existing.id },
+      data: { tenKyNang, trangThaiHienThi: true },
+    });
+  }
+
+  return prisma.kyNang.create({
+    data: { tenKyNang, trangThaiHienThi: true },
+  });
+}
+
 async function main() {
   const now = new Date();
   const adminPasswordHash = await bcrypt.hash(adminPassword, 12);
@@ -75,71 +135,59 @@ async function main() {
 
   const linhVucs = await Promise.all(
     [
-      'Cong nghe thong tin',
-      'Giao duc',
-      'Thuong mai - dich vu',
-      'San xuat',
-      'Tai chinh - ke toan',
-      'Y te',
-      'Du lich - khach san',
-      'Xay dung',
-      'Bat dong san',
-      'Van tai - logistics',
-      'Nong nghiep',
-      'Truyen thong - giai tri',
-      'Hanh chinh - van phong',
-      'Phap ly',
-      'Co khi - dien tu',
-      'Ban le',
-      'Lao dong pho thong',
-    ].map((tenLinhVuc) =>
-      prisma.linhVuc.upsert({
-        where: { tenLinhVuc },
-        update: { trangThaiHienThi: true },
-        create: { tenLinhVuc, trangThaiHienThi: true },
-      }),
+      ['Công nghệ thông tin', 'Cong nghe thong tin'],
+      ['Giáo dục', 'Giao duc'],
+      ['Thương mại - dịch vụ', 'Thuong mai - dich vu'],
+      ['Sản xuất', 'San xuat'],
+      ['Tài chính - kế toán', 'Tai chinh - ke toan'],
+      ['Y tế', 'Y te'],
+      ['Du lịch - khách sạn', 'Du lich - khach san'],
+      ['Xây dựng', 'Xay dung'],
+      ['Bất động sản', 'Bat dong san'],
+      ['Vận tải - logistics', 'Van tai - logistics'],
+      ['Nông nghiệp', 'Nong nghiep'],
+      ['Truyền thông - giải trí', 'Truyen thong - giai tri'],
+      ['Hành chính - văn phòng', 'Hanh chinh - van phong'],
+      ['Pháp lý', 'Phap ly'],
+      ['Cơ khí - điện tử', 'Co khi - dien tu'],
+      ['Bán lẻ', 'Ban le'],
+      ['Lao động phổ thông', 'Lao dong pho thong'],
+    ].map(([tenLinhVuc, legacyName]) =>
+      upsertLinhVuc(tenLinhVuc, [legacyName]),
     ),
   );
 
   const nganhNghes = await Promise.all(
     [
-      'Phat trien phan mem',
-      'Kiem thu phan mem',
-      'Thiet ke do hoa',
-      'Ke toan',
-      'Nhan su',
-      'Kinh doanh',
-      'Marketing',
-      'Cham soc khach hang',
-    ].map((tenNganhNghe) =>
-      prisma.nganhNghe.upsert({
-        where: { tenNganhNghe },
-        update: { trangThaiHienThi: true },
-        create: { tenNganhNghe, trangThaiHienThi: true },
-      }),
+      ['Phát triển phần mềm', 'Phat trien phan mem'],
+      ['Kiểm thử phần mềm', 'Kiem thu phan mem'],
+      ['Thiết kế đồ họa', 'Thiet ke do hoa'],
+      ['Kế toán', 'Ke toan'],
+      ['Nhân sự', 'Nhan su'],
+      ['Kinh doanh', 'Kinh doanh'],
+      ['Marketing', 'Marketing'],
+      ['Chăm sóc khách hàng', 'Cham soc khach hang'],
+    ].map(([tenNganhNghe, legacyName]) =>
+      upsertNganhNghe(tenNganhNghe, [legacyName]),
     ),
   );
 
   const kyNangs = await Promise.all(
     [
-      'JavaScript',
-      'TypeScript',
-      'React',
-      'Next.js',
-      'NestJS',
-      'PostgreSQL',
-      'Prisma',
-      'Git',
-      'Giao tiep',
-      'Lam viec nhom',
-      'Microsoft Office',
-      'Tieng Anh',
-    ].map((tenKyNang) =>
-      prisma.kyNang.upsert({
-        where: { tenKyNang },
-        update: { trangThaiHienThi: true },
-        create: { tenKyNang, trangThaiHienThi: true },
-      }),
+      ['JavaScript'],
+      ['TypeScript'],
+      ['React'],
+      ['Next.js'],
+      ['NestJS'],
+      ['PostgreSQL'],
+      ['Prisma'],
+      ['Git'],
+      ['Giao tiếp', 'Giao tiep'],
+      ['Làm việc nhóm', 'Lam viec nhom'],
+      ['Microsoft Office'],
+      ['Tiếng Anh', 'Tieng Anh'],
+    ].map(([tenKyNang, legacyName]) =>
+      upsertKyNang(tenKyNang, legacyName ? [legacyName] : []),
     ),
   );
 
@@ -156,27 +204,27 @@ async function main() {
   const hoSoNguoiLaoDong = await prisma.hoSoNguoiLaoDong.upsert({
     where: { taiKhoanId: nguoiLaoDong.id },
     update: {
-      hoTen: 'Nguyen Van An',
+      hoTen: 'Nguyễn Văn An',
       ngaySinh: new Date('2001-05-12T00:00:00.000Z'),
       gioiTinh: GioiTinh.NAM,
-      diaChi: 'Cau Giay, Ha Noi',
-      gioiThieuBanThan: 'Lap trinh vien tre yeu thich NestJS va PostgreSQL.',
+      diaChi: 'Cầu Giấy, Hà Nội',
+      gioiThieuBanThan: 'Lập trình viên trẻ yêu thích NestJS và PostgreSQL.',
       mucLuongMongMuonTu: new Prisma.Decimal('12000000'),
       mucLuongMongMuonDen: new Prisma.Decimal('18000000'),
-      diaDiemMongMuon: 'Ha Noi',
+      diaDiemMongMuon: 'Hà Nội',
       tepCvUrl: 'https://example.com/cv/nguyen-van-an.pdf',
       trangThaiTimViec: TrangThaiTimViec.DANG_TIM_VIEC,
     },
     create: {
       taiKhoanId: nguoiLaoDong.id,
-      hoTen: 'Nguyen Van An',
+      hoTen: 'Nguyễn Văn An',
       ngaySinh: new Date('2001-05-12T00:00:00.000Z'),
       gioiTinh: GioiTinh.NAM,
-      diaChi: 'Cau Giay, Ha Noi',
-      gioiThieuBanThan: 'Lap trinh vien tre yeu thich NestJS va PostgreSQL.',
+      diaChi: 'Cầu Giấy, Hà Nội',
+      gioiThieuBanThan: 'Lập trình viên trẻ yêu thích NestJS và PostgreSQL.',
       mucLuongMongMuonTu: new Prisma.Decimal('12000000'),
       mucLuongMongMuonDen: new Prisma.Decimal('18000000'),
-      diaDiemMongMuon: 'Ha Noi',
+      diaDiemMongMuon: 'Hà Nội',
       tepCvUrl: 'https://example.com/cv/nguyen-van-an.pdf',
       trangThaiTimViec: TrangThaiTimViec.DANG_TIM_VIEC,
     },
@@ -186,23 +234,23 @@ async function main() {
     where: { id: 1 },
     update: {
       hoSoNguoiLaoDongId: hoSoNguoiLaoDong.id,
-      trinhDo: 'Dai hoc',
-      tenCoSoDaoTao: 'Dai hoc Cong nghe',
-      chuyenNganh: 'Cong nghe thong tin',
+      trinhDo: 'Đại học',
+      tenCoSoDaoTao: 'Đại học Công nghệ',
+      chuyenNganh: 'Công nghệ thông tin',
       namBatDau: 2019,
       namTotNghiep: 2023,
       dangHoc: false,
-      xepLoai: 'Kha',
+      xepLoai: 'Khá',
     },
     create: {
       hoSoNguoiLaoDongId: hoSoNguoiLaoDong.id,
-      trinhDo: 'Dai hoc',
-      tenCoSoDaoTao: 'Dai hoc Cong nghe',
-      chuyenNganh: 'Cong nghe thong tin',
+      trinhDo: 'Đại học',
+      tenCoSoDaoTao: 'Đại học Công nghệ',
+      chuyenNganh: 'Công nghệ thông tin',
       namBatDau: 2019,
       namTotNghiep: 2023,
       dangHoc: false,
-      xepLoai: 'Kha',
+      xepLoai: 'Khá',
     },
   });
 
@@ -210,21 +258,21 @@ async function main() {
     where: { id: 1 },
     update: {
       hoSoNguoiLaoDongId: hoSoNguoiLaoDong.id,
-      tenDonVi: 'Cong ty Phan mem Demo',
-      viTriCongViec: 'Thuc tap sinh Backend',
+      tenDonVi: 'Công ty Phần mềm Demo',
+      viTriCongViec: 'Thực tập sinh Backend',
       ngayBatDau: new Date('2022-06-01T00:00:00.000Z'),
       ngayKetThuc: new Date('2023-01-31T00:00:00.000Z'),
       dangLamViec: false,
-      moTaCongViec: 'Xay dung API voi NestJS va Prisma.',
+      moTaCongViec: 'Xây dựng API với NestJS và Prisma.',
     },
     create: {
       hoSoNguoiLaoDongId: hoSoNguoiLaoDong.id,
-      tenDonVi: 'Cong ty Phan mem Demo',
-      viTriCongViec: 'Thuc tap sinh Backend',
+      tenDonVi: 'Công ty Phần mềm Demo',
+      viTriCongViec: 'Thực tập sinh Backend',
       ngayBatDau: new Date('2022-06-01T00:00:00.000Z'),
       ngayKetThuc: new Date('2023-01-31T00:00:00.000Z'),
       dangLamViec: false,
-      moTaCongViec: 'Xay dung API voi NestJS va Prisma.',
+      moTaCongViec: 'Xây dựng API với NestJS và Prisma.',
     },
   });
 
@@ -276,16 +324,16 @@ async function main() {
     where: { taiKhoanId: nhaTuyenDungAccount.id },
     update: {
       linhVucId: linhVucs[0].id,
-      tenDonVi: 'Cong ty TNHH Cong nghe Tre Ha Noi',
+      tenDonVi: 'Công ty TNHH Công nghệ Trẻ Hà Nội',
       maSoThue: '0109999001',
-      diaChiTruSo: 'Dong Da, Ha Noi',
-      nguoiDaiDien: 'Tran Thi Binh',
-      chucVuNguoiDaiDien: 'Giam doc',
+      diaChiTruSo: 'Đống Đa, Hà Nội',
+      nguoiDaiDien: 'Trần Thị Bình',
+      chucVuNguoiDaiDien: 'Giám đốc',
       soDienThoaiLienHe: '02439990001',
       emailLienHe: 'hr@congnghetre.example.com',
       website: 'https://congnghetre.example.com',
       moTaDonVi:
-        'Doanh nghiep cong nghe tap trung vao giai phap viec lam va giao duc.',
+        'Doanh nghiệp công nghệ tập trung vào giải pháp việc làm và giáo dục.',
       tepGiayPhepUrl: 'https://example.com/licenses/cong-nghe-tre.pdf',
       trangThaiDuyet: TrangThaiKiemDuyet.DA_DUYET,
       lyDoTuChoi: null,
@@ -295,16 +343,16 @@ async function main() {
     create: {
       taiKhoanId: nhaTuyenDungAccount.id,
       linhVucId: linhVucs[0].id,
-      tenDonVi: 'Cong ty TNHH Cong nghe Tre Ha Noi',
+      tenDonVi: 'Công ty TNHH Công nghệ Trẻ Hà Nội',
       maSoThue: '0109999001',
-      diaChiTruSo: 'Dong Da, Ha Noi',
-      nguoiDaiDien: 'Tran Thi Binh',
-      chucVuNguoiDaiDien: 'Giam doc',
+      diaChiTruSo: 'Đống Đa, Hà Nội',
+      nguoiDaiDien: 'Trần Thị Bình',
+      chucVuNguoiDaiDien: 'Giám đốc',
       soDienThoaiLienHe: '02439990001',
       emailLienHe: 'hr@congnghetre.example.com',
       website: 'https://congnghetre.example.com',
       moTaDonVi:
-        'Doanh nghiep cong nghe tap trung vao giai phap viec lam va giao duc.',
+        'Doanh nghiệp công nghệ tập trung vào giải pháp việc làm và giáo dục.',
       tepGiayPhepUrl: 'https://example.com/licenses/cong-nghe-tre.pdf',
       trangThaiDuyet: TrangThaiKiemDuyet.DA_DUYET,
       ngayGuiDuyet: now,
@@ -321,7 +369,7 @@ async function main() {
       tinTuyenDungId: null,
       trangThaiTruoc: TrangThaiKiemDuyet.CHO_DUYET,
       trangThaiSau: TrangThaiKiemDuyet.DA_DUYET,
-      lyDo: 'Ho so hop le.',
+      lyDo: 'Hồ sơ hợp lệ.',
     },
     create: {
       nguoiKiemDuyetId: admin.id,
@@ -329,15 +377,15 @@ async function main() {
       hoSoNhaTuyenDungId: hoSoNhaTuyenDung.id,
       trangThaiTruoc: TrangThaiKiemDuyet.CHO_DUYET,
       trangThaiSau: TrangThaiKiemDuyet.DA_DUYET,
-      lyDo: 'Ho so hop le.',
+      lyDo: 'Hồ sơ hợp lệ.',
     },
   });
 
   const phatTrienPhanMem = nganhNghes.find(
-    (nganhNghe) => nganhNghe.tenNganhNghe === 'Phat trien phan mem',
+    (nganhNghe) => nganhNghe.tenNganhNghe === 'Phát triển phần mềm',
   );
   const kiemThuPhanMem = nganhNghes.find(
-    (nganhNghe) => nganhNghe.tenNganhNghe === 'Kiem thu phan mem',
+    (nganhNghe) => nganhNghe.tenNganhNghe === 'Kiểm thử phần mềm',
   );
 
   if (!phatTrienPhanMem || !kiemThuPhanMem) {
@@ -349,19 +397,19 @@ async function main() {
     update: {
       nhaTuyenDungId: hoSoNhaTuyenDung.id,
       nganhNgheId: phatTrienPhanMem.id,
-      viTriTuyenDung: 'Lap trinh vien Backend NestJS',
-      moTaCongViec: 'Phat trien API cho nen tang ket noi viec lam.',
-      yeuCauUngVien: 'Nam vung TypeScript, NestJS, PostgreSQL va Git.',
+      viTriTuyenDung: 'Lập trình viên Backend NestJS',
+      moTaCongViec: 'Phát triển API cho nền tảng kết nối việc làm.',
+      yeuCauUngVien: 'Nắm vững TypeScript, NestJS, PostgreSQL và Git.',
       quyenLoi:
-        'Moi truong tre, duoc dao tao va co lo trinh phat trien ro rang.',
+        'Môi trường trẻ, được đào tạo và có lộ trình phát triển rõ ràng.',
       mucLuongTu: new Prisma.Decimal('15000000'),
       mucLuongDen: new Prisma.Decimal('25000000'),
       coTheThoaThuan: false,
-      diaDiemLamViec: 'Ha Noi',
+      diaDiemLamViec: 'Hà Nội',
       hinhThucLamViec: HinhThucLamViec.TOAN_THOI_GIAN,
       soLuongTuyen: 2,
       soNamKinhNghiemToiThieu: new Prisma.Decimal('1.0'),
-      trinhDoYeuCau: 'Cao dang tro len',
+      trinhDoYeuCau: 'Cao đẳng trở lên',
       thoiHanNhanHoSo: new Date('2027-12-31T23:59:59.000Z'),
       trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
       trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
@@ -372,19 +420,19 @@ async function main() {
     create: {
       nhaTuyenDungId: hoSoNhaTuyenDung.id,
       nganhNgheId: phatTrienPhanMem.id,
-      viTriTuyenDung: 'Lap trinh vien Backend NestJS',
-      moTaCongViec: 'Phat trien API cho nen tang ket noi viec lam.',
-      yeuCauUngVien: 'Nam vung TypeScript, NestJS, PostgreSQL va Git.',
+      viTriTuyenDung: 'Lập trình viên Backend NestJS',
+      moTaCongViec: 'Phát triển API cho nền tảng kết nối việc làm.',
+      yeuCauUngVien: 'Nắm vững TypeScript, NestJS, PostgreSQL và Git.',
       quyenLoi:
-        'Moi truong tre, duoc dao tao va co lo trinh phat trien ro rang.',
+        'Môi trường trẻ, được đào tạo và có lộ trình phát triển rõ ràng.',
       mucLuongTu: new Prisma.Decimal('15000000'),
       mucLuongDen: new Prisma.Decimal('25000000'),
       coTheThoaThuan: false,
-      diaDiemLamViec: 'Ha Noi',
+      diaDiemLamViec: 'Hà Nội',
       hinhThucLamViec: HinhThucLamViec.TOAN_THOI_GIAN,
       soLuongTuyen: 2,
       soNamKinhNghiemToiThieu: new Prisma.Decimal('1.0'),
-      trinhDoYeuCau: 'Cao dang tro len',
+      trinhDoYeuCau: 'Cao đẳng trở lên',
       thoiHanNhanHoSo: new Date('2027-12-31T23:59:59.000Z'),
       trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
       trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
@@ -399,19 +447,19 @@ async function main() {
     update: {
       nhaTuyenDungId: hoSoNhaTuyenDung.id,
       nganhNgheId: kiemThuPhanMem.id,
-      viTriTuyenDung: 'Nhan vien Kiem thu phan mem',
-      moTaCongViec: 'Thiet ke test case, kiem thu tinh nang va bao cao loi.',
+      viTriTuyenDung: 'Nhân viên Kiểm thử phần mềm',
+      moTaCongViec: 'Thiết kế test case, kiểm thử tính năng và báo cáo lỗi.',
       yeuCauUngVien:
-        'Can than, co tu duy logic va biet su dung cong cu quan ly loi.',
-      quyenLoi: 'Duoc dao tao quy trinh kiem thu san pham thuc te.',
+        'Cẩn thận, có tư duy logic và biết sử dụng công cụ quản lý lỗi.',
+      quyenLoi: 'Được đào tạo quy trình kiểm thử sản phẩm thực tế.',
       mucLuongTu: new Prisma.Decimal('10000000'),
       mucLuongDen: new Prisma.Decimal('16000000'),
       coTheThoaThuan: false,
-      diaDiemLamViec: 'Ha Noi',
+      diaDiemLamViec: 'Hà Nội',
       hinhThucLamViec: HinhThucLamViec.TOAN_THOI_GIAN,
       soLuongTuyen: 3,
       soNamKinhNghiemToiThieu: new Prisma.Decimal('0.5'),
-      trinhDoYeuCau: 'Trung cap tro len',
+      trinhDoYeuCau: 'Trung cấp trở lên',
       thoiHanNhanHoSo: new Date('2027-12-31T23:59:59.000Z'),
       trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
       trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
@@ -422,19 +470,19 @@ async function main() {
     create: {
       nhaTuyenDungId: hoSoNhaTuyenDung.id,
       nganhNgheId: kiemThuPhanMem.id,
-      viTriTuyenDung: 'Nhan vien Kiem thu phan mem',
-      moTaCongViec: 'Thiet ke test case, kiem thu tinh nang va bao cao loi.',
+      viTriTuyenDung: 'Nhân viên Kiểm thử phần mềm',
+      moTaCongViec: 'Thiết kế test case, kiểm thử tính năng và báo cáo lỗi.',
       yeuCauUngVien:
-        'Can than, co tu duy logic va biet su dung cong cu quan ly loi.',
-      quyenLoi: 'Duoc dao tao quy trinh kiem thu san pham thuc te.',
+        'Cẩn thận, có tư duy logic và biết sử dụng công cụ quản lý lỗi.',
+      quyenLoi: 'Được đào tạo quy trình kiểm thử sản phẩm thực tế.',
       mucLuongTu: new Prisma.Decimal('10000000'),
       mucLuongDen: new Prisma.Decimal('16000000'),
       coTheThoaThuan: false,
-      diaDiemLamViec: 'Ha Noi',
+      diaDiemLamViec: 'Hà Nội',
       hinhThucLamViec: HinhThucLamViec.TOAN_THOI_GIAN,
       soLuongTuyen: 3,
       soNamKinhNghiemToiThieu: new Prisma.Decimal('0.5'),
-      trinhDoYeuCau: 'Trung cap tro len',
+      trinhDoYeuCau: 'Trung cấp trở lên',
       thoiHanNhanHoSo: new Date('2027-12-31T23:59:59.000Z'),
       trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
       trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
@@ -482,13 +530,13 @@ async function main() {
     },
     {
       tinTuyenDungId: tinTester.id,
-      tenKyNang: 'Giao tiep',
+      tenKyNang: 'Giao tiếp',
       mucDoYeuCau: MucDoKyNang.KHA,
       batBuoc: false,
     },
     {
       tinTuyenDungId: tinTester.id,
-      tenKyNang: 'Lam viec nhom',
+      tenKyNang: 'Làm việc nhóm',
       mucDoYeuCau: MucDoKyNang.KHA,
       batBuoc: true,
     },

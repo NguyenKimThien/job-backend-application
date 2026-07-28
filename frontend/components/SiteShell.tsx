@@ -1,10 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ReactNode, SVGProps, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { ReactNode, SVGProps, useEffect, useState } from 'react';
+import NavNotifications from '@/components/NavNotifications';
 import { ACCESS_TOKEN_KEY, ACCOUNT_KEY } from '@/lib/backend-api';
-import { portalFetch } from '@/lib/portal-api';
 
 type ShellRole = 'worker' | 'employer' | 'admin';
 
@@ -26,14 +26,6 @@ type StoredAccount = {
   tenDangNhap?: string;
   tenHienThi?: string;
   vaiTro?: AccountRole;
-};
-
-type Notice = {
-  id: number;
-  tieuDe: string;
-  noiDung: string;
-  ngayTao: string;
-  daDoc?: boolean;
 };
 
 const menus: Record<ShellRole, Array<[string, string]>> = {
@@ -83,9 +75,7 @@ export default function SiteShell({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [notificationOpen, setNotificationOpen] = useState(false);
   const [user, setUser] = useState<StoredAccount | null>(null);
-  const [notices, setNotices] = useState<Notice[]>([]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ACCOUNT_KEY);
@@ -102,14 +92,6 @@ export default function SiteShell({
     }
   }, []);
 
-  useEffect(() => {
-    if (!window.localStorage.getItem(ACCESS_TOKEN_KEY)) return;
-
-    portalFetch<Notice[]>('/notifications')
-      .then(setNotices)
-      .catch(() => setNotices([]));
-  }, []);
-
   function logout() {
     window.localStorage.removeItem(ACCESS_TOKEN_KEY);
     window.localStorage.removeItem(ACCOUNT_KEY);
@@ -124,7 +106,6 @@ export default function SiteShell({
     user?.email ??
     roleFallback(role);
   const initials = getInitials(displayName);
-  const unreadCount = notices.filter((item) => !item.daDoc).length;
 
   return (
     <main className={`portal-page ${pageClassName ?? ''}`}>
@@ -156,65 +137,13 @@ export default function SiteShell({
             })}
           </nav>
           <div className="portal-account">
-            <button
-              className="notification-button"
-              onClick={() => {
-                setNotificationOpen((value) => !value);
-                setAccountOpen(false);
-              }}
-              aria-label="Mở thông báo"
-              aria-expanded={notificationOpen}
-              type="button"
-            >
-              <ShellIcon name="bell" />
-              {unreadCount > 0 && <b>{unreadCount}</b>}
-            </button>
-            {notificationOpen && (
-              <div className="notification-popover">
-                <div className="notification-popover-head">
-                  <div>
-                    <h3>Thông báo</h3>
-                    <small>{unreadCount} thông báo chưa đọc</small>
-                  </div>
-                  <Link href={`/thong-bao?role=${role}`}>Xem tất cả</Link>
-                </div>
-                <div className="notification-popover-list">
-                  {notices.slice(0, 3).map((item) => (
-                    <Link
-                      className={
-                        !item.daDoc ? 'popover-notice unread' : 'popover-notice'
-                      }
-                      href={`/thong-bao?role=${role}`}
-                      key={item.id}
-                    >
-                      <span>
-                        <ShellIcon name="bell" />
-                      </span>
-                      <div>
-                        <strong>{item.tieuDe}</strong>
-                        <p>{item.noiDung}</p>
-                        <small>
-                          {new Date(item.ngayTao).toLocaleDateString('vi-VN')}
-                        </small>
-                      </div>
-                      {!item.daDoc && <i />}
-                    </Link>
-                  ))}
-                </div>
-                <Link
-                  className="notification-popover-footer"
-                  href={`/thong-bao?role=${role}`}
-                >
-                  Xem toàn bộ thông báo →
-                </Link>
-              </div>
-            )}
+            <NavNotifications
+              role={role}
+              onOpen={() => setAccountOpen(false)}
+            />
             <button
               className="account-trigger"
-              onClick={() => {
-                setAccountOpen((value) => !value);
-                setNotificationOpen(false);
-              }}
+              onClick={() => setAccountOpen((value) => !value)}
               aria-haspopup="menu"
               aria-expanded={accountOpen}
               type="button"
@@ -321,14 +250,13 @@ function getInitials(value: string) {
     .toUpperCase();
 }
 
-type ShellIconName = 'bell' | 'chevronDown' | 'menu';
+type ShellIconName = 'chevronDown' | 'menu';
 
 function ShellIcon({
   name,
   ...props
 }: { name: ShellIconName } & SVGProps<SVGSVGElement>) {
   const paths: Record<ShellIconName, ReactNode> = {
-    bell: <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Zm-8 12h4" />,
     chevronDown: <path d="m6 9 6 6 6-6" />,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   };

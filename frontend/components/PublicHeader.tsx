@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ReactNode, SVGProps, useEffect, useRef, useState } from 'react';
+import NavNotifications, {
+  NotificationRole,
+} from '@/components/NavNotifications';
 import { ACCESS_TOKEN_KEY, ACCOUNT_KEY } from '@/lib/backend-api';
 
 type AccountRole = 'NGUOI_LAO_DONG' | 'NHA_TUYEN_DUNG' | 'QUAN_TRI_VIEN';
@@ -151,6 +154,11 @@ export default function PublicHeader({ active = 'home' }: PublicHeaderProps) {
         </div>
 
         <div className={`home-nav-actions ${menuOpen ? 'open' : ''}`}>
+          <NavNotifications
+            className="home-notification"
+            role={notificationRole(account?.vaiTro)}
+            onOpen={() => setAccountMenuOpen(false)}
+          />
           {account ? (
             <div className="home-account" ref={accountMenuRef}>
               <button
@@ -244,6 +252,12 @@ function roleLabel(role?: AccountRole) {
     default:
       return 'Tài khoản';
   }
+}
+
+function notificationRole(role?: AccountRole): NotificationRole {
+  if (role === 'QUAN_TRI_VIEN') return 'admin';
+  if (role === 'NHA_TUYEN_DUNG') return 'employer';
+  return 'worker';
 }
 
 function getInitials(value: string) {

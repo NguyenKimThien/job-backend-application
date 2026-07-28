@@ -38,7 +38,6 @@ type Job = {
   deadlineAt: number | null;
   initials: string;
   tags: string[];
-  verified: boolean;
 };
 
 type CategoryOption = {
@@ -715,15 +714,6 @@ function JobCard({
             </h3>
             <p className="company-name">
               <span>{job.company}</span>
-              {job.verified && (
-                <span
-                  className="verified-label dark"
-                  title="Doanh nghiệp đã xác thực"
-                >
-                  <Icon name="checkCircle" />
-                  Đã xác thực
-                </span>
-              )}
             </p>
           </div>
 
@@ -982,7 +972,6 @@ function mapJob(job: ApiJob): Job {
     deadlineAt: Number.isNaN(deadlineAt) ? null : deadlineAt,
     initials: getInitials(job.company),
     tags: job.skills.length ? job.skills : [job.category],
-    verified: isVerifiedEmployer(job),
   };
 }
 
@@ -1070,11 +1059,6 @@ function getInitials(company: string) {
     .toUpperCase();
 }
 
-function isVerifiedEmployer(job: ApiJob) {
-  const status = job.employer?.trangThaiDuyet;
-  return status === 'DA_DUYET';
-}
-
 function relativeDate(value: string) {
   const date = new Date(value);
   const diff = Date.now() - date.getTime();
@@ -1101,7 +1085,6 @@ type IconName =
   | 'bookmarkFilled'
   | 'briefcase'
   | 'calendar'
-  | 'checkCircle'
   | 'clock'
   | 'loader'
   | 'mapPin'
@@ -1133,7 +1116,6 @@ function Icon({
     calendar: (
       <path d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
     ),
-    checkCircle: <path d="M9 12l2 2 4-5m6 3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     clock: <path d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     loader: <path d="M12 3a9 9 0 1 0 9 9" />,
     mapPin: (

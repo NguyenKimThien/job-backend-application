@@ -110,6 +110,18 @@ export default function SiteShell({
   return (
     <main className={`portal-page ${pageClassName ?? ''}`}>
       <header className="portal-header">
+        <div className="portal-utility">
+          <div className="container portal-utility-inner">
+            <a href="tel:02438582525">
+              <ShellIcon name="phone" />
+              <span>024 3858 2525</span>
+            </a>
+            <a href="mailto:hotro@vieclamthanhnien.vn">
+              <ShellIcon name="mail" />
+              <span>hotro@vieclamthanhnien.vn</span>
+            </a>
+          </div>
+        </div>
         <div className="container portal-nav">
           <Logo />
           <button
@@ -250,7 +262,7 @@ function getInitials(value: string) {
     .toUpperCase();
 }
 
-type ShellIconName = 'chevronDown' | 'menu';
+type ShellIconName = 'chevronDown' | 'mail' | 'menu' | 'phone';
 
 function ShellIcon({
   name,
@@ -258,7 +270,11 @@ function ShellIcon({
 }: { name: ShellIconName } & SVGProps<SVGSVGElement>) {
   const paths: Record<ShellIconName, ReactNode> = {
     chevronDown: <path d="m6 9 6 6 6-6" />,
+    mail: <path d="M4 6h16v12H4V6Zm0 1 8 6 8-6" />,
     menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+    phone: (
+      <path d="M6 4h4l2 5-3 2a11 11 0 0 0 4 4l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2Z" />
+    ),
   };
 
   return (

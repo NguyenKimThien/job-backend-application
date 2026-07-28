@@ -6,11 +6,11 @@ import {
   SVGProps,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import PublicHeader from '@/components/PublicHeader';
 import { ACCESS_TOKEN_KEY, ACCOUNT_KEY } from '@/lib/backend-api';
 import {
   ApiJob,
@@ -83,13 +83,10 @@ const categoryIcons = [
 
 export default function Home() {
   const router = useRouter();
-  const accountMenuRef = useRef<HTMLDivElement | null>(null);
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState(defaultCategory);
   const [location, setLocation] = useState(defaultLocation);
   const [saved, setSaved] = useState<number[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [account, setAccount] = useState<Account | null>(null);
@@ -157,31 +154,6 @@ export default function Home() {
       .then((items) => setSaved(items.map((job) => job.id)))
       .catch(() => undefined);
   }, [account]);
-
-  useEffect(() => {
-    function handleDocumentClick(event: MouseEvent) {
-      if (
-        accountMenuRef.current &&
-        !accountMenuRef.current.contains(event.target as Node)
-      ) {
-        setAccountMenuOpen(false);
-      }
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        setAccountMenuOpen(false);
-        setMenuOpen(false);
-      }
-    }
-
-    document.addEventListener('mousedown', handleDocumentClick);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleDocumentClick);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, []);
 
   const featuredJobs = useMemo(() => jobs.slice(0, 6), [jobs]);
   const visibleCategories = useMemo(
@@ -253,21 +225,6 @@ export default function Home() {
     }
   }
 
-  function logout() {
-    window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-    window.localStorage.removeItem(ACCOUNT_KEY);
-    setAccount(null);
-    setAccountMenuOpen(false);
-    router.refresh();
-  }
-
-  const displayName =
-    account?.tenHienThi ??
-    account?.hoTen ??
-    account?.tenDangNhap ??
-    account?.email ??
-    '';
-  const accountInitials = getInitials(displayName || 'Tài khoản');
   const primaryCta = getPrimaryCta(account);
   const secondaryCta =
     account?.vaiTro === 'NHA_TUYEN_DUNG'
@@ -276,101 +233,7 @@ export default function Home() {
 
   return (
     <main className="home-page">
-      <header className="home-header">
-        <div className="home-utility">
-          <div className="home-container home-utility-inner">
-            <a href="tel:02438582525">
-              <Icon name="phone" />
-              <span>024 3858 2525</span>
-            </a>
-            <a href="mailto:hotro@vieclamthanhnien.vn">
-              <Icon name="mail" />
-              <span>hotro@vieclamthanhnien.vn</span>
-            </a>
-          </div>
-        </div>
-
-        <nav className="home-container home-nav" aria-label="Điều hướng chính">
-          <Link
-            className="home-brand"
-            href="/"
-            aria-label="Việc làm Thanh niên Hà Nội"
-          >
-            <span className="home-brand-mark">V</span>
-            <span>
-              <strong>VIỆC LÀM</strong>
-              <small>THANH NIÊN HÀ NỘI</small>
-            </span>
-          </Link>
-
-          <button
-            className="home-menu-button"
-            onClick={() => setMenuOpen((value) => !value)}
-            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
-            aria-expanded={menuOpen}
-            type="button"
-          >
-            <Icon name="menu" />
-          </button>
-
-          <div className={`home-nav-links ${menuOpen ? 'open' : ''}`}>
-            <Link className="active" href="/">
-              Trang chủ
-            </Link>
-            <Link href="/viec-lam">Việc làm</Link>
-            <Link href="/nganh-nghe">Ngành nghề</Link>
-            <a href="#cam-nang">Cẩm nang</a>
-            <a href="#lien-he">Liên hệ</a>
-          </div>
-
-          <div className={`home-nav-actions ${menuOpen ? 'open' : ''}`}>
-            {account ? (
-              <div className="home-account" ref={accountMenuRef}>
-                <button
-                  className="home-account-trigger"
-                  type="button"
-                  onClick={() => setAccountMenuOpen((value) => !value)}
-                  aria-haspopup="menu"
-                  aria-expanded={accountMenuOpen}
-                >
-                  <span className="home-account-avatar">{accountInitials}</span>
-                  <span className="home-account-name">
-                    <strong>{displayName}</strong>
-                    <small>{roleLabel(account.vaiTro)}</small>
-                  </span>
-                  <Icon name="chevronDown" />
-                </button>
-                {accountMenuOpen && (
-                  <div className="home-account-menu" role="menu">
-                    {accountMenuItems(account.vaiTro).map((item) => (
-                      <Link href={item.href} key={item.href} role="menuitem">
-                        {item.label}
-                      </Link>
-                    ))}
-                    <button
-                      className="danger"
-                      onClick={logout}
-                      type="button"
-                      role="menuitem"
-                    >
-                      Đăng xuất
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <Link className="home-auth-link" href="/dang-nhap">
-                  Đăng nhập
-                </Link>
-                <Link className="home-primary-link" href="/dang-ky">
-                  Tạo tài khoản
-                </Link>
-              </>
-            )}
-          </div>
-        </nav>
-      </header>
+      <PublicHeader active="home" />
 
       <section className="home-hero">
         <div className="home-container home-hero-inner">
@@ -762,38 +625,6 @@ function mapJob(job: ApiJob): Job {
   };
 }
 
-function accountMenuItems(role?: AccountRole) {
-  if (role === 'NHA_TUYEN_DUNG') {
-    return [
-      { href: '/nha-tuyen-dung/ho-so', label: 'Hồ sơ doanh nghiệp' },
-      {
-        href: '/nha-tuyen-dung/tin-tuyen-dung',
-        label: 'Quản lý tin tuyển dụng',
-      },
-      {
-        href: '/nha-tuyen-dung/tin-tuyen-dung/tao-moi',
-        label: 'Đăng tin tuyển dụng',
-      },
-      { href: '/doi-mat-khau', label: 'Cài đặt tài khoản' },
-    ];
-  }
-
-  if (role === 'QUAN_TRI_VIEN') {
-    return [
-      { href: '/quan-tri/thong-ke', label: 'Trang quản trị' },
-      { href: '/thong-bao?role=admin', label: 'Thông báo' },
-      { href: '/doi-mat-khau', label: 'Cài đặt tài khoản' },
-    ];
-  }
-
-  return [
-    { href: '/ho-so', label: 'Hồ sơ cá nhân' },
-    { href: '/viec-lam-da-luu', label: 'Việc làm đã lưu' },
-    { href: '/viec-lam-da-ung-tuyen', label: 'Hồ sơ đã ứng tuyển' },
-    { href: '/doi-mat-khau', label: 'Cài đặt tài khoản' },
-  ];
-}
-
 function getPrimaryCta(account: Account | null) {
   if (account?.vaiTro === 'NHA_TUYEN_DUNG') {
     return {
@@ -811,19 +642,6 @@ function getPrimaryCta(account: Account | null) {
   }
 
   return { href: '/dang-ky', label: 'Tạo tài khoản' };
-}
-
-function roleLabel(role?: AccountRole) {
-  switch (role) {
-    case 'NHA_TUYEN_DUNG':
-      return 'Nhà tuyển dụng';
-    case 'QUAN_TRI_VIEN':
-      return 'Quản trị viên';
-    case 'NGUOI_LAO_DONG':
-      return 'Người lao động';
-    default:
-      return 'Tài khoản';
-  }
 }
 
 function experienceLabel(value: ApiJob['experience']) {
@@ -879,18 +697,14 @@ type IconName =
   | 'bookmark'
   | 'briefcase'
   | 'calculator'
-  | 'chevronDown'
   | 'clock'
   | 'code'
   | 'graduation'
   | 'grid'
   | 'headphones'
-  | 'mail'
   | 'mapPin'
   | 'megaphone'
-  | 'menu'
   | 'palette'
-  | 'phone'
   | 'search'
   | 'shieldCheck'
   | 'users'
@@ -909,7 +723,6 @@ function Icon({
     calculator: (
       <path d="M7 3h10v18H7V3Zm2 4h6M9 11h.01M12 11h.01M15 11h.01M9 15h.01M12 15h.01M15 15h.01" />
     ),
-    chevronDown: <path d="m6 9 6 6 6-6" />,
     clock: <path d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     code: <path d="m8 9-4 3 4 3m8-6 4 3-4 3m-2-9-4 12" />,
     graduation: <path d="m3 8 9-4 9 4-9 4-9-4Zm4 3v4c2 2 8 2 10 0v-4" />,
@@ -919,17 +732,12 @@ function Icon({
     headphones: (
       <path d="M4 13a8 8 0 0 1 16 0v5a2 2 0 0 1-2 2h-2v-7h4M4 13h4v7H6a2 2 0 0 1-2-2v-5Z" />
     ),
-    mail: <path d="M4 6h16v12H4V6Zm0 1 8 6 8-6" />,
     mapPin: (
       <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Zm0-8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
     ),
     megaphone: <path d="M4 13h3l10 4V5L7 9H4v4Zm3 0 1 5h3l-1-4" />,
-    menu: <path d="M4 7h16M4 12h16M4 17h16" />,
     palette: (
       <path d="M12 3a9 9 0 0 0 0 18h1.5a2 2 0 0 0 1.2-3.6 1.4 1.4 0 0 1 .8-2.4H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8ZM7.5 10h.01M10 7h.01M14 7h.01M16.5 10h.01" />
-    ),
-    phone: (
-      <path d="M6 4h4l2 5-3 2a11 11 0 0 0 4 4l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2Z" />
     ),
     search: (
       <path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" />

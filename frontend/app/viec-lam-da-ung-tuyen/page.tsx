@@ -9,6 +9,7 @@ import {
 } from '@/lib/portal-api';
 import Link from 'next/link';
 import {
+  CSSProperties,
   FormEvent,
   ReactNode,
   SVGProps,
@@ -126,6 +127,16 @@ const sortOptions: Array<{ key: SortKey; label: string }> = [
   { key: 'status', label: 'Theo trạng thái' },
 ];
 
+const visuallyHiddenStyle: CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  clipPath: 'inset(50%)',
+};
+
 export default function AppliedJobsPage() {
   const [items, setItems] = useState<AppliedJob[]>([]);
   const [pageState, setPageState] = useState<PageState>('loading');
@@ -232,14 +243,10 @@ export default function AppliedJobsPage() {
       .sort((a, b) => compareApplications(a, b, sort));
   }, [filter, items, query, sort]);
 
-  const countLabel =
-    pageState === 'loading'
-      ? 'Đang tải hồ sơ...'
-      : applicationCountLabel(items.length);
   const resultLabel =
     query.trim() || filter !== 'all'
       ? `${shown.length}/${items.length} hồ sơ phù hợp`
-      : `${items.length} hồ sơ ứng tuyển trong tài khoản của bạn`;
+      : `${items.length} hồ sơ trong tài khoản của bạn`;
 
   return (
     <SiteShell
@@ -250,7 +257,6 @@ export default function AppliedJobsPage() {
       <section className="container portal-content applied-jobs-content">
         <div className="applied-toolbar" aria-labelledby="applied-title">
           <div className="applied-toolbar-copy">
-            <span>{countLabel}</span>
             <h2 id="applied-title">Hồ sơ ứng tuyển</h2>
             <p aria-live="polite">{resultLabel}</p>
           </div>
@@ -260,7 +266,7 @@ export default function AppliedJobsPage() {
               onSubmit={submitSearch}
               role="search"
             >
-              <label className="sr-only" htmlFor="applied-query">
+              <label style={visuallyHiddenStyle} htmlFor="applied-query">
                 Tìm theo tên công việc hoặc công ty
               </label>
               <Icon name="search" />
@@ -280,9 +286,10 @@ export default function AppliedJobsPage() {
                 </button>
               )}
             </form>
-            <label className="applied-sort">
+            <label className="applied-sort" htmlFor="applied-sort">
               <span>Sắp xếp</span>
               <select
+                id="applied-sort"
                 value={sort}
                 onChange={(event) => changeSort(event.target.value as SortKey)}
               >
@@ -335,7 +342,20 @@ export default function AppliedJobsPage() {
             Boolean(shown.length) && <AppliedJobsList items={shown} />}
           {pageState === 'ready' && !items.length && <AppliedJobsEmpty />}
           {pageState === 'ready' && Boolean(items.length) && !shown.length && (
-            <AppliedJobsNoResults onClear={clearQuery} />
+            <AppliedJobsNoResults
+              filterLabel={
+                filters.find((filterItem) => filterItem.key === filter)
+                  ?.label ?? ''
+              }
+              hasQuery={Boolean(query.trim())}
+              onClear={
+                query.trim()
+                  ? clearQuery
+                  : () => {
+                      changeFilter('all');
+                    }
+              }
+            />
           )}
         </div>
       </section>
@@ -345,39 +365,32 @@ export default function AppliedJobsPage() {
 
 function AppliedJobsList({ items }: { items: AppliedJob[] }) {
   return (
-    <>
-      <div className="content-card applied-table-card">
-        <div className="applied-table-wrap">
-          <table className="applied-table">
-            <thead>
-              <tr>
-                <th>Công việc</th>
-                <th>Công ty</th>
-                <th>Ngày nộp</th>
-                <th>Trạng thái</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => (
-                <AppliedJobRow item={item} key={item.id} />
-              ))}
-            </tbody>
-          </table>
-        </div>
+    <div className="content-card applied-table-card">
+      <div className="applied-table-wrap">
+        <table className="applied-table">
+          <thead>
+            <tr>
+              <th scope="col">Công việc</th>
+              <th scope="col">Công ty</th>
+              <th scope="col">Ngày nộp</th>
+              <th scope="col">Trạng thái</th>
+              <th scope="col">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <AppliedJobRow item={item} key={item.id} />
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="applied-card-list">
-        {items.map((item) => (
-          <AppliedJobCard item={item} key={item.id} />
-        ))}
-      </div>
-    </>
+    </div>
   );
 }
 
 function AppliedJobRow({ item }: { item: AppliedJob }) {
   const meta = applicationStatusMeta[item.trangThaiHienTai];
-  const updatedAt = item.ngayCapNhatTrangThai ?? item.ngayNop;
+  const updatedAt = item.ngayCapNhatTrangThai;
 
   return (
     <tr>
@@ -404,7 +417,6 @@ function AppliedJobRow({ item }: { item: AppliedJob }) {
           <Link href={`/cong-ty/${item.job.companyId}`}>
             {item.job.company}
           </Link>
-          {isVerifiedEmployer(item.job) && <span>Đã xác thực</span>}
         </div>
       </td>
       <td>
@@ -414,7 +426,7 @@ function AppliedJobRow({ item }: { item: AppliedJob }) {
         >
           {formatDate(item.ngayNop)}
         </time>
-        <small>Nộp {relativeDate(item.ngayNop)}</small>
+        <small>{relativeDate(item.ngayNop)}</small>
       </td>
       <td>
         <span className={`applied-status ${meta.tone}`}>{meta.label}</span>
@@ -422,40 +434,10 @@ function AppliedJobRow({ item }: { item: AppliedJob }) {
       </td>
       <td>
         <div className="applied-actions">
-          <Link href={`/viec-lam/${item.job.id}`}>Xem tin</Link>
+          <Link href={`/viec-lam/${item.job.id}`}>Xem tin tuyển dụng</Link>
         </div>
       </td>
     </tr>
-  );
-}
-
-function AppliedJobCard({ item }: { item: AppliedJob }) {
-  const meta = applicationStatusMeta[item.trangThaiHienTai];
-  const updatedAt = item.ngayCapNhatTrangThai ?? item.ngayNop;
-
-  return (
-    <article className="applied-card">
-      <div className="applied-card-head">
-        <CompanyLogo
-          company={item.job.company}
-          logoUrl={item.job.companyLogo}
-        />
-        <div>
-          <Link href={`/viec-lam/${item.job.id}`}>{item.job.title}</Link>
-          <p>{item.job.company}</p>
-        </div>
-        <span className={`applied-status ${meta.tone}`}>{meta.label}</span>
-      </div>
-      <div className="applied-card-meta">
-        <span>{joinMeta([item.job.location, salaryLabel(item.job)])}</span>
-        <span>Nộp {formatDate(item.ngayNop)}</span>
-        {updatedAt && <span>Cập nhật {relativeDate(updatedAt)}</span>}
-      </div>
-      <p className="applied-next-action">{meta.nextAction}</p>
-      <div className="applied-actions">
-        <Link href={`/viec-lam/${item.job.id}`}>Xem tin tuyển dụng</Link>
-      </div>
-    </article>
   );
 }
 
@@ -506,16 +488,32 @@ function AppliedJobsEmpty() {
   );
 }
 
-function AppliedJobsNoResults({ onClear }: { onClear: () => void }) {
+function AppliedJobsNoResults({
+  filterLabel,
+  hasQuery,
+  onClear,
+}: {
+  filterLabel: string;
+  hasQuery: boolean;
+  onClear: () => void;
+}) {
+  const title = hasQuery
+    ? 'Không tìm thấy hồ sơ phù hợp'
+    : `Không có hồ sơ ở trạng thái ${filterLabel.toLowerCase()}`;
+  const description = hasQuery
+    ? 'Hãy thử đổi trạng thái lọc hoặc nhập từ khóa khác.'
+    : 'Bạn có thể quay lại toàn bộ hồ sơ để xem các ứng tuyển đã nộp.';
+  const actionLabel = hasQuery ? 'Xóa từ khóa' : 'Xem tất cả';
+
   return (
     <div className="applied-state">
       <span>
         <Icon name="search" />
       </span>
-      <h3>Không tìm thấy hồ sơ phù hợp</h3>
-      <p>Hãy thử đổi trạng thái lọc hoặc nhập từ khóa khác.</p>
+      <h3>{title}</h3>
+      <p>{description}</p>
       <button className="applied-secondary" onClick={onClear} type="button">
-        Xóa từ khóa
+        {actionLabel}
       </button>
     </div>
   );
@@ -571,10 +569,6 @@ function compareApplications(a: AppliedJob, b: AppliedJob, sort: SortKey) {
   );
 }
 
-function applicationCountLabel(count: number) {
-  return `${count} hồ sơ ứng tuyển`;
-}
-
 function joinMeta(values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(' · ');
 }
@@ -583,7 +577,11 @@ function formatDate(value?: string | null) {
   if (!value) return 'Chưa có dữ liệu';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return 'Chưa có dữ liệu';
-  return date.toLocaleDateString('vi-VN');
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
 }
 
 function formatDateTime(value?: string | null) {
@@ -646,10 +644,6 @@ function companyInitials(company: string) {
   return initials || 'CT';
 }
 
-function isVerifiedEmployer(job: ApiJob) {
-  return job.employer?.trangThaiDuyet === 'DA_DUYET';
-}
-
 function normalizeText(value: string) {
   return value
     .toLocaleLowerCase('vi-VN')
@@ -670,6 +664,8 @@ type IconName = 'alertCircle' | 'file' | 'search' | 'x';
 
 function Icon({
   name,
+  height = 18,
+  width = 18,
   ...props
 }: { name: IconName } & SVGProps<SVGSVGElement>) {
   const paths: Record<IconName, ReactNode> = {
@@ -705,6 +701,8 @@ function Icon({
       strokeLinejoin="round"
       strokeWidth="1.8"
       viewBox="0 0 24 24"
+      width={width}
+      height={height}
       {...props}
     >
       {paths[name]}

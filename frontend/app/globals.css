@@ -15670,7 +15670,8 @@ td small {
   font-weight: 700;
 }
 
-.admin-report-actions input {
+.admin-report-actions input,
+.admin-report-actions select {
   min-height: 42px;
   padding: 8px 10px;
   border: 1px solid #d5dfec;

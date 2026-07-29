@@ -18,6 +18,7 @@ import type { AuthenticatedRequest } from '../../common/auth/jwt-auth.guard.js';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
 import { Roles } from '../../common/auth/roles.decorator.js';
 import { RolesGuard } from '../../common/auth/roles.guard.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { PortalService } from './portal.service.js';
 
 @Controller()
@@ -225,7 +226,7 @@ export class ProtectedPortalController {
   @Patch('account/password')
   changePassword(
     @Req() request: AuthenticatedRequest,
-    @Body() body: Record<string, any>,
+    @Body() body: ChangePasswordDto,
   ) {
     return this.portal.changePassword(request.user.sub, body);
   }

@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  LoaiThongBao,
   Prisma,
   TrangThaiTaiKhoan,
   VaiTroTaiKhoan,
@@ -171,15 +172,50 @@ export class AdminUsersService {
       });
     }
 
-    const updated = await this.prisma.taiKhoan.update({
-      where: { id },
-      data: { trangThaiTaiKhoan: dto.status },
-      include: {
-        hoSoNguoiLaoDong: { select: { hoTen: true } },
-        hoSoNhaTuyenDung: {
-          select: { tenDonVi: true, maSoThue: true, trangThaiDuyet: true },
-        },
+    const statusNotification = {
+      [TrangThaiTaiKhoan.HOAT_DONG]: {
+        title: 'Tài khoản đã được mở khóa',
+        content:
+          'Quản trị viên đã mở khóa tài khoản của bạn. Bạn có thể tiếp tục sử dụng các chức năng được cấp quyền.',
       },
+      [TrangThaiTaiKhoan.TAM_KHOA]: {
+        title: 'Tài khoản đã bị tạm khóa',
+        content:
+          'Quản trị viên đã tạm khóa tài khoản của bạn. Vui lòng liên hệ bộ phận hỗ trợ nếu cần thêm thông tin.',
+      },
+      [TrangThaiTaiKhoan.DA_KHOA]: {
+        title: 'Tài khoản đã bị khóa',
+        content:
+          'Quản trị viên đã khóa tài khoản của bạn. Vui lòng liên hệ bộ phận hỗ trợ để được giải quyết.',
+      },
+      [TrangThaiTaiKhoan.CHO_XAC_THUC_EMAIL]: {
+        title: 'Tài khoản cần xác thực email',
+        content:
+          'Trạng thái tài khoản đã được chuyển sang chờ xác thực email. Vui lòng hoàn tất xác thực để tiếp tục sử dụng.',
+      },
+    }[dto.status];
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const item = await tx.taiKhoan.update({
+        where: { id },
+        data: { trangThaiTaiKhoan: dto.status },
+        include: {
+          hoSoNguoiLaoDong: { select: { hoTen: true } },
+          hoSoNhaTuyenDung: {
+            select: { tenDonVi: true, maSoThue: true, trangThaiDuyet: true },
+          },
+        },
+      });
+      await tx.thongBao.create({
+        data: {
+          taiKhoanId: id,
+          tieuDe: statusNotification.title,
+          noiDung: statusNotification.content,
+          loaiThongBao: LoaiThongBao.TAI_KHOAN,
+          duongDanDich: '/',
+        },
+      });
+      return item;
     });
 
     return {

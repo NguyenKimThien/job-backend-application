@@ -48,6 +48,9 @@ type ReportRow = {
   value: number;
 };
 
+type ReportType = 'summary' | 'users' | 'jobs' | 'applications';
+type ReportFormat = 'csv' | 'json';
+
 const accountStatusLabels: Record<string, string> = {
   CHO_XAC_THUC_EMAIL: 'Chờ xác thực',
   HOAT_DONG: 'Hoạt động',
@@ -82,6 +85,8 @@ export default function StatisticsPage() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [reportType, setReportType] = useState<ReportType>('summary');
+  const [reportFormat, setReportFormat] = useState<ReportFormat>('csv');
 
   useEffect(() => {
     void loadStatistics();
@@ -113,7 +118,12 @@ export default function StatisticsPage() {
     setMessage('');
     try {
       const response = await fetch(
-        `${BACKEND_API_URL}/admin/reports/export${reportQuery(from, to)}`,
+        `${BACKEND_API_URL}/admin/reports/export${reportQuery(
+          from,
+          to,
+          reportType,
+          reportFormat,
+        )}`,
         { headers: getAuthHeaders() },
       );
       handleUnauthorizedResponse(response);
@@ -125,9 +135,9 @@ export default function StatisticsPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `bao-cao-viec-lam-${new Date()
+      link.download = `bao-cao-${reportFileNames[reportType]}-${new Date()
         .toISOString()
-        .slice(0, 10)}.csv`;
+        .slice(0, 10)}.${reportFormat}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -254,6 +264,32 @@ export default function StatisticsPage() {
                       value={to}
                     />
                   </label>
+                  <label>
+                    <span>Loại báo cáo</span>
+                    <select
+                      onChange={(event) =>
+                        setReportType(event.target.value as ReportType)
+                      }
+                      value={reportType}
+                    >
+                      <option value="summary">Báo cáo tổng hợp</option>
+                      <option value="users">Báo cáo người dùng</option>
+                      <option value="jobs">Báo cáo tin tuyển dụng</option>
+                      <option value="applications">Báo cáo ứng tuyển</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Định dạng</span>
+                    <select
+                      onChange={(event) =>
+                        setReportFormat(event.target.value as ReportFormat)
+                      }
+                      value={reportFormat}
+                    >
+                      <option value="csv">CSV</option>
+                      <option value="json">JSON</option>
+                    </select>
+                  </label>
                   <button
                     className="btn btn-outline"
                     onClick={() => void loadStatistics()}
@@ -267,7 +303,9 @@ export default function StatisticsPage() {
                     onClick={() => void exportReport()}
                     type="button"
                   >
-                    {exporting ? 'Đang xuất...' : 'Xuất báo cáo CSV'}
+                    {exporting
+                      ? 'Đang xuất...'
+                      : `Xuất báo cáo ${reportFormat.toUpperCase()}`}
                   </button>
                 </div>
               </header>
@@ -312,10 +350,24 @@ export default function StatisticsPage() {
   );
 }
 
-function reportQuery(from: string, to: string) {
+const reportFileNames: Record<ReportType, string> = {
+  summary: 'tong-hop',
+  users: 'nguoi-dung',
+  jobs: 'tin-tuyen-dung',
+  applications: 'ung-tuyen',
+};
+
+function reportQuery(
+  from: string,
+  to: string,
+  type?: ReportType,
+  format?: ReportFormat,
+) {
   const params = new URLSearchParams();
   if (from) params.set('from', from);
   if (to) params.set('to', to);
+  if (type) params.set('type', type);
+  if (format) params.set('format', format);
   const query = params.toString();
   return query ? `?${query}` : '';
 }

@@ -662,7 +662,7 @@ function JobPostActions({
 }
 
 function canEditJob(job: EmployerJob) {
-  return job.status !== 'CHO_DUYET' && (job.editCount ?? 0) < 3;
+  return job.status === 'TU_CHOI' && (job.editCount ?? 0) < 3;
 }
 
 function EditQuota({ job }: { job: EmployerJob }) {

@@ -15,6 +15,7 @@ import {
 import { ApiError } from '../../common/api-error.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 
 @Injectable()
 export class PortalService {
@@ -452,10 +453,10 @@ export class PortalService {
       include: { nhaTuyenDung: true },
     });
     if (!current) this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
-    if (current.trangThaiKiemDuyet === TrangThaiKiemDuyet.CHO_DUYET) {
+    if (current.trangThaiKiemDuyet !== TrangThaiKiemDuyet.TU_CHOI) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_EDITABLE',
-        message: 'Tin đang chờ kiểm duyệt nên chưa thể chỉnh sửa.',
+        message: 'Chỉ tin tuyển dụng bị từ chối mới được phép chỉnh sửa.',
       });
     }
     if (current.soLanChinhSua >= 3) {
@@ -859,14 +860,26 @@ export class PortalService {
     return `\uFEFF${csv}`;
   }
 
-  async changePassword(accountId: number, body: Record<string, any>) {
+  async changePassword(accountId: number, body: ChangePasswordDto) {
     const account = await this.prisma.taiKhoan.findUnique({ where: { id: accountId } });
     if (!account) this.notFound('Không tìm thấy tài khoản.');
+    if (body.newPassword !== body.confirmPassword) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'PASSWORD_CONFIRMATION_MISMATCH',
+        message: 'Mật khẩu xác nhận không khớp.',
+      });
+    }
     const matches = await bcrypt.compare(body.currentPassword, account.matKhauHash);
     if (!matches) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_CURRENT_PASSWORD',
         message: 'Mật khẩu hiện tại không chính xác.',
+      });
+    }
+    if (await bcrypt.compare(body.newPassword, account.matKhauHash)) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'PASSWORD_UNCHANGED',
+        message: 'Mật khẩu mới phải khác mật khẩu hiện tại.',
       });
     }
     const hash = await bcrypt.hash(body.newPassword, 12);
@@ -1030,10 +1043,25 @@ export class PortalService {
     }
     const from = this.numberOrNull(body.mucLuongTu);
     const to = this.numberOrNull(body.mucLuongDen);
+    if ((from !== null && from < 0) || (to !== null && to < 0)) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_SALARY',
+        message: 'Mức lương không được nhỏ hơn 0.',
+      });
+    }
     if (!body.coTheThoaThuan && from !== null && to !== null && from > to) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_SALARY',
         message: 'Mức lương từ không được lớn hơn mức lương đến.',
+      });
+    }
+    const minimumExperience = this.numberOrNull(
+      body.soNamKinhNghiemToiThieu,
+    );
+    if (minimumExperience !== null && minimumExperience < 0) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_EXPERIENCE',
+        message: 'Số năm kinh nghiệm tối thiểu không được nhỏ hơn 0.',
       });
     }
   }
@@ -1046,8 +1074,8 @@ export class PortalService {
       moTaCongViec: body.moTaCongViec,
       yeuCauUngVien: body.yeuCauUngVien,
       quyenLoi: body.quyenLoi || null,
-      mucLuongTu: this.decimal(body.mucLuongTu),
-      mucLuongDen: this.decimal(body.mucLuongDen),
+      mucLuongTu: body.coTheThoaThuan ? null : this.decimal(body.mucLuongTu),
+      mucLuongDen: body.coTheThoaThuan ? null : this.decimal(body.mucLuongDen),
       coTheThoaThuan: Boolean(body.coTheThoaThuan),
       diaDiemLamViec: body.diaDiemLamViec,
       hinhThucLamViec: body.hinhThucLamViec as HinhThucLamViec,

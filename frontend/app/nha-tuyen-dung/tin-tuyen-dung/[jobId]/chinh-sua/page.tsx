@@ -112,7 +112,22 @@ export default function EditEmployerJobPage() {
             <div className="form-message error">{message}</div>
           </div>
         )}
-        {job && remainingEdits === 0 && (
+        {job && job.status !== 'TU_CHOI' && (
+          <div className="content-card employer-edit-limit-message">
+            <strong>Tin tuyển dụng không được phép chỉnh sửa</strong>
+            <p>
+              Chỉ tin tuyển dụng ở trạng thái Từ chối mới được chỉnh sửa và
+              gửi lại để kiểm duyệt.
+            </p>
+            <Link
+              className="btn btn-primary"
+              href="/nha-tuyen-dung/tin-tuyen-dung"
+            >
+              Quay lại danh sách
+            </Link>
+          </div>
+        )}
+        {job && job.status === 'TU_CHOI' && remainingEdits === 0 && (
           <div className="content-card employer-edit-limit-message">
             <strong>Đã hết lượt chỉnh sửa tin tuyển dụng</strong>
             <p>
@@ -128,7 +143,7 @@ export default function EditEmployerJobPage() {
             </Link>
           </div>
         )}
-        {job && remainingEdits > 0 && (
+        {job && job.status === 'TU_CHOI' && remainingEdits > 0 && (
           <form className="content-card editor-form" onSubmit={save}>
             <div className="form-message info employer-edit-quota-message">
               Bạn còn <strong>{remainingEdits}/3 lượt chỉnh sửa</strong> cho

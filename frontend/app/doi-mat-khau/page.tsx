@@ -21,13 +21,39 @@ export default function ChangePasswordPage() {
     setMessage("");
     setErrors({});
     const form = new FormData(event.currentTarget);
+    const currentPassword = String(form.get("matKhauHienTai") ?? "");
+    const newPassword = String(form.get("matKhauMoi") ?? "");
+    const confirmPassword = String(form.get("xacNhanMatKhauMoi") ?? "");
+    const nextErrors: FieldErrors = {};
+
+    if (newPassword.length < 8 || newPassword.length > 64) {
+      nextErrors.matKhauMoi = ["Mật khẩu mới phải có từ 8 đến 64 ký tự."];
+    } else if (
+      !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).+$/.test(newPassword)
+    ) {
+      nextErrors.matKhauMoi = [
+        "Mật khẩu mới phải gồm chữ hoa, chữ thường, số và ký tự đặc biệt.",
+      ];
+    } else if (newPassword === currentPassword) {
+      nextErrors.matKhauMoi = ["Mật khẩu mới phải khác mật khẩu hiện tại."];
+    }
+    if (confirmPassword !== newPassword) {
+      nextErrors.xacNhanMatKhauMoi = ["Mật khẩu xác nhận không khớp."];
+    }
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
+      setMessage("Vui lòng kiểm tra lại thông tin mật khẩu.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const data = await portalFetch<{ message?: string }>("/account/password", {
         method: "PATCH",
         body: JSON.stringify({
-          currentPassword: form.get("matKhauHienTai"),
-          newPassword: form.get("matKhauMoi"),
+          currentPassword,
+          newPassword,
+          confirmPassword,
         }),
       });
       setMessage(data?.message ?? "Đổi mật khẩu thành công.");

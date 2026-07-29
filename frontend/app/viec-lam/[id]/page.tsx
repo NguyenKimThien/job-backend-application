@@ -577,6 +577,16 @@ function JobInformationCard({
     },
     { icon: 'clock', label: 'Hình thức', value: jobTypeLabel(job.type) },
     {
+      icon: 'briefcase',
+      label: 'Số lượng tuyển',
+      value: `${Math.max(1, Number(job.quantity ?? 1)).toLocaleString('vi-VN')} người`,
+    },
+    {
+      icon: 'building',
+      label: 'Trình độ yêu cầu',
+      value: job.requiredEducation?.trim() || 'Không yêu cầu',
+    },
+    {
       icon: 'calendar',
       label: 'Hạn nộp',
       value: formatDate(job.deadline),

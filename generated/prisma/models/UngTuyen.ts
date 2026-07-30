@@ -30,12 +30,14 @@ export type UngTuyenAvgAggregateOutputType = {
   id: number | null
   hoSoNguoiLaoDongId: number | null
   tinTuyenDungId: number | null
+  kichThuocCvUngTuyen: number | null
 }
 
 export type UngTuyenSumAggregateOutputType = {
   id: number | null
   hoSoNguoiLaoDongId: number | null
   tinTuyenDungId: number | null
+  kichThuocCvUngTuyen: number | null
 }
 
 export type UngTuyenMinAggregateOutputType = {
@@ -46,6 +48,11 @@ export type UngTuyenMinAggregateOutputType = {
   emailSnapshot: string | null
   soDienThoaiSnapshot: string | null
   tepCvSnapshotUrl: string | null
+  tenFileCvUngTuyen: string | null
+  duongDanCvUngTuyen: string | null
+  loaiFileCvUngTuyen: string | null
+  kichThuocCvUngTuyen: number | null
+  ngayNopCv: Date | null
   thuGioiThieu: string | null
   trangThaiHienTai: $Enums.TrangThaiUngTuyen | null
   lyDoTuChoi: string | null
@@ -61,6 +68,11 @@ export type UngTuyenMaxAggregateOutputType = {
   emailSnapshot: string | null
   soDienThoaiSnapshot: string | null
   tepCvSnapshotUrl: string | null
+  tenFileCvUngTuyen: string | null
+  duongDanCvUngTuyen: string | null
+  loaiFileCvUngTuyen: string | null
+  kichThuocCvUngTuyen: number | null
+  ngayNopCv: Date | null
   thuGioiThieu: string | null
   trangThaiHienTai: $Enums.TrangThaiUngTuyen | null
   lyDoTuChoi: string | null
@@ -76,6 +88,11 @@ export type UngTuyenCountAggregateOutputType = {
   emailSnapshot: number
   soDienThoaiSnapshot: number
   tepCvSnapshotUrl: number
+  tenFileCvUngTuyen: number
+  duongDanCvUngTuyen: number
+  loaiFileCvUngTuyen: number
+  kichThuocCvUngTuyen: number
+  ngayNopCv: number
   thuGioiThieu: number
   trangThaiHienTai: number
   lyDoTuChoi: number
@@ -89,12 +106,14 @@ export type UngTuyenAvgAggregateInputType = {
   id?: true
   hoSoNguoiLaoDongId?: true
   tinTuyenDungId?: true
+  kichThuocCvUngTuyen?: true
 }
 
 export type UngTuyenSumAggregateInputType = {
   id?: true
   hoSoNguoiLaoDongId?: true
   tinTuyenDungId?: true
+  kichThuocCvUngTuyen?: true
 }
 
 export type UngTuyenMinAggregateInputType = {
@@ -105,6 +124,11 @@ export type UngTuyenMinAggregateInputType = {
   emailSnapshot?: true
   soDienThoaiSnapshot?: true
   tepCvSnapshotUrl?: true
+  tenFileCvUngTuyen?: true
+  duongDanCvUngTuyen?: true
+  loaiFileCvUngTuyen?: true
+  kichThuocCvUngTuyen?: true
+  ngayNopCv?: true
   thuGioiThieu?: true
   trangThaiHienTai?: true
   lyDoTuChoi?: true
@@ -120,6 +144,11 @@ export type UngTuyenMaxAggregateInputType = {
   emailSnapshot?: true
   soDienThoaiSnapshot?: true
   tepCvSnapshotUrl?: true
+  tenFileCvUngTuyen?: true
+  duongDanCvUngTuyen?: true
+  loaiFileCvUngTuyen?: true
+  kichThuocCvUngTuyen?: true
+  ngayNopCv?: true
   thuGioiThieu?: true
   trangThaiHienTai?: true
   lyDoTuChoi?: true
@@ -135,6 +164,11 @@ export type UngTuyenCountAggregateInputType = {
   emailSnapshot?: true
   soDienThoaiSnapshot?: true
   tepCvSnapshotUrl?: true
+  tenFileCvUngTuyen?: true
+  duongDanCvUngTuyen?: true
+  loaiFileCvUngTuyen?: true
+  kichThuocCvUngTuyen?: true
+  ngayNopCv?: true
   thuGioiThieu?: true
   trangThaiHienTai?: true
   lyDoTuChoi?: true
@@ -237,6 +271,11 @@ export type UngTuyenGroupByOutputType = {
   emailSnapshot: string
   soDienThoaiSnapshot: string | null
   tepCvSnapshotUrl: string | null
+  tenFileCvUngTuyen: string | null
+  duongDanCvUngTuyen: string | null
+  loaiFileCvUngTuyen: string | null
+  kichThuocCvUngTuyen: number | null
+  ngayNopCv: Date | null
   thuGioiThieu: string | null
   trangThaiHienTai: $Enums.TrangThaiUngTuyen
   lyDoTuChoi: string | null
@@ -275,6 +314,11 @@ export type UngTuyenWhereInput = {
   emailSnapshot?: Prisma.StringFilter<"UngTuyen"> | string
   soDienThoaiSnapshot?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
   tepCvSnapshotUrl?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  tenFileCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  duongDanCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  loaiFileCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  kichThuocCvUngTuyen?: Prisma.IntNullableFilter<"UngTuyen"> | number | null
+  ngayNopCv?: Prisma.DateTimeNullableFilter<"UngTuyen"> | Date | string | null
   thuGioiThieu?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFilter<"UngTuyen"> | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
@@ -293,6 +337,11 @@ export type UngTuyenOrderByWithRelationInput = {
   emailSnapshot?: Prisma.SortOrder
   soDienThoaiSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   tepCvSnapshotUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  tenFileCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  duongDanCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  loaiFileCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  ngayNopCv?: Prisma.SortOrderInput | Prisma.SortOrder
   thuGioiThieu?: Prisma.SortOrderInput | Prisma.SortOrder
   trangThaiHienTai?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -315,6 +364,11 @@ export type UngTuyenWhereUniqueInput = Prisma.AtLeast<{
   emailSnapshot?: Prisma.StringFilter<"UngTuyen"> | string
   soDienThoaiSnapshot?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
   tepCvSnapshotUrl?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  tenFileCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  duongDanCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  loaiFileCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  kichThuocCvUngTuyen?: Prisma.IntNullableFilter<"UngTuyen"> | number | null
+  ngayNopCv?: Prisma.DateTimeNullableFilter<"UngTuyen"> | Date | string | null
   thuGioiThieu?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFilter<"UngTuyen"> | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
@@ -333,6 +387,11 @@ export type UngTuyenOrderByWithAggregationInput = {
   emailSnapshot?: Prisma.SortOrder
   soDienThoaiSnapshot?: Prisma.SortOrderInput | Prisma.SortOrder
   tepCvSnapshotUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  tenFileCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  duongDanCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  loaiFileCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrderInput | Prisma.SortOrder
+  ngayNopCv?: Prisma.SortOrderInput | Prisma.SortOrder
   thuGioiThieu?: Prisma.SortOrderInput | Prisma.SortOrder
   trangThaiHienTai?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -356,6 +415,11 @@ export type UngTuyenScalarWhereWithAggregatesInput = {
   emailSnapshot?: Prisma.StringWithAggregatesFilter<"UngTuyen"> | string
   soDienThoaiSnapshot?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
   tepCvSnapshotUrl?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
+  tenFileCvUngTuyen?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
+  duongDanCvUngTuyen?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
+  loaiFileCvUngTuyen?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
+  kichThuocCvUngTuyen?: Prisma.IntNullableWithAggregatesFilter<"UngTuyen"> | number | null
+  ngayNopCv?: Prisma.DateTimeNullableWithAggregatesFilter<"UngTuyen"> | Date | string | null
   thuGioiThieu?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenWithAggregatesFilter<"UngTuyen"> | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.StringNullableWithAggregatesFilter<"UngTuyen"> | string | null
@@ -368,6 +432,11 @@ export type UngTuyenCreateInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -386,6 +455,11 @@ export type UngTuyenUncheckedCreateInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -399,6 +473,11 @@ export type UngTuyenUpdateInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -417,6 +496,11 @@ export type UngTuyenUncheckedUpdateInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -433,6 +517,11 @@ export type UngTuyenCreateManyInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -445,6 +534,11 @@ export type UngTuyenUpdateManyMutationInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -460,6 +554,11 @@ export type UngTuyenUncheckedUpdateManyInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -490,6 +589,11 @@ export type UngTuyenCountOrderByAggregateInput = {
   emailSnapshot?: Prisma.SortOrder
   soDienThoaiSnapshot?: Prisma.SortOrder
   tepCvSnapshotUrl?: Prisma.SortOrder
+  tenFileCvUngTuyen?: Prisma.SortOrder
+  duongDanCvUngTuyen?: Prisma.SortOrder
+  loaiFileCvUngTuyen?: Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrder
+  ngayNopCv?: Prisma.SortOrder
   thuGioiThieu?: Prisma.SortOrder
   trangThaiHienTai?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrder
@@ -501,6 +605,7 @@ export type UngTuyenAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   hoSoNguoiLaoDongId?: Prisma.SortOrder
   tinTuyenDungId?: Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrder
 }
 
 export type UngTuyenMaxOrderByAggregateInput = {
@@ -511,6 +616,11 @@ export type UngTuyenMaxOrderByAggregateInput = {
   emailSnapshot?: Prisma.SortOrder
   soDienThoaiSnapshot?: Prisma.SortOrder
   tepCvSnapshotUrl?: Prisma.SortOrder
+  tenFileCvUngTuyen?: Prisma.SortOrder
+  duongDanCvUngTuyen?: Prisma.SortOrder
+  loaiFileCvUngTuyen?: Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrder
+  ngayNopCv?: Prisma.SortOrder
   thuGioiThieu?: Prisma.SortOrder
   trangThaiHienTai?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrder
@@ -526,6 +636,11 @@ export type UngTuyenMinOrderByAggregateInput = {
   emailSnapshot?: Prisma.SortOrder
   soDienThoaiSnapshot?: Prisma.SortOrder
   tepCvSnapshotUrl?: Prisma.SortOrder
+  tenFileCvUngTuyen?: Prisma.SortOrder
+  duongDanCvUngTuyen?: Prisma.SortOrder
+  loaiFileCvUngTuyen?: Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrder
+  ngayNopCv?: Prisma.SortOrder
   thuGioiThieu?: Prisma.SortOrder
   trangThaiHienTai?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrder
@@ -537,6 +652,7 @@ export type UngTuyenSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   hoSoNguoiLaoDongId?: Prisma.SortOrder
   tinTuyenDungId?: Prisma.SortOrder
+  kichThuocCvUngTuyen?: Prisma.SortOrder
 }
 
 export type UngTuyenScalarRelationFilter = {
@@ -651,6 +767,11 @@ export type UngTuyenCreateWithoutHoSoNguoiLaoDongInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -667,6 +788,11 @@ export type UngTuyenUncheckedCreateWithoutHoSoNguoiLaoDongInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -712,6 +838,11 @@ export type UngTuyenScalarWhereInput = {
   emailSnapshot?: Prisma.StringFilter<"UngTuyen"> | string
   soDienThoaiSnapshot?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
   tepCvSnapshotUrl?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  tenFileCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  duongDanCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  loaiFileCvUngTuyen?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
+  kichThuocCvUngTuyen?: Prisma.IntNullableFilter<"UngTuyen"> | number | null
+  ngayNopCv?: Prisma.DateTimeNullableFilter<"UngTuyen"> | Date | string | null
   thuGioiThieu?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFilter<"UngTuyen"> | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.StringNullableFilter<"UngTuyen"> | string | null
@@ -724,6 +855,11 @@ export type UngTuyenCreateWithoutTinTuyenDungInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -740,6 +876,11 @@ export type UngTuyenUncheckedCreateWithoutTinTuyenDungInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -779,6 +920,11 @@ export type UngTuyenCreateWithoutLichSuTrangThaiUngTuyensInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -796,6 +942,11 @@ export type UngTuyenUncheckedCreateWithoutLichSuTrangThaiUngTuyensInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -824,6 +975,11 @@ export type UngTuyenUpdateWithoutLichSuTrangThaiUngTuyensInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -841,6 +997,11 @@ export type UngTuyenUncheckedUpdateWithoutLichSuTrangThaiUngTuyensInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -855,6 +1016,11 @@ export type UngTuyenCreateManyHoSoNguoiLaoDongInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -867,6 +1033,11 @@ export type UngTuyenUpdateWithoutHoSoNguoiLaoDongInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -883,6 +1054,11 @@ export type UngTuyenUncheckedUpdateWithoutHoSoNguoiLaoDongInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -898,6 +1074,11 @@ export type UngTuyenUncheckedUpdateManyWithoutHoSoNguoiLaoDongInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -912,6 +1093,11 @@ export type UngTuyenCreateManyTinTuyenDungInput = {
   emailSnapshot: string
   soDienThoaiSnapshot?: string | null
   tepCvSnapshotUrl?: string | null
+  tenFileCvUngTuyen?: string | null
+  duongDanCvUngTuyen?: string | null
+  loaiFileCvUngTuyen?: string | null
+  kichThuocCvUngTuyen?: number | null
+  ngayNopCv?: Date | string | null
   thuGioiThieu?: string | null
   trangThaiHienTai?: $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: string | null
@@ -924,6 +1110,11 @@ export type UngTuyenUpdateWithoutTinTuyenDungInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -940,6 +1131,11 @@ export type UngTuyenUncheckedUpdateWithoutTinTuyenDungInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -955,6 +1151,11 @@ export type UngTuyenUncheckedUpdateManyWithoutTinTuyenDungInput = {
   emailSnapshot?: Prisma.StringFieldUpdateOperationsInput | string
   soDienThoaiSnapshot?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvSnapshotUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCvUngTuyen?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCvUngTuyen?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayNopCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   thuGioiThieu?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   trangThaiHienTai?: Prisma.EnumTrangThaiUngTuyenFieldUpdateOperationsInput | $Enums.TrangThaiUngTuyen
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1001,6 +1202,11 @@ export type UngTuyenSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   emailSnapshot?: boolean
   soDienThoaiSnapshot?: boolean
   tepCvSnapshotUrl?: boolean
+  tenFileCvUngTuyen?: boolean
+  duongDanCvUngTuyen?: boolean
+  loaiFileCvUngTuyen?: boolean
+  kichThuocCvUngTuyen?: boolean
+  ngayNopCv?: boolean
   thuGioiThieu?: boolean
   trangThaiHienTai?: boolean
   lyDoTuChoi?: boolean
@@ -1020,6 +1226,11 @@ export type UngTuyenSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   emailSnapshot?: boolean
   soDienThoaiSnapshot?: boolean
   tepCvSnapshotUrl?: boolean
+  tenFileCvUngTuyen?: boolean
+  duongDanCvUngTuyen?: boolean
+  loaiFileCvUngTuyen?: boolean
+  kichThuocCvUngTuyen?: boolean
+  ngayNopCv?: boolean
   thuGioiThieu?: boolean
   trangThaiHienTai?: boolean
   lyDoTuChoi?: boolean
@@ -1037,6 +1248,11 @@ export type UngTuyenSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   emailSnapshot?: boolean
   soDienThoaiSnapshot?: boolean
   tepCvSnapshotUrl?: boolean
+  tenFileCvUngTuyen?: boolean
+  duongDanCvUngTuyen?: boolean
+  loaiFileCvUngTuyen?: boolean
+  kichThuocCvUngTuyen?: boolean
+  ngayNopCv?: boolean
   thuGioiThieu?: boolean
   trangThaiHienTai?: boolean
   lyDoTuChoi?: boolean
@@ -1054,6 +1270,11 @@ export type UngTuyenSelectScalar = {
   emailSnapshot?: boolean
   soDienThoaiSnapshot?: boolean
   tepCvSnapshotUrl?: boolean
+  tenFileCvUngTuyen?: boolean
+  duongDanCvUngTuyen?: boolean
+  loaiFileCvUngTuyen?: boolean
+  kichThuocCvUngTuyen?: boolean
+  ngayNopCv?: boolean
   thuGioiThieu?: boolean
   trangThaiHienTai?: boolean
   lyDoTuChoi?: boolean
@@ -1061,7 +1282,7 @@ export type UngTuyenSelectScalar = {
   ngayCapNhatTrangThai?: boolean
 }
 
-export type UngTuyenOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hoSoNguoiLaoDongId" | "tinTuyenDungId" | "hoTenSnapshot" | "emailSnapshot" | "soDienThoaiSnapshot" | "tepCvSnapshotUrl" | "thuGioiThieu" | "trangThaiHienTai" | "lyDoTuChoi" | "ngayNop" | "ngayCapNhatTrangThai", ExtArgs["result"]["ungTuyen"]>
+export type UngTuyenOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "hoSoNguoiLaoDongId" | "tinTuyenDungId" | "hoTenSnapshot" | "emailSnapshot" | "soDienThoaiSnapshot" | "tepCvSnapshotUrl" | "tenFileCvUngTuyen" | "duongDanCvUngTuyen" | "loaiFileCvUngTuyen" | "kichThuocCvUngTuyen" | "ngayNopCv" | "thuGioiThieu" | "trangThaiHienTai" | "lyDoTuChoi" | "ngayNop" | "ngayCapNhatTrangThai", ExtArgs["result"]["ungTuyen"]>
 export type UngTuyenInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   hoSoNguoiLaoDong?: boolean | Prisma.HoSoNguoiLaoDongDefaultArgs<ExtArgs>
   tinTuyenDung?: boolean | Prisma.TinTuyenDungDefaultArgs<ExtArgs>
@@ -1092,6 +1313,11 @@ export type $UngTuyenPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     emailSnapshot: string
     soDienThoaiSnapshot: string | null
     tepCvSnapshotUrl: string | null
+    tenFileCvUngTuyen: string | null
+    duongDanCvUngTuyen: string | null
+    loaiFileCvUngTuyen: string | null
+    kichThuocCvUngTuyen: number | null
+    ngayNopCv: Date | null
     thuGioiThieu: string | null
     trangThaiHienTai: $Enums.TrangThaiUngTuyen
     lyDoTuChoi: string | null
@@ -1530,6 +1756,11 @@ export interface UngTuyenFieldRefs {
   readonly emailSnapshot: Prisma.FieldRef<"UngTuyen", 'String'>
   readonly soDienThoaiSnapshot: Prisma.FieldRef<"UngTuyen", 'String'>
   readonly tepCvSnapshotUrl: Prisma.FieldRef<"UngTuyen", 'String'>
+  readonly tenFileCvUngTuyen: Prisma.FieldRef<"UngTuyen", 'String'>
+  readonly duongDanCvUngTuyen: Prisma.FieldRef<"UngTuyen", 'String'>
+  readonly loaiFileCvUngTuyen: Prisma.FieldRef<"UngTuyen", 'String'>
+  readonly kichThuocCvUngTuyen: Prisma.FieldRef<"UngTuyen", 'Int'>
+  readonly ngayNopCv: Prisma.FieldRef<"UngTuyen", 'DateTime'>
   readonly thuGioiThieu: Prisma.FieldRef<"UngTuyen", 'String'>
   readonly trangThaiHienTai: Prisma.FieldRef<"UngTuyen", 'TrangThaiUngTuyen'>
   readonly lyDoTuChoi: Prisma.FieldRef<"UngTuyen", 'String'>

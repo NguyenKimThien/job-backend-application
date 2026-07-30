@@ -12,7 +12,7 @@ import {
   useState,
 } from 'react';
 import SiteShell from '@/components/SiteShell';
-import { portalFetch } from '@/lib/portal-api';
+import { portalFetch, portalFetchBlob } from '@/lib/portal-api';
 
 type SectionId =
   'personal' | 'education' | 'experience' | 'skills' | 'preferences' | 'cv';
@@ -63,11 +63,24 @@ type ApiWorkerProfile = {
   mucLuongMongMuonDen?: string | number | null;
   diaDiemMongMuon?: string | null;
   tepCvUrl?: string | null;
+  tenFileCv?: string | null;
+  loaiFileCv?: string | null;
+  kichThuocCv?: number | null;
+  ngayTaiCv?: string | null;
+  cv?: ApiCvMetadata | null;
   ngayCapNhat?: string | null;
   taiKhoan?: ApiAccount | null;
   hocVans?: ApiEducation[];
   kinhNghiemLamViecs?: ApiExperience[];
   hoSoKyNangs?: ApiSkill[];
+};
+
+type ApiCvMetadata = {
+  hasCv: boolean;
+  tenFileCv?: string | null;
+  loaiFileCv?: string | null;
+  kichThuocCv?: number | null;
+  ngayTaiCv?: string | null;
 };
 
 type Education = {
@@ -104,6 +117,10 @@ type ProfileForm = {
   mucLuongMongMuon: string;
   diaDiemMongMuon: string;
   tepCvUrl: string;
+  tenFileCv: string;
+  loaiFileCv: string;
+  kichThuocCv: number | null;
+  ngayTaiCv: string;
   email: string;
   soDienThoai: string;
   ngayCapNhat: string;
@@ -169,6 +186,10 @@ const emptyProfile: ProfileForm = {
   mucLuongMongMuon: '',
   diaDiemMongMuon: '',
   tepCvUrl: '',
+  tenFileCv: '',
+  loaiFileCv: '',
+  kichThuocCv: null,
+  ngayTaiCv: '',
   email: '',
   soDienThoai: '',
   ngayCapNhat: '',
@@ -195,6 +216,7 @@ export default function ProfilePage() {
   );
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [lastSavedAt, setLastSavedAt] = useState('');
+  const [cvBusy, setCvBusy] = useState(false);
   const firstErrorRef = useRef<HTMLInputElement | HTMLSelectElement | null>(
     null,
   );
@@ -394,8 +416,9 @@ export default function ProfilePage() {
     }));
   }
 
-  function handleCvChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handleCvChange(event: ChangeEvent<HTMLInputElement>) {
     const selectedFile = event.target.files?.[0];
+    event.target.value = '';
     if (!selectedFile) return;
 
     const validationError = validateCvFile(selectedFile);
@@ -404,17 +427,102 @@ export default function ProfilePage() {
       return;
     }
 
-    updateField('tepCvUrl', selectedFile.name);
-    setErrors((current) => {
-      const next = { ...current };
-      delete next.cv;
-      return next;
-    });
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    setCvBusy(true);
+    setMessage('Đang tải CV lên...');
+
+    try {
+      const metadata = await portalFetch<ApiCvMetadata>('/worker/profile/cv', {
+        method: 'POST',
+        body: formData,
+      });
+      applyCvMetadata(metadata);
+      setErrors((current) => {
+        const next = { ...current };
+        delete next.cv;
+        return next;
+      });
+      setMessage('CV cá nhân đã được cập nhật.');
+    } catch (reason) {
+      setErrors((current) => ({
+        ...current,
+        cv:
+          reason instanceof Error
+            ? reason.message
+            : 'Không thể tải CV lên. Vui lòng thử lại.',
+      }));
+      setMessage('Không thể tải CV lên. Vui lòng thử lại.');
+    } finally {
+      setCvBusy(false);
+    }
   }
 
-  function removeCv() {
+  async function removeCv() {
     if (!window.confirm('Xóa CV đang đính kèm khỏi hồ sơ?')) return;
-    updateField('tepCvUrl', '');
+    setCvBusy(true);
+    setMessage('Đang xóa CV...');
+
+    try {
+      const metadata = await portalFetch<ApiCvMetadata>('/worker/profile/cv', {
+        method: 'DELETE',
+      });
+      applyCvMetadata(metadata);
+      setMessage('CV cá nhân đã được xóa.');
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể xóa CV. Vui lòng thử lại.',
+      );
+    } finally {
+      setCvBusy(false);
+    }
+  }
+
+  async function viewCv() {
+    if (cvBusy) return;
+    setCvBusy(true);
+    setMessage('');
+    try {
+      const { blob } = await portalFetchBlob('/worker/profile/cv/view');
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể mở CV. Vui lòng thử lại.',
+      );
+    } finally {
+      setCvBusy(false);
+    }
+  }
+
+  async function downloadCv() {
+    if (cvBusy) return;
+    setCvBusy(true);
+    setMessage('');
+    try {
+      const { blob, fileName: downloadedName } = await portalFetchBlob(
+        '/worker/profile/cv/download',
+      );
+      downloadBlob(blob, downloadedName || form.tenFileCv || 'CV.pdf');
+    } catch (reason) {
+      setMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể tải CV. Vui lòng thử lại.',
+      );
+    } finally {
+      setCvBusy(false);
+    }
+  }
+
+  function applyCvMetadata(metadata: ApiCvMetadata) {
+    setForm((current) => applyCvToForm(current, metadata));
+    setSavedForm((current) => applyCvToForm(current, metadata));
   }
 
   function startEdit(section: SectionId) {
@@ -687,11 +795,14 @@ export default function ProfilePage() {
             description="PDF hoặc DOCX, tối đa 5 MB."
           >
             <CvSection
+              busy={cvBusy}
               editing={editingSection === 'cv'}
               error={errors.cv}
               form={form}
               onChange={handleCvChange}
+              onDownload={downloadCv}
               onRemove={removeCv}
+              onView={viewCv}
             />
           </ProfileSection>
         </div>
@@ -1436,47 +1547,58 @@ function PreferenceEditor({
 }
 
 function CvSection({
+  busy,
   editing,
   error,
   form,
   onChange,
+  onDownload,
   onRemove,
+  onView,
 }: {
+  busy: boolean;
   editing: boolean;
   error?: string;
   form: ProfileForm;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onDownload: () => void;
   onRemove: () => void;
+  onView: () => void;
 }) {
-  if (form.tepCvUrl) {
-    const downloadable = isDownloadableUrl(form.tepCvUrl);
-
+  if (form.tenFileCv || form.tepCvUrl) {
+    const name = form.tenFileCv || form.tepCvUrl;
     return (
       <div className="cv-file-card">
-        <span>{fileExtension(form.tepCvUrl)}</span>
+        <span>{fileExtension(name)}</span>
         <div>
-          <strong>{fileName(form.tepCvUrl)}</strong>
-          {form.ngayCapNhat && (
-            <small>Cập nhật {formatDate(form.ngayCapNhat)}</small>
+          <strong>{fileName(name)}</strong>
+          {(form.kichThuocCv || form.ngayTaiCv) && (
+            <small>
+              {[formatFileSize(form.kichThuocCv), form.ngayTaiCv ? `Cập nhật ${formatDate(form.ngayTaiCv)}` : '']
+                .filter(Boolean)
+                .join(' · ')}
+            </small>
           )}
         </div>
         <div>
-          {downloadable && (
-            <a href={form.tepCvUrl} target="_blank" rel="noreferrer">
-              Tải xuống
-            </a>
-          )}
+          <button disabled={busy} onClick={onView} type="button">
+            Xem CV
+          </button>
+          <button disabled={busy} onClick={onDownload} type="button">
+            Tải xuống
+          </button>
           {editing && (
             <>
               <label>
-                Thay thế
+                {busy ? 'Đang xử lý...' : 'Thay thế'}
                 <input
+                  disabled={busy}
                   type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+                  accept=".pdf,application/pdf"
                   onChange={onChange}
                 />
               </label>
-              <button onClick={onRemove} type="button">
+              <button disabled={busy} onClick={onRemove} type="button">
                 Xóa
               </button>
             </>
@@ -1502,12 +1624,13 @@ function CvSection({
       <input
         id="profile-cv-upload"
         type="file"
-        accept=".pdf,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword"
+        accept=".pdf,application/pdf"
+        disabled={busy}
         onChange={onChange}
       />
       <Icon name="upload" />
-      <strong>Kéo thả CV hoặc chọn tệp</strong>
-      <small>PDF hoặc DOCX, tối đa 5 MB</small>
+      <strong>{busy ? 'Đang tải CV lên...' : 'Kéo thả CV hoặc chọn tệp'}</strong>
+      <small>PDF, tối đa 5 MB</small>
       <FieldError id="profile-cv-error" value={error} />
     </label>
   );
@@ -1677,7 +1800,11 @@ function mapProfile(profile: ApiWorkerProfile): ProfileForm {
     gioiThieuBanThan: profile.gioiThieuBanThan ?? '',
     mucLuongMongMuon: salary ? String(Number(salary)) : '',
     diaDiemMongMuon: profile.diaDiemMongMuon ?? '',
-    tepCvUrl: profile.tepCvUrl ?? '',
+    tepCvUrl: profile.cv?.tenFileCv ?? profile.tenFileCv ?? profile.tepCvUrl ?? '',
+    tenFileCv: profile.cv?.tenFileCv ?? profile.tenFileCv ?? '',
+    loaiFileCv: profile.cv?.loaiFileCv ?? profile.loaiFileCv ?? '',
+    kichThuocCv: profile.cv?.kichThuocCv ?? profile.kichThuocCv ?? null,
+    ngayTaiCv: profile.cv?.ngayTaiCv ?? profile.ngayTaiCv ?? '',
     email: profile.taiKhoan?.email ?? '',
     soDienThoai: profile.taiKhoan?.soDienThoai ?? '',
     ngayCapNhat: profile.ngayCapNhat ?? '',
@@ -1725,7 +1852,6 @@ function buildPayload(form: ProfileForm) {
       ? Number(form.mucLuongMongMuon)
       : null,
     diaDiemMongMuon: form.diaDiemMongMuon.trim() || null,
-    tepCvUrl: form.tepCvUrl || null,
     kinhNghiemLamViecs: form.experiences.map((item) => ({
       tenDonVi: item.tenDonVi.trim(),
       viTriCongViec: item.viTriCongViec.trim(),
@@ -1745,6 +1871,28 @@ function buildPayload(form: ProfileForm) {
     })),
     skills: form.skills,
   };
+}
+
+function applyCvToForm(form: ProfileForm, metadata: ApiCvMetadata): ProfileForm {
+  return {
+    ...form,
+    tepCvUrl: metadata.hasCv ? metadata.tenFileCv ?? '' : '',
+    tenFileCv: metadata.hasCv ? metadata.tenFileCv ?? '' : '',
+    loaiFileCv: metadata.hasCv ? metadata.loaiFileCv ?? '' : '',
+    kichThuocCv: metadata.hasCv ? metadata.kichThuocCv ?? null : null,
+    ngayTaiCv: metadata.hasCv ? metadata.ngayTaiCv ?? '' : '',
+  };
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function serializeProfile(form: ProfileForm) {
@@ -1993,19 +2141,14 @@ function formatCurrency(value: string) {
 }
 
 function validateCvFile(file: File) {
-  const allowedTypes = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ];
-  const allowedExtensions = ['.pdf', '.doc', '.docx'];
   const lowerName = file.name.toLowerCase();
-  const validExtension = allowedExtensions.some((extension) =>
-    lowerName.endsWith(extension),
-  );
 
-  if (!allowedTypes.includes(file.type) && !validExtension) {
-    return 'File CV phải có định dạng PDF hoặc DOCX.';
+  if (!file.size) {
+    return 'Vui lòng chọn file CV.';
+  }
+
+  if (file.type !== 'application/pdf' || !lowerName.endsWith('.pdf')) {
+    return 'CV chỉ được phép có định dạng PDF.';
   }
 
   if (file.size > 5 * 1024 * 1024) {
@@ -2013,6 +2156,12 @@ function validateCvFile(file: File) {
   }
 
   return '';
+}
+
+function formatFileSize(size?: number | null) {
+  if (!size) return '';
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function fileName(value: string) {

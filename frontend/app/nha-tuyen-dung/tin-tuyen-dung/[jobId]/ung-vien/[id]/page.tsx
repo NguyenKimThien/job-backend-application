@@ -2,7 +2,7 @@
 
 import SiteShell from '@/components/SiteShell';
 import { BACKEND_API_URL } from '@/lib/backend-api';
-import { portalFetch } from '@/lib/portal-api';
+import { portalFetch, portalFetchBlob } from '@/lib/portal-api';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
@@ -44,6 +44,10 @@ type ApplicantDetail = {
   emailSnapshot: string;
   soDienThoaiSnapshot?: string | null;
   tepCvSnapshotUrl?: string | null;
+  tenFileCvUngTuyen?: string | null;
+  kichThuocCvUngTuyen?: number | null;
+  ngayNopCv?: string | null;
+  hasCv?: boolean;
   thuGioiThieu?: string | null;
   trangThaiHienTai: ApplicationStatus;
   lyDoTuChoi?: string | null;
@@ -111,6 +115,7 @@ export default function ApplicantDetailPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<ApplicationStatus | null>(null);
+  const [cvBusy, setCvBusy] = useState<'view' | 'download' | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -188,6 +193,48 @@ export default function ApplicantDetailPage() {
     }
   }
 
+  async function viewCv() {
+    if (cvBusy) return;
+    setCvBusy('view');
+    setError('');
+    try {
+      const { blob } = await portalFetchBlob(
+        `/employer/jobs/${jobId}/applicants/${id}/cv/view`,
+      );
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể mở CV. Vui lòng thử lại.',
+      );
+    } finally {
+      setCvBusy(null);
+    }
+  }
+
+  async function downloadCv() {
+    if (cvBusy) return;
+    setCvBusy('download');
+    setError('');
+    try {
+      const { blob, fileName } = await portalFetchBlob(
+        `/employer/jobs/${jobId}/applicants/${id}/cv/download`,
+      );
+      downloadBlob(blob, fileName || item?.tenFileCvUngTuyen || 'CV_Ung_Vien.pdf');
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể tải CV. Vui lòng thử lại.',
+      );
+    } finally {
+      setCvBusy(null);
+    }
+  }
+
   if (loading) {
     return (
       <SiteShell role="employer">
@@ -218,7 +265,7 @@ export default function ApplicantDetailPage() {
   const profile = item.hoSoNguoiLaoDong;
   const displayName = item.hoTenSnapshot || profile.hoTen;
   const currentStatus = statusMeta[item.trangThaiHienTai];
-  const cvUrl = documentUrl(item.tepCvSnapshotUrl || profile.tepCvUrl);
+  const hasCv = Boolean(item.hasCv || item.tenFileCvUngTuyen);
   const avatarUrl = documentUrl(profile.anhDaiDienUrl);
 
   return (
@@ -265,17 +312,45 @@ export default function ApplicantDetailPage() {
                   <span>Nộp hồ sơ {formatDateTime(item.ngayNop)}</span>
                 </div>
               </div>
-              {cvUrl && (
-                <a
-                  className="btn btn-primary applicant-cv-button"
-                  href={cvUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Xem CV đính kèm
-                </a>
+              {hasCv && (
+                <div className="applicant-cv-actions">
+                  <button
+                    className="btn btn-primary applicant-cv-button"
+                    disabled={Boolean(cvBusy)}
+                    onClick={viewCv}
+                    type="button"
+                  >
+                    {cvBusy === 'view' ? 'Đang mở...' : 'Xem CV'}
+                  </button>
+                  <button
+                    className="btn btn-light applicant-cv-button"
+                    disabled={Boolean(cvBusy)}
+                    onClick={downloadCv}
+                    type="button"
+                  >
+                    {cvBusy === 'download' ? 'Đang tải...' : 'Tải CV'}
+                  </button>
+                </div>
               )}
             </header>
+
+            <ProfileSection title="CV ứng tuyển">
+              {hasCv ? (
+                <dl className="applicant-info-grid">
+                  <Info label="Tên CV" value={item.tenFileCvUngTuyen} />
+                  <Info
+                    label="Dung lượng"
+                    value={formatFileSize(item.kichThuocCvUngTuyen)}
+                  />
+                  <Info
+                    label="Ngày nộp CV"
+                    value={formatDateTime(item.ngayNopCv)}
+                  />
+                </dl>
+              ) : (
+                <EmptyText text="Ứng viên chưa đính kèm CV." />
+              )}
+            </ProfileSection>
 
             <ProfileSection title="Giới thiệu bản thân">
               <p>{profile.gioiThieuBanThan || 'Ứng viên chưa cập nhật phần giới thiệu.'}</p>
@@ -557,6 +632,23 @@ function formatDateTime(value?: string | null) {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function formatFileSize(size?: number | null) {
+  if (!size) return 'Chưa cập nhật';
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function downloadBlob(blob: Blob, fileName: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function formatMonth(value?: string | null) {

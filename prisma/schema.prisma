@@ -147,6 +147,11 @@ model HoSoNguoiLaoDong {
   mucLuongMongMuonDen Decimal?            @map("muc_luong_mong_muon_den") @db.Decimal(15, 2)
   diaDiemMongMuon     String?             @map("dia_diem_mong_muon") @db.Text
   tepCvUrl            String?             @map("tep_cv_url") @db.Text
+  tenFileCv           String?             @map("ten_file_cv") @db.VarChar(255)
+  duongDanCv          String?             @map("duong_dan_cv") @db.VarChar(500)
+  loaiFileCv          String?             @map("loai_file_cv") @db.VarChar(100)
+  kichThuocCv         Int?                @map("kich_thuoc_cv")
+  ngayTaiCv           DateTime?           @map("ngay_tai_cv") @db.Timestamptz(6)
   trangThaiTimViec    TrangThaiTimViec    @default(DANG_TIM_VIEC) @map("trang_thai_tim_viec")
   ngayTao             DateTime            @default(now()) @map("ngay_tao") @db.Timestamptz(6)
   ngayCapNhat         DateTime            @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
@@ -333,6 +338,11 @@ model UngTuyen {
   emailSnapshot            String                    @map("email_snapshot") @db.VarChar(255)
   soDienThoaiSnapshot      String?                   @map("so_dien_thoai_snapshot") @db.VarChar(20)
   tepCvSnapshotUrl         String?                   @map("tep_cv_snapshot_url") @db.Text
+  tenFileCvUngTuyen        String?                   @map("ten_file_cv_ung_tuyen") @db.VarChar(255)
+  duongDanCvUngTuyen       String?                   @map("duong_dan_cv_ung_tuyen") @db.VarChar(500)
+  loaiFileCvUngTuyen       String?                   @map("loai_file_cv_ung_tuyen") @db.VarChar(100)
+  kichThuocCvUngTuyen      Int?                      @map("kich_thuoc_cv_ung_tuyen")
+  ngayNopCv                DateTime?                 @map("ngay_nop_cv") @db.Timestamptz(6)
   thuGioiThieu             String?                   @map("thu_gioi_thieu") @db.Text
   trangThaiHienTai         TrangThaiUngTuyen         @default(DA_NOP) @map("trang_thai_hien_tai")
   lyDoTuChoi               String?                   @map("ly_do_tu_choi") @db.Text

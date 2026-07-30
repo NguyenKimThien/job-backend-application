@@ -31,6 +31,7 @@ export type HoSoNguoiLaoDongAvgAggregateOutputType = {
   taiKhoanId: number | null
   mucLuongMongMuonTu: runtime.Decimal | null
   mucLuongMongMuonDen: runtime.Decimal | null
+  kichThuocCv: number | null
 }
 
 export type HoSoNguoiLaoDongSumAggregateOutputType = {
@@ -38,6 +39,7 @@ export type HoSoNguoiLaoDongSumAggregateOutputType = {
   taiKhoanId: number | null
   mucLuongMongMuonTu: runtime.Decimal | null
   mucLuongMongMuonDen: runtime.Decimal | null
+  kichThuocCv: number | null
 }
 
 export type HoSoNguoiLaoDongMinAggregateOutputType = {
@@ -53,6 +55,11 @@ export type HoSoNguoiLaoDongMinAggregateOutputType = {
   mucLuongMongMuonDen: runtime.Decimal | null
   diaDiemMongMuon: string | null
   tepCvUrl: string | null
+  tenFileCv: string | null
+  duongDanCv: string | null
+  loaiFileCv: string | null
+  kichThuocCv: number | null
+  ngayTaiCv: Date | null
   trangThaiTimViec: $Enums.TrangThaiTimViec | null
   ngayTao: Date | null
   ngayCapNhat: Date | null
@@ -71,6 +78,11 @@ export type HoSoNguoiLaoDongMaxAggregateOutputType = {
   mucLuongMongMuonDen: runtime.Decimal | null
   diaDiemMongMuon: string | null
   tepCvUrl: string | null
+  tenFileCv: string | null
+  duongDanCv: string | null
+  loaiFileCv: string | null
+  kichThuocCv: number | null
+  ngayTaiCv: Date | null
   trangThaiTimViec: $Enums.TrangThaiTimViec | null
   ngayTao: Date | null
   ngayCapNhat: Date | null
@@ -89,6 +101,11 @@ export type HoSoNguoiLaoDongCountAggregateOutputType = {
   mucLuongMongMuonDen: number
   diaDiemMongMuon: number
   tepCvUrl: number
+  tenFileCv: number
+  duongDanCv: number
+  loaiFileCv: number
+  kichThuocCv: number
+  ngayTaiCv: number
   trangThaiTimViec: number
   ngayTao: number
   ngayCapNhat: number
@@ -101,6 +118,7 @@ export type HoSoNguoiLaoDongAvgAggregateInputType = {
   taiKhoanId?: true
   mucLuongMongMuonTu?: true
   mucLuongMongMuonDen?: true
+  kichThuocCv?: true
 }
 
 export type HoSoNguoiLaoDongSumAggregateInputType = {
@@ -108,6 +126,7 @@ export type HoSoNguoiLaoDongSumAggregateInputType = {
   taiKhoanId?: true
   mucLuongMongMuonTu?: true
   mucLuongMongMuonDen?: true
+  kichThuocCv?: true
 }
 
 export type HoSoNguoiLaoDongMinAggregateInputType = {
@@ -123,6 +142,11 @@ export type HoSoNguoiLaoDongMinAggregateInputType = {
   mucLuongMongMuonDen?: true
   diaDiemMongMuon?: true
   tepCvUrl?: true
+  tenFileCv?: true
+  duongDanCv?: true
+  loaiFileCv?: true
+  kichThuocCv?: true
+  ngayTaiCv?: true
   trangThaiTimViec?: true
   ngayTao?: true
   ngayCapNhat?: true
@@ -141,6 +165,11 @@ export type HoSoNguoiLaoDongMaxAggregateInputType = {
   mucLuongMongMuonDen?: true
   diaDiemMongMuon?: true
   tepCvUrl?: true
+  tenFileCv?: true
+  duongDanCv?: true
+  loaiFileCv?: true
+  kichThuocCv?: true
+  ngayTaiCv?: true
   trangThaiTimViec?: true
   ngayTao?: true
   ngayCapNhat?: true
@@ -159,6 +188,11 @@ export type HoSoNguoiLaoDongCountAggregateInputType = {
   mucLuongMongMuonDen?: true
   diaDiemMongMuon?: true
   tepCvUrl?: true
+  tenFileCv?: true
+  duongDanCv?: true
+  loaiFileCv?: true
+  kichThuocCv?: true
+  ngayTaiCv?: true
   trangThaiTimViec?: true
   ngayTao?: true
   ngayCapNhat?: true
@@ -264,6 +298,11 @@ export type HoSoNguoiLaoDongGroupByOutputType = {
   mucLuongMongMuonDen: runtime.Decimal | null
   diaDiemMongMuon: string | null
   tepCvUrl: string | null
+  tenFileCv: string | null
+  duongDanCv: string | null
+  loaiFileCv: string | null
+  kichThuocCv: number | null
+  ngayTaiCv: Date | null
   trangThaiTimViec: $Enums.TrangThaiTimViec
   ngayTao: Date
   ngayCapNhat: Date
@@ -305,6 +344,11 @@ export type HoSoNguoiLaoDongWhereInput = {
   mucLuongMongMuonDen?: Prisma.DecimalNullableFilter<"HoSoNguoiLaoDong"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
   tepCvUrl?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  tenFileCv?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  duongDanCv?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  loaiFileCv?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  kichThuocCv?: Prisma.IntNullableFilter<"HoSoNguoiLaoDong"> | number | null
+  ngayTaiCv?: Prisma.DateTimeNullableFilter<"HoSoNguoiLaoDong"> | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFilter<"HoSoNguoiLaoDong"> | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFilter<"HoSoNguoiLaoDong"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"HoSoNguoiLaoDong"> | Date | string
@@ -329,6 +373,11 @@ export type HoSoNguoiLaoDongOrderByWithRelationInput = {
   mucLuongMongMuonDen?: Prisma.SortOrderInput | Prisma.SortOrder
   diaDiemMongMuon?: Prisma.SortOrderInput | Prisma.SortOrder
   tepCvUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  tenFileCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  duongDanCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  loaiFileCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  ngayTaiCv?: Prisma.SortOrderInput | Prisma.SortOrder
   trangThaiTimViec?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
@@ -356,6 +405,11 @@ export type HoSoNguoiLaoDongWhereUniqueInput = Prisma.AtLeast<{
   mucLuongMongMuonDen?: Prisma.DecimalNullableFilter<"HoSoNguoiLaoDong"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
   tepCvUrl?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  tenFileCv?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  duongDanCv?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  loaiFileCv?: Prisma.StringNullableFilter<"HoSoNguoiLaoDong"> | string | null
+  kichThuocCv?: Prisma.IntNullableFilter<"HoSoNguoiLaoDong"> | number | null
+  ngayTaiCv?: Prisma.DateTimeNullableFilter<"HoSoNguoiLaoDong"> | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFilter<"HoSoNguoiLaoDong"> | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFilter<"HoSoNguoiLaoDong"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"HoSoNguoiLaoDong"> | Date | string
@@ -380,6 +434,11 @@ export type HoSoNguoiLaoDongOrderByWithAggregationInput = {
   mucLuongMongMuonDen?: Prisma.SortOrderInput | Prisma.SortOrder
   diaDiemMongMuon?: Prisma.SortOrderInput | Prisma.SortOrder
   tepCvUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  tenFileCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  duongDanCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  loaiFileCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrderInput | Prisma.SortOrder
+  ngayTaiCv?: Prisma.SortOrderInput | Prisma.SortOrder
   trangThaiTimViec?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
@@ -406,6 +465,11 @@ export type HoSoNguoiLaoDongScalarWhereWithAggregatesInput = {
   mucLuongMongMuonDen?: Prisma.DecimalNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.StringNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | string | null
   tepCvUrl?: Prisma.StringNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | string | null
+  tenFileCv?: Prisma.StringNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | string | null
+  duongDanCv?: Prisma.StringNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | string | null
+  loaiFileCv?: Prisma.StringNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | string | null
+  kichThuocCv?: Prisma.IntNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | number | null
+  ngayTaiCv?: Prisma.DateTimeNullableWithAggregatesFilter<"HoSoNguoiLaoDong"> | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecWithAggregatesFilter<"HoSoNguoiLaoDong"> | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeWithAggregatesFilter<"HoSoNguoiLaoDong"> | Date | string
   ngayCapNhat?: Prisma.DateTimeWithAggregatesFilter<"HoSoNguoiLaoDong"> | Date | string
@@ -422,6 +486,11 @@ export type HoSoNguoiLaoDongCreateInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -446,6 +515,11 @@ export type HoSoNguoiLaoDongUncheckedCreateInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -467,6 +541,11 @@ export type HoSoNguoiLaoDongUpdateInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -491,6 +570,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -514,6 +598,11 @@ export type HoSoNguoiLaoDongCreateManyInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -530,6 +619,11 @@ export type HoSoNguoiLaoDongUpdateManyMutationInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -548,6 +642,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateManyInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -571,6 +670,11 @@ export type HoSoNguoiLaoDongCountOrderByAggregateInput = {
   mucLuongMongMuonDen?: Prisma.SortOrder
   diaDiemMongMuon?: Prisma.SortOrder
   tepCvUrl?: Prisma.SortOrder
+  tenFileCv?: Prisma.SortOrder
+  duongDanCv?: Prisma.SortOrder
+  loaiFileCv?: Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrder
+  ngayTaiCv?: Prisma.SortOrder
   trangThaiTimViec?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
@@ -581,6 +685,7 @@ export type HoSoNguoiLaoDongAvgOrderByAggregateInput = {
   taiKhoanId?: Prisma.SortOrder
   mucLuongMongMuonTu?: Prisma.SortOrder
   mucLuongMongMuonDen?: Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrder
 }
 
 export type HoSoNguoiLaoDongMaxOrderByAggregateInput = {
@@ -596,6 +701,11 @@ export type HoSoNguoiLaoDongMaxOrderByAggregateInput = {
   mucLuongMongMuonDen?: Prisma.SortOrder
   diaDiemMongMuon?: Prisma.SortOrder
   tepCvUrl?: Prisma.SortOrder
+  tenFileCv?: Prisma.SortOrder
+  duongDanCv?: Prisma.SortOrder
+  loaiFileCv?: Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrder
+  ngayTaiCv?: Prisma.SortOrder
   trangThaiTimViec?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
@@ -614,6 +724,11 @@ export type HoSoNguoiLaoDongMinOrderByAggregateInput = {
   mucLuongMongMuonDen?: Prisma.SortOrder
   diaDiemMongMuon?: Prisma.SortOrder
   tepCvUrl?: Prisma.SortOrder
+  tenFileCv?: Prisma.SortOrder
+  duongDanCv?: Prisma.SortOrder
+  loaiFileCv?: Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrder
+  ngayTaiCv?: Prisma.SortOrder
   trangThaiTimViec?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
@@ -624,6 +739,7 @@ export type HoSoNguoiLaoDongSumOrderByAggregateInput = {
   taiKhoanId?: Prisma.SortOrder
   mucLuongMongMuonTu?: Prisma.SortOrder
   mucLuongMongMuonDen?: Prisma.SortOrder
+  kichThuocCv?: Prisma.SortOrder
 }
 
 export type HoSoNguoiLaoDongScalarRelationFilter = {
@@ -673,6 +789,14 @@ export type NullableDecimalFieldUpdateOperationsInput = {
   decrement?: runtime.Decimal | runtime.DecimalJsLike | number | string
   multiply?: runtime.Decimal | runtime.DecimalJsLike | number | string
   divide?: runtime.Decimal | runtime.DecimalJsLike | number | string
+}
+
+export type NullableIntFieldUpdateOperationsInput = {
+  set?: number | null
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type EnumTrangThaiTimViecFieldUpdateOperationsInput = {
@@ -760,6 +884,11 @@ export type HoSoNguoiLaoDongCreateWithoutTaiKhoanInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -782,6 +911,11 @@ export type HoSoNguoiLaoDongUncheckedCreateWithoutTaiKhoanInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -819,6 +953,11 @@ export type HoSoNguoiLaoDongUpdateWithoutTaiKhoanInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -841,6 +980,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateWithoutTaiKhoanInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -862,6 +1006,11 @@ export type HoSoNguoiLaoDongCreateWithoutHocVansInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -885,6 +1034,11 @@ export type HoSoNguoiLaoDongUncheckedCreateWithoutHocVansInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -921,6 +1075,11 @@ export type HoSoNguoiLaoDongUpdateWithoutHocVansInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -944,6 +1103,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateWithoutHocVansInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -964,6 +1128,11 @@ export type HoSoNguoiLaoDongCreateWithoutKinhNghiemLamViecsInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -987,6 +1156,11 @@ export type HoSoNguoiLaoDongUncheckedCreateWithoutKinhNghiemLamViecsInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1023,6 +1197,11 @@ export type HoSoNguoiLaoDongUpdateWithoutKinhNghiemLamViecsInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1046,6 +1225,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateWithoutKinhNghiemLamViecsInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1066,6 +1250,11 @@ export type HoSoNguoiLaoDongCreateWithoutHoSoKyNangsInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1089,6 +1278,11 @@ export type HoSoNguoiLaoDongUncheckedCreateWithoutHoSoKyNangsInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1125,6 +1319,11 @@ export type HoSoNguoiLaoDongUpdateWithoutHoSoKyNangsInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1148,6 +1347,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateWithoutHoSoKyNangsInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1168,6 +1372,11 @@ export type HoSoNguoiLaoDongCreateWithoutUngTuyensInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1191,6 +1400,11 @@ export type HoSoNguoiLaoDongUncheckedCreateWithoutUngTuyensInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1227,6 +1441,11 @@ export type HoSoNguoiLaoDongUpdateWithoutUngTuyensInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1250,6 +1469,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateWithoutUngTuyensInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1270,6 +1494,11 @@ export type HoSoNguoiLaoDongCreateWithoutTinTuyenDungDaLuuInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1293,6 +1522,11 @@ export type HoSoNguoiLaoDongUncheckedCreateWithoutTinTuyenDungDaLuuInput = {
   mucLuongMongMuonDen?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: string | null
   tepCvUrl?: string | null
+  tenFileCv?: string | null
+  duongDanCv?: string | null
+  loaiFileCv?: string | null
+  kichThuocCv?: number | null
+  ngayTaiCv?: Date | string | null
   trangThaiTimViec?: $Enums.TrangThaiTimViec
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
@@ -1329,6 +1563,11 @@ export type HoSoNguoiLaoDongUpdateWithoutTinTuyenDungDaLuuInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1352,6 +1591,11 @@ export type HoSoNguoiLaoDongUncheckedUpdateWithoutTinTuyenDungDaLuuInput = {
   mucLuongMongMuonDen?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   diaDiemMongMuon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   tepCvUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tenFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  duongDanCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  loaiFileCv?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  kichThuocCv?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  ngayTaiCv?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   trangThaiTimViec?: Prisma.EnumTrangThaiTimViecFieldUpdateOperationsInput | $Enums.TrangThaiTimViec
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1441,6 +1685,11 @@ export type HoSoNguoiLaoDongSelect<ExtArgs extends runtime.Types.Extensions.Inte
   mucLuongMongMuonDen?: boolean
   diaDiemMongMuon?: boolean
   tepCvUrl?: boolean
+  tenFileCv?: boolean
+  duongDanCv?: boolean
+  loaiFileCv?: boolean
+  kichThuocCv?: boolean
+  ngayTaiCv?: boolean
   trangThaiTimViec?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
@@ -1466,6 +1715,11 @@ export type HoSoNguoiLaoDongSelectCreateManyAndReturn<ExtArgs extends runtime.Ty
   mucLuongMongMuonDen?: boolean
   diaDiemMongMuon?: boolean
   tepCvUrl?: boolean
+  tenFileCv?: boolean
+  duongDanCv?: boolean
+  loaiFileCv?: boolean
+  kichThuocCv?: boolean
+  ngayTaiCv?: boolean
   trangThaiTimViec?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
@@ -1485,6 +1739,11 @@ export type HoSoNguoiLaoDongSelectUpdateManyAndReturn<ExtArgs extends runtime.Ty
   mucLuongMongMuonDen?: boolean
   diaDiemMongMuon?: boolean
   tepCvUrl?: boolean
+  tenFileCv?: boolean
+  duongDanCv?: boolean
+  loaiFileCv?: boolean
+  kichThuocCv?: boolean
+  ngayTaiCv?: boolean
   trangThaiTimViec?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
@@ -1504,12 +1763,17 @@ export type HoSoNguoiLaoDongSelectScalar = {
   mucLuongMongMuonDen?: boolean
   diaDiemMongMuon?: boolean
   tepCvUrl?: boolean
+  tenFileCv?: boolean
+  duongDanCv?: boolean
+  loaiFileCv?: boolean
+  kichThuocCv?: boolean
+  ngayTaiCv?: boolean
   trangThaiTimViec?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
 }
 
-export type HoSoNguoiLaoDongOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taiKhoanId" | "hoTen" | "ngaySinh" | "gioiTinh" | "diaChi" | "anhDaiDienUrl" | "gioiThieuBanThan" | "mucLuongMongMuonTu" | "mucLuongMongMuonDen" | "diaDiemMongMuon" | "tepCvUrl" | "trangThaiTimViec" | "ngayTao" | "ngayCapNhat", ExtArgs["result"]["hoSoNguoiLaoDong"]>
+export type HoSoNguoiLaoDongOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "taiKhoanId" | "hoTen" | "ngaySinh" | "gioiTinh" | "diaChi" | "anhDaiDienUrl" | "gioiThieuBanThan" | "mucLuongMongMuonTu" | "mucLuongMongMuonDen" | "diaDiemMongMuon" | "tepCvUrl" | "tenFileCv" | "duongDanCv" | "loaiFileCv" | "kichThuocCv" | "ngayTaiCv" | "trangThaiTimViec" | "ngayTao" | "ngayCapNhat", ExtArgs["result"]["hoSoNguoiLaoDong"]>
 export type HoSoNguoiLaoDongInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   taiKhoan?: boolean | Prisma.TaiKhoanDefaultArgs<ExtArgs>
   hocVans?: boolean | Prisma.HoSoNguoiLaoDong$hocVansArgs<ExtArgs>
@@ -1549,6 +1813,11 @@ export type $HoSoNguoiLaoDongPayload<ExtArgs extends runtime.Types.Extensions.In
     mucLuongMongMuonDen: runtime.Decimal | null
     diaDiemMongMuon: string | null
     tepCvUrl: string | null
+    tenFileCv: string | null
+    duongDanCv: string | null
+    loaiFileCv: string | null
+    kichThuocCv: number | null
+    ngayTaiCv: Date | null
     trangThaiTimViec: $Enums.TrangThaiTimViec
     ngayTao: Date
     ngayCapNhat: Date
@@ -1993,6 +2262,11 @@ export interface HoSoNguoiLaoDongFieldRefs {
   readonly mucLuongMongMuonDen: Prisma.FieldRef<"HoSoNguoiLaoDong", 'Decimal'>
   readonly diaDiemMongMuon: Prisma.FieldRef<"HoSoNguoiLaoDong", 'String'>
   readonly tepCvUrl: Prisma.FieldRef<"HoSoNguoiLaoDong", 'String'>
+  readonly tenFileCv: Prisma.FieldRef<"HoSoNguoiLaoDong", 'String'>
+  readonly duongDanCv: Prisma.FieldRef<"HoSoNguoiLaoDong", 'String'>
+  readonly loaiFileCv: Prisma.FieldRef<"HoSoNguoiLaoDong", 'String'>
+  readonly kichThuocCv: Prisma.FieldRef<"HoSoNguoiLaoDong", 'Int'>
+  readonly ngayTaiCv: Prisma.FieldRef<"HoSoNguoiLaoDong", 'DateTime'>
   readonly trangThaiTimViec: Prisma.FieldRef<"HoSoNguoiLaoDong", 'TrangThaiTimViec'>
   readonly ngayTao: Prisma.FieldRef<"HoSoNguoiLaoDong", 'DateTime'>
   readonly ngayCapNhat: Prisma.FieldRef<"HoSoNguoiLaoDong", 'DateTime'>

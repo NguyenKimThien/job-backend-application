@@ -1,6 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcrypt';
-import { randomInt } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
+import { copyFile, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import {
   HinhThucLamViec,
   LoaiDoiTuongKiemDuyet,
@@ -16,6 +18,31 @@ import { ApiError } from '../../common/api-error.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+
+const maxCvSize = 5 * 1024 * 1024;
+const workerCvDir = 'uploads/cv';
+const applicationCvDir = 'uploads/application-cv';
+
+type UploadedCvFile = {
+  buffer?: Buffer;
+  mimetype?: string;
+  originalname?: string;
+  size?: number;
+};
+
+type StoredCvFile = {
+  originalName: string;
+  relativePath: string;
+  mimeType: string;
+  size: number;
+};
+
+type CvStreamTarget = {
+  absolutePath: string;
+  fileName: string;
+  mimeType: string;
+  size: number;
+};
 
 @Injectable()
 export class PortalService {
@@ -158,7 +185,7 @@ export class PortalService {
       },
     });
     if (!profile) this.notFound('Chưa có hồ sơ người lao động.');
-    return { success: true, data: profile };
+    return { success: true, data: this.mapWorkerProfile(profile) };
   }
 
   async updateWorkerProfile(accountId: number, body: Record<string, any>) {
@@ -180,7 +207,6 @@ export class PortalService {
           mucLuongMongMuonTu: this.decimal(body.mucLuongMongMuonTu),
           mucLuongMongMuonDen: this.decimal(body.mucLuongMongMuonDen),
           diaDiemMongMuon: body.diaDiemMongMuon || null,
-          tepCvUrl: body.tepCvUrl || null,
         },
       });
       if (Array.isArray(body.kinhNghiemLamViecs)) {
@@ -241,7 +267,80 @@ export class PortalService {
     return this.workerProfile(accountId);
   }
 
-  async apply(accountId: number, jobId: number, body: Record<string, any>) {
+  async workerCv(accountId: number) {
+    const profile = await this.workerProfileRecord(accountId);
+    return { success: true, data: this.cvMetadata(profile) };
+  }
+
+  async uploadWorkerCv(accountId: number, file?: UploadedCvFile) {
+    const profile = await this.workerProfileRecord(accountId);
+    const stored = await this.storeUploadedCv(file, workerCvDir);
+    const previousPath = profile.duongDanCv ?? profile.tepCvUrl;
+
+    try {
+      const updated = await this.prisma.hoSoNguoiLaoDong.update({
+        where: { id: profile.id },
+        data: {
+          tepCvUrl: stored.relativePath,
+          tenFileCv: stored.originalName,
+          duongDanCv: stored.relativePath,
+          loaiFileCv: stored.mimeType,
+          kichThuocCv: stored.size,
+          ngayTaiCv: new Date(),
+        },
+      });
+      await this.safeUnlink(previousPath, workerCvDir);
+      return {
+        success: true,
+        message: 'Đã cập nhật CV cá nhân.',
+        data: this.cvMetadata(updated),
+      };
+    } catch (error) {
+      await this.safeUnlink(stored.relativePath, workerCvDir);
+      throw error;
+    }
+  }
+
+  async deleteWorkerCv(accountId: number) {
+    const profile = await this.workerProfileRecord(accountId);
+    const previousPath = profile.duongDanCv ?? profile.tepCvUrl;
+    const updated = await this.prisma.hoSoNguoiLaoDong.update({
+      where: { id: profile.id },
+      data: {
+        tepCvUrl: null,
+        tenFileCv: null,
+        duongDanCv: null,
+        loaiFileCv: null,
+        kichThuocCv: null,
+        ngayTaiCv: null,
+      },
+    });
+    await this.safeUnlink(previousPath, workerCvDir);
+    return {
+      success: true,
+      message: 'Đã xóa CV cá nhân.',
+      data: this.cvMetadata(updated),
+    };
+  }
+
+  async workerCvStream(accountId: number): Promise<CvStreamTarget> {
+    const profile = await this.workerProfileRecord(accountId);
+    return this.resolveStoredCv({
+      relativePath: profile.duongDanCv ?? profile.tepCvUrl,
+      fileName: profile.tenFileCv,
+      mimeType: profile.loaiFileCv,
+      size: profile.kichThuocCv,
+      allowedDir: workerCvDir,
+      missingMessage: 'Bạn chưa có CV trong hồ sơ.',
+    });
+  }
+
+  async apply(
+    accountId: number,
+    jobId: number,
+    body: Record<string, any>,
+    file?: UploadedCvFile,
+  ) {
     const profile = await this.prisma.hoSoNguoiLaoDong.findUnique({
       where: { taiKhoanId: accountId },
       include: { taiKhoan: true },
@@ -276,33 +375,73 @@ export class PortalService {
         message: 'Bạn đã ứng tuyển vào tin này.',
       });
     }
-    const application = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.ungTuyen.create({
-        data: {
-          hoSoNguoiLaoDongId: profile.id,
-          tinTuyenDungId: jobId,
-          hoTenSnapshot: profile.hoTen,
-          emailSnapshot: profile.taiKhoan.email,
-          soDienThoaiSnapshot: profile.taiKhoan.soDienThoai,
-          tepCvSnapshotUrl: body.tepCvUrl || profile.tepCvUrl,
-          thuGioiThieu: body.thuGioiThieu || null,
-          lichSuTrangThaiUngTuyens: {
-            create: { trangThaiSau: TrangThaiUngTuyen.DA_NOP },
+    const hoTenSnapshot = String(
+      body.hoTen ?? body.hoTenSnapshot ?? profile.hoTen ?? '',
+    ).trim();
+    const emailSnapshot = String(
+      body.email ?? body.emailSnapshot ?? profile.taiKhoan.email ?? '',
+    )
+      .trim()
+      .toLowerCase();
+    const soDienThoaiSnapshot =
+      String(
+        body.soDienThoai ??
+          body.soDienThoaiSnapshot ??
+          profile.taiKhoan.soDienThoai ??
+          '',
+      ).trim() || null;
+
+    if (!hoTenSnapshot || !emailSnapshot) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'APPLICATION_CONTACT_REQUIRED',
+        message: 'Vui lòng nhập đầy đủ họ tên và email trước khi nộp hồ sơ.',
+      });
+    }
+
+    const submittedCv = await this.prepareApplicationCv(profile, body, file);
+
+    let application: any;
+    try {
+      application = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.ungTuyen.create({
+          data: {
+            hoSoNguoiLaoDongId: profile.id,
+            tinTuyenDungId: jobId,
+            hoTenSnapshot,
+            emailSnapshot,
+            soDienThoaiSnapshot,
+            tepCvSnapshotUrl: submittedCv.relativePath,
+            tenFileCvUngTuyen: submittedCv.originalName,
+            duongDanCvUngTuyen: submittedCv.relativePath,
+            loaiFileCvUngTuyen: submittedCv.mimeType,
+            kichThuocCvUngTuyen: submittedCv.size,
+            ngayNopCv: new Date(),
+            thuGioiThieu: body.thuGioiThieu || null,
+            lichSuTrangThaiUngTuyens: {
+              create: { trangThaiSau: TrangThaiUngTuyen.DA_NOP },
+            },
           },
-        },
+        });
+        await tx.thongBao.create({
+          data: {
+            taiKhoanId: job.nhaTuyenDung.taiKhoanId,
+            tieuDe: 'Có hồ sơ ứng tuyển mới',
+            noiDung: `${hoTenSnapshot} vừa ứng tuyển vị trí ${job.viTriTuyenDung}.`,
+            loaiThongBao: LoaiThongBao.UNG_TUYEN,
+            duongDanDich: `/nha-tuyen-dung/tin-tuyen-dung/${jobId}/ung-vien/${created.id}`,
+          },
+        });
+        return created;
       });
-      await tx.thongBao.create({
-        data: {
-          taiKhoanId: job.nhaTuyenDung.taiKhoanId,
-          tieuDe: 'Có hồ sơ ứng tuyển mới',
-          noiDung: `${profile.hoTen} vừa ứng tuyển vị trí ${job.viTriTuyenDung}.`,
-          loaiThongBao: LoaiThongBao.UNG_TUYEN,
-          duongDanDich: `/nha-tuyen-dung/tin-tuyen-dung/${jobId}/ung-vien`,
-        },
-      });
-      return created;
-    });
-    return { success: true, message: 'Ứng tuyển thành công.', data: application };
+    } catch (error) {
+      await this.safeUnlink(submittedCv.relativePath, applicationCvDir);
+      throw error;
+    }
+    return {
+      success: true,
+      message: 'Ứng tuyển thành công.',
+      data: this.mapApplication(application),
+    };
   }
 
   async workerApplications(accountId: number) {
@@ -313,10 +452,9 @@ export class PortalService {
     });
     return {
       success: true,
-      data: items.map((item) => ({
-        ...item,
-        job: this.mapJob(item.tinTuyenDung),
-      })),
+      data: items.map((item) =>
+        this.mapApplication(item, this.mapJob(item.tinTuyenDung)),
+      ),
     };
   }
 
@@ -494,7 +632,7 @@ export class PortalService {
       include: { hoSoNguoiLaoDong: true },
       orderBy: { ngayNop: 'desc' },
     });
-    return { success: true, data: items };
+    return { success: true, data: items.map((item) => this.mapApplication(item)) };
   }
 
   async employerApplicant(accountId: number, jobId: number, id: number) {
@@ -534,7 +672,27 @@ export class PortalService {
       ]);
       item.trangThaiHienTai = TrangThaiUngTuyen.DA_XEM;
     }
-    return { success: true, data: item };
+    return { success: true, data: this.mapApplication(item) };
+  }
+
+  async employerApplicationCvStream(
+    accountId: number,
+    jobId: number,
+    id: number,
+  ): Promise<CvStreamTarget> {
+    await this.assertEmployerJob(accountId, jobId);
+    const item = await this.prisma.ungTuyen.findFirst({
+      where: { id, tinTuyenDungId: jobId },
+    });
+    if (!item) this.notFound('Không tìm thấy ứng viên.');
+    return this.resolveStoredCv({
+      relativePath: item.duongDanCvUngTuyen ?? item.tepCvSnapshotUrl,
+      fileName: item.tenFileCvUngTuyen,
+      mimeType: item.loaiFileCvUngTuyen,
+      size: item.kichThuocCvUngTuyen,
+      allowedDir: applicationCvDir,
+      missingMessage: 'Ứng viên chưa đính kèm CV.',
+    });
   }
 
   async updateApplicationStatus(
@@ -620,7 +778,11 @@ export class PortalService {
       }
       return result;
     });
-    return { success: true, message: 'Đã cập nhật trạng thái ứng viên.', data: updated };
+    return {
+      success: true,
+      message: 'Đã cập nhật trạng thái ứng viên.',
+      data: this.mapApplication(updated),
+    };
   }
 
   async adminCategories() {
@@ -1154,6 +1316,267 @@ export class PortalService {
       where: { id: jobId, nhaTuyenDung: { taiKhoanId: accountId } },
     });
     if (!job) this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
+  }
+
+  private mapWorkerProfile(profile: any) {
+    const { duongDanCv, tepCvUrl, ...safeProfile } = profile;
+    return {
+      ...safeProfile,
+      tepCvUrl:
+        profile.tenFileCv ??
+        this.fileNameFromStoredPath(profile.duongDanCv ?? profile.tepCvUrl),
+      hasCv: Boolean(profile.duongDanCv ?? profile.tepCvUrl),
+      cv: this.cvMetadata(profile),
+    };
+  }
+
+  private mapApplication(item: any, job?: any) {
+    const { duongDanCvUngTuyen, tepCvSnapshotUrl, hoSoNguoiLaoDong, tinTuyenDung, ...safe } =
+      item;
+    const safeProfile = hoSoNguoiLaoDong
+      ? this.mapWorkerProfile(hoSoNguoiLaoDong)
+      : undefined;
+    const cvName =
+      item.tenFileCvUngTuyen ??
+      this.fileNameFromStoredPath(item.duongDanCvUngTuyen ?? item.tepCvSnapshotUrl);
+
+    return {
+      ...safe,
+      tepCvSnapshotUrl: null,
+      hoSoNguoiLaoDong: safeProfile,
+      ...(job ? { job } : {}),
+      ...(tinTuyenDung && !job ? { tinTuyenDung } : {}),
+      tenFileCvUngTuyen: cvName,
+      hasCv: Boolean(item.duongDanCvUngTuyen ?? item.tepCvSnapshotUrl),
+    };
+  }
+
+  private cvMetadata(profile: any) {
+    const pathValue = profile.duongDanCv ?? profile.tepCvUrl;
+    return {
+      hasCv: Boolean(pathValue),
+      tenFileCv:
+        profile.tenFileCv ?? this.fileNameFromStoredPath(pathValue),
+      loaiFileCv: profile.loaiFileCv ?? 'application/pdf',
+      kichThuocCv: profile.kichThuocCv ?? null,
+      ngayTaiCv: profile.ngayTaiCv ?? null,
+    };
+  }
+
+  private async prepareApplicationCv(
+    profile: any,
+    body: Record<string, any>,
+    file?: UploadedCvFile,
+  ) {
+    const source = String(
+      body.nguonCv ?? body.cvSource ?? (file ? 'UPLOADED_CV' : 'CURRENT_PROFILE_CV'),
+    );
+
+    if (file) return this.storeUploadedCv(file, applicationCvDir);
+
+    if (source === 'UPLOADED_CV') {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'CV_FILE_REQUIRED',
+        message: 'Vui lòng chọn file CV.',
+      });
+    }
+
+    const currentPath = profile.duongDanCv ?? profile.tepCvUrl;
+    if (!currentPath) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'PROFILE_CV_REQUIRED',
+        message:
+          'Bạn chưa có CV trong hồ sơ. Vui lòng tải lên một CV để ứng tuyển.',
+      });
+    }
+
+    const sourceFile = await this.resolveStoredCv({
+      relativePath: currentPath,
+      fileName: profile.tenFileCv,
+      mimeType: profile.loaiFileCv,
+      size: profile.kichThuocCv,
+      allowedDir: workerCvDir,
+      missingMessage: 'Không tìm thấy file CV hiện có trong hồ sơ.',
+    });
+    await this.assertPdfSignature(sourceFile.absolutePath);
+
+    const relativePath = this.relativeCvPath(applicationCvDir);
+    const absolutePath = this.safeAbsolutePath(relativePath, applicationCvDir);
+    await this.ensureUploadDir(applicationCvDir);
+    await copyFile(sourceFile.absolutePath, absolutePath);
+    const fileStat = await stat(absolutePath);
+
+    return {
+      originalName: sourceFile.fileName,
+      relativePath,
+      mimeType: 'application/pdf',
+      size: Number(fileStat.size),
+    };
+  }
+
+  private async storeUploadedCv(file: UploadedCvFile | undefined, targetDir: string) {
+    this.validateUploadedCv(file);
+
+    const relativePath = this.relativeCvPath(targetDir);
+    const absolutePath = this.safeAbsolutePath(relativePath, targetDir);
+    await this.ensureUploadDir(targetDir);
+    await writeFile(absolutePath, file!.buffer!);
+
+    return {
+      originalName: this.cleanOriginalFileName(file!.originalname),
+      relativePath,
+      mimeType: 'application/pdf',
+      size: file!.buffer!.length,
+    };
+  }
+
+  private validateUploadedCv(file: UploadedCvFile | undefined) {
+    if (!file?.buffer?.length || !file.size) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'CV_FILE_REQUIRED',
+        message: 'Vui lòng chọn file CV.',
+      });
+    }
+
+    if (file.size > maxCvSize || file.buffer.length > maxCvSize) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'CV_FILE_TOO_LARGE',
+        message: 'Dung lượng CV không được vượt quá 5 MB.',
+      });
+    }
+
+    const name = this.cleanOriginalFileName(file.originalname).toLowerCase();
+    if (file.mimetype !== 'application/pdf' || !name.endsWith('.pdf')) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_CV_TYPE',
+        message: 'CV chỉ được phép có định dạng PDF.',
+      });
+    }
+
+    if (file.buffer.subarray(0, 5).toString('utf8') !== '%PDF-') {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_CV_CONTENT',
+        message: 'Nội dung file không phải là tài liệu PDF hợp lệ.',
+      });
+    }
+  }
+
+  private async assertPdfSignature(absolutePath: string) {
+    let fileHeader: Buffer;
+    try {
+      const buffer = await readFile(absolutePath);
+      fileHeader = buffer.subarray(0, 5);
+    } catch {
+      throw new ApiError(HttpStatus.NOT_FOUND, {
+        code: 'CV_FILE_NOT_READABLE',
+        message: 'Không thể đọc file CV.',
+      });
+    }
+
+    if (fileHeader.toString('utf8') !== '%PDF-') {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_CV_CONTENT',
+        message: 'Nội dung file không phải là tài liệu PDF hợp lệ.',
+      });
+    }
+  }
+
+  private async resolveStoredCv({
+    relativePath,
+    fileName,
+    mimeType,
+    size,
+    allowedDir,
+    missingMessage,
+  }: {
+    relativePath?: string | null;
+    fileName?: string | null;
+    mimeType?: string | null;
+    size?: number | null;
+    allowedDir: string;
+    missingMessage: string;
+  }): Promise<CvStreamTarget> {
+    if (!relativePath) {
+      throw new ApiError(HttpStatus.NOT_FOUND, {
+        code: 'CV_NOT_FOUND',
+        message: missingMessage,
+      });
+    }
+
+    const absolutePath = this.safeAbsolutePath(relativePath, allowedDir);
+    let fileStat;
+    try {
+      fileStat = await stat(absolutePath);
+    } catch {
+      throw new ApiError(HttpStatus.NOT_FOUND, {
+        code: 'CV_FILE_NOT_FOUND',
+        message: 'Không tìm thấy file CV.',
+      });
+    }
+    if (!fileStat.isFile()) {
+      throw new ApiError(HttpStatus.NOT_FOUND, {
+        code: 'CV_FILE_NOT_FOUND',
+        message: 'Không tìm thấy file CV.',
+      });
+    }
+
+    return {
+      absolutePath,
+      fileName: fileName || this.fileNameFromStoredPath(relativePath) || 'CV.pdf',
+      mimeType: mimeType || 'application/pdf',
+      size: size ?? Number(fileStat.size),
+    };
+  }
+
+  private safeAbsolutePath(relativePath: string, allowedDir: string) {
+    const normalized = String(relativePath).replace(/\\/g, '/');
+    if (
+      path.posix.isAbsolute(normalized) ||
+      normalized.split('/').some((segment) => segment === '..')
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_CV_PATH',
+        message: 'Đường dẫn file CV không hợp lệ.',
+      });
+    }
+
+    const root = path.resolve(process.cwd(), allowedDir);
+    const target = path.resolve(process.cwd(), normalized);
+    const relativeToRoot = path.relative(root, target);
+    if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_CV_PATH',
+        message: 'Đường dẫn file CV không hợp lệ.',
+      });
+    }
+    return target;
+  }
+
+  private async safeUnlink(relativePath: string | null | undefined, allowedDir: string) {
+    if (!relativePath) return;
+    try {
+      await unlink(this.safeAbsolutePath(relativePath, allowedDir));
+    } catch {
+      console.warn('Không thể xóa file CV cũ.');
+    }
+  }
+
+  private async ensureUploadDir(relativeDir: string) {
+    await mkdir(path.resolve(process.cwd(), relativeDir), { recursive: true });
+  }
+
+  private relativeCvPath(relativeDir: string) {
+    return `${relativeDir}/${randomUUID()}.pdf`;
+  }
+
+  private cleanOriginalFileName(value?: string) {
+    const name = path.basename(String(value || 'CV.pdf')).replace(/[\r\n]/g, ' ');
+    return name.slice(0, 255) || 'CV.pdf';
+  }
+
+  private fileNameFromStoredPath(value?: string | null) {
+    if (!value) return null;
+    return path.posix.basename(String(value).replace(/\\/g, '/'));
   }
 
   private reviewStatus(action: string): TrangThaiKiemDuyet {

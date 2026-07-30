@@ -244,6 +244,17 @@ export type DecimalNullableFilter<$PrismaModel = never> = {
   not?: Prisma.NestedDecimalNullableFilter<$PrismaModel> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
 }
 
+export type IntNullableFilter<$PrismaModel = never> = {
+  equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
+  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
+  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedIntNullableFilter<$PrismaModel> | number | null
+}
+
 export type EnumTrangThaiTimViecFilter<$PrismaModel = never> = {
   equals?: $Enums.TrangThaiTimViec | Prisma.EnumTrangThaiTimViecFieldRefInput<$PrismaModel>
   in?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
@@ -277,27 +288,6 @@ export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDecimalNullableFilter<$PrismaModel>
 }
 
-export type EnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.TrangThaiTimViec | Prisma.EnumTrangThaiTimViecFieldRefInput<$PrismaModel>
-  in?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
-  notIn?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel> | $Enums.TrangThaiTimViec
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
-}
-
-export type IntNullableFilter<$PrismaModel = never> = {
-  equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
-  in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
-  notIn?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
-  lt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  lte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gt?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  gte?: number | Prisma.IntFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedIntNullableFilter<$PrismaModel> | number | null
-}
-
 export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
@@ -312,6 +302,16 @@ export type IntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _sum?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedIntNullableFilter<$PrismaModel>
   _max?: Prisma.NestedIntNullableFilter<$PrismaModel>
+}
+
+export type EnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TrangThaiTimViec | Prisma.EnumTrangThaiTimViecFieldRefInput<$PrismaModel>
+  in?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel> | $Enums.TrangThaiTimViec
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
 }
 
 export type EnumMucDoKyNangFilter<$PrismaModel = never> = {
@@ -770,16 +770,6 @@ export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDecimalNullableFilter<$PrismaModel>
 }
 
-export type NestedEnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: $Enums.TrangThaiTimViec | Prisma.EnumTrangThaiTimViecFieldRefInput<$PrismaModel>
-  in?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
-  notIn?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedEnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel> | $Enums.TrangThaiTimViec
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
-  _max?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
-}
-
 export type NestedIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel> | null
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel> | null
@@ -805,6 +795,16 @@ export type NestedFloatNullableFilter<$PrismaModel = never> = {
   gt?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   gte?: number | Prisma.FloatFieldRefInput<$PrismaModel>
   not?: Prisma.NestedFloatNullableFilter<$PrismaModel> | number | null
+}
+
+export type NestedEnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TrangThaiTimViec | Prisma.EnumTrangThaiTimViecFieldRefInput<$PrismaModel>
+  in?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TrangThaiTimViec[] | Prisma.ListEnumTrangThaiTimViecFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTrangThaiTimViecWithAggregatesFilter<$PrismaModel> | $Enums.TrangThaiTimViec
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTrangThaiTimViecFilter<$PrismaModel>
 }
 
 export type NestedEnumMucDoKyNangFilter<$PrismaModel = never> = {

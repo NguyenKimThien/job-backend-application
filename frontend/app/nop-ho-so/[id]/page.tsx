@@ -5,6 +5,7 @@ import {
   ApiJob,
   jobTypeLabel,
   portalFetch,
+  portalFetchBlob,
   salaryLabel,
 } from '@/lib/portal-api';
 import Link from 'next/link';
@@ -39,8 +40,25 @@ type WorkerProfile = {
   id: number;
   hoTen?: string | null;
   tepCvUrl?: string | null;
+  tenFileCv?: string | null;
+  loaiFileCv?: string | null;
+  kichThuocCv?: number | null;
+  ngayTaiCv?: string | null;
+  hasCv?: boolean;
+  cv?: {
+    hasCv: boolean;
+    tenFileCv?: string | null;
+    kichThuocCv?: number | null;
+    ngayTaiCv?: string | null;
+  } | null;
   ngayCapNhat?: string | null;
   taiKhoan?: ApiAccount | null;
+};
+
+type ApplicantForm = {
+  hoTen: string;
+  email: string;
+  soDienThoai: string;
 };
 
 type WorkerApplication = {
@@ -48,6 +66,9 @@ type WorkerApplication = {
   ngayNop?: string | null;
   trangThaiHienTai?: string | null;
   tepCvSnapshotUrl?: string | null;
+  tenFileCvUngTuyen?: string | null;
+  kichThuocCvUngTuyen?: number | null;
+  ngayNopCv?: string | null;
   thuGioiThieu?: string | null;
   job?: ApiJob;
 };
@@ -60,6 +81,7 @@ type SubmittedApplication = {
 };
 
 type SelectedCv = {
+  file: File;
   name: string;
   size: number;
   type: string;
@@ -82,6 +104,11 @@ const approvedStatus = 'DA_DUYET';
 const visibleStatus = 'DANG_HIEN_THI';
 const maxCvSize = 5 * 1024 * 1024;
 const maxCoverLetterLength = 1000;
+const emptyApplicantForm: ApplicantForm = {
+  hoTen: '',
+  email: '',
+  soDienThoai: '',
+};
 
 const applicationStatusLabels: Record<string, string> = {
   DA_NOP: 'Đã nộp',
@@ -105,11 +132,16 @@ export default function ApplyPage() {
     useState<WorkerApplication | null>(null);
   const [submittedApplication, setSubmittedApplication] =
     useState<SubmittedApplication | null>(null);
+  const [applicantForm, setApplicantForm] =
+    useState<ApplicantForm>(emptyApplicantForm);
   const [selectedCv, setSelectedCv] = useState<SelectedCv | null>(null);
   const [coverLetter, setCoverLetter] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [loadMessage, setLoadMessage] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileLoadError, setProfileLoadError] = useState('');
+  const [cvViewing, setCvViewing] = useState(false);
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -121,9 +153,8 @@ export default function ApplyPage() {
       setErrors({});
 
       try {
-        const [jobData, profileData, applicationData] = await Promise.all([
+        const [jobData, applicationData] = await Promise.all([
           portalFetch<ApiJob>(`/jobs/${params.id}`),
-          portalFetch<WorkerProfile>('/worker/profile'),
           portalFetch<WorkerApplication[]>('/worker/applications'),
         ]);
 
@@ -134,7 +165,7 @@ export default function ApplyPage() {
         );
 
         setJob(jobData);
-        setProfile(profileData);
+        setProfile(null);
         setApplications(applicationData);
         setExistingApplication(applied ?? null);
 
@@ -166,26 +197,28 @@ export default function ApplyPage() {
     }
   }, [pageState]);
 
-  const cvValue = selectedCv?.name ?? profile?.tepCvUrl ?? '';
+  const profileCvName =
+    profile?.cv?.tenFileCv ?? profile?.tenFileCv ?? profile?.tepCvUrl ?? '';
+  const profileHasCv = Boolean(profile?.cv?.hasCv ?? profile?.hasCv);
+  const cvValue = selectedCv?.name ?? profileCvName;
   const missingProfileItems = useMemo(
-    () => getMissingProfileItems(profile),
-    [profile],
+    () => getMissingApplicantItems(applicantForm),
+    [applicantForm],
   );
   const submitting = pageState === 'submitting';
 
   async function reloadPageData() {
     setPageState('loading');
     try {
-      const [jobData, profileData, applicationData] = await Promise.all([
+      const [jobData, applicationData] = await Promise.all([
         portalFetch<ApiJob>(`/jobs/${params.id}`),
-        portalFetch<WorkerProfile>('/worker/profile'),
         portalFetch<WorkerApplication[]>('/worker/applications'),
       ]);
       const applied = applicationData.find(
         (item) => Number(item.job?.id) === Number(jobData.id),
       );
       setJob(jobData);
-      setProfile(profileData);
+      setProfile(null);
       setApplications(applicationData);
       setExistingApplication(applied ?? null);
       setPageState(
@@ -200,6 +233,40 @@ export default function ApplyPage() {
     }
   }
 
+  async function loadExistingProfile() {
+    if (profileLoading || submitting) return;
+
+    setProfileLoading(true);
+    setProfileLoadError('');
+
+    try {
+      const profileData = await portalFetch<WorkerProfile>('/worker/profile');
+      setProfile(profileData);
+      setSelectedCv(null);
+      setApplicantForm({
+        hoTen: profileData.hoTen ?? '',
+        email: profileData.taiKhoan?.email ?? '',
+        soDienThoai: profileData.taiKhoan?.soDienThoai ?? '',
+      });
+      setErrors((current) => ({
+        ...current,
+        cv: undefined,
+        profile: undefined,
+      }));
+    } catch {
+      setProfileLoadError(
+        'Không thể tải hồ sơ hiện có. Bạn vẫn có thể nhập thông tin thủ công.',
+      );
+    } finally {
+      setProfileLoading(false);
+    }
+  }
+
+  function updateApplicantField(field: keyof ApplicantForm, value: string) {
+    setApplicantForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, profile: undefined }));
+  }
+
   function handleCvChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = '';
@@ -212,6 +279,7 @@ export default function ApplyPage() {
     }
 
     setSelectedCv({
+      file,
       name: file.name,
       size: file.size,
       type: file.type,
@@ -225,13 +293,54 @@ export default function ApplyPage() {
     document.getElementById('application-cv-upload')?.click();
   }
 
+  async function viewApplicationCv() {
+    if (cvViewing) return;
+
+    setErrors((current) => ({ ...current, cv: undefined }));
+
+    if (selectedCv?.file) {
+      const objectUrl = URL.createObjectURL(selectedCv.file);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      return;
+    }
+
+    if (!profileHasCv) {
+      setErrors((current) => ({
+        ...current,
+        cv: 'Vui lòng chọn file CV hoặc cập nhật CV hiện có từ hồ sơ.',
+      }));
+      return;
+    }
+
+    setCvViewing(true);
+    try {
+      const { blob } = await portalFetchBlob('/worker/profile/cv/view');
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (reason) {
+      setErrors((current) => ({
+        ...current,
+        cv:
+          reason instanceof Error
+            ? reason.message
+            : 'Không thể mở CV. Vui lòng thử lại.',
+      }));
+    } finally {
+      setCvViewing(false);
+    }
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!job || !profile || submitting) return;
+    if (!job || submitting) return;
 
     const nextErrors = validateForm({
+      applicantForm,
       confirmed,
       coverLetter,
+      hasCv: Boolean(selectedCv || profileHasCv),
       job,
       missingProfileItems,
     });
@@ -256,22 +365,47 @@ export default function ApplyPage() {
     setErrors({});
 
     try {
+      const basePayload = {
+        hoTen: applicantForm.hoTen.trim(),
+        email: applicantForm.email.trim(),
+        soDienThoai: applicantForm.soDienThoai.trim() || null,
+        thuGioiThieu: coverLetter.trim() || null,
+      };
+      const requestInit: RequestInit = selectedCv
+        ? {
+            method: 'POST',
+            body: (() => {
+              const formData = new FormData();
+              Object.entries({
+                ...basePayload,
+                nguonCv: 'UPLOADED_CV',
+              }).forEach(([key, value]) => {
+                if (value !== null && value !== undefined) {
+                  formData.append(key, String(value));
+                }
+              });
+              formData.append('file', selectedCv.file);
+              return formData;
+            })(),
+          }
+        : {
+            method: 'POST',
+            body: JSON.stringify({
+              ...basePayload,
+              nguonCv: 'CURRENT_PROFILE_CV',
+            }),
+          };
+
       const response = await portalFetch<Partial<WorkerApplication>>(
         `/worker/applications/${job.id}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            tepCvUrl: cvValue || null,
-            thuGioiThieu: coverLetter.trim() || null,
-          }),
-        },
+        requestInit,
       );
 
       setSubmittedApplication({
         id: response.id,
         submittedAt: response.ngayNop ?? new Date().toISOString(),
         status: response.trangThaiHienTai,
-        cvUrl: (response.tepCvSnapshotUrl ?? cvValue) || null,
+        cvUrl: (response.tenFileCvUngTuyen ?? cvValue) || null,
       });
       setPageState('submitted');
     } catch (error) {
@@ -329,76 +463,87 @@ export default function ApplyPage() {
         {job && pageState !== 'loading' && pageState !== 'error' && (
           <>
             <div className="application-main-column">
-              {(pageState === 'ready' || pageState === 'submitting') &&
-                profile && (
-                  <form
-                    className="content-card application-form"
-                    onSubmit={(event) => {
-                      void submit(event);
+              {(pageState === 'ready' || pageState === 'submitting') && (
+                <form
+                  className="content-card application-form"
+                  onSubmit={(event) => {
+                    void submit(event);
+                  }}
+                  noValidate
+                >
+                  <ApplicationStepState state={pageState} />
+
+                  {errors.profile && Boolean(missingProfileItems.length) && (
+                    <ProfileNotice missingItems={missingProfileItems} />
+                  )}
+
+                  <ApplicantInformation
+                    disabled={submitting}
+                    form={applicantForm}
+                    loadError={profileLoadError}
+                    loadingExistingProfile={profileLoading}
+                    onChange={updateApplicantField}
+                    onLoadExistingProfile={() => {
+                      void loadExistingProfile();
                     }}
-                    noValidate
-                  >
-                    <ApplicationStepState state={pageState} />
+                  />
+                  {errors.profile && !missingProfileItems.length && (
+                    <div className="application-alert error" role="alert">
+                      {errors.profile}
+                    </div>
+                  )}
 
-                    {Boolean(missingProfileItems.length) && (
-                      <ProfileNotice missingItems={missingProfileItems} />
-                    )}
+                  <ApplicationCvSelector
+                    cvValue={cvValue}
+                    error={errors.cv}
+                    onChange={handleCvChange}
+                    onKeyDown={handleCvKeyDown}
+                    onView={viewApplicationCv}
+                    profileHasCv={profileHasCv}
+                    profileUpdatedAt={
+                      profile?.cv?.ngayTaiCv ??
+                      profile?.ngayTaiCv ??
+                      profile?.ngayCapNhat
+                    }
+                    selectedCv={selectedCv}
+                    viewing={cvViewing}
+                  />
 
-                    <ApplicantInformation profile={profile} />
+                  <ApplicationCoverLetter
+                    disabled={submitting}
+                    error={errors.coverLetter}
+                    value={coverLetter}
+                    onChange={(value) => {
+                      setCoverLetter(value);
+                      setErrors((current) => ({
+                        ...current,
+                        coverLetter: undefined,
+                      }));
+                    }}
+                  />
 
-                    <ApplicationCvSelector
-                      cvValue={cvValue}
-                      error={errors.cv}
-                      onChange={handleCvChange}
-                      onKeyDown={handleCvKeyDown}
-                      profileCvUrl={profile.tepCvUrl}
-                      profileUpdatedAt={profile.ngayCapNhat}
-                      selectedCv={selectedCv}
-                    />
+                  <ApplicationConfirm
+                    checked={confirmed}
+                    disabled={submitting}
+                    error={errors.confirm}
+                    onChange={(checked) => {
+                      setConfirmed(checked);
+                      setErrors((current) => ({
+                        ...current,
+                        confirm: undefined,
+                      }));
+                    }}
+                  />
 
-                    <ApplicationCoverLetter
-                      disabled={submitting}
-                      error={errors.coverLetter}
-                      value={coverLetter}
-                      onChange={(value) => {
-                        setCoverLetter(value);
-                        setErrors((current) => ({
-                          ...current,
-                          coverLetter: undefined,
-                        }));
-                      }}
-                    />
+                  {errors.submit && (
+                    <div className="application-alert error" role="alert">
+                      {errors.submit}
+                    </div>
+                  )}
 
-                    <ApplicationConfirm
-                      checked={confirmed}
-                      disabled={submitting}
-                      error={errors.confirm}
-                      onChange={(checked) => {
-                        setConfirmed(checked);
-                        setErrors((current) => ({
-                          ...current,
-                          confirm: undefined,
-                        }));
-                      }}
-                    />
-
-                    {errors.profile && (
-                      <div className="application-alert error" role="alert">
-                        {errors.profile}
-                      </div>
-                    )}
-                    {errors.submit && (
-                      <div className="application-alert error" role="alert">
-                        {errors.submit}
-                      </div>
-                    )}
-
-                    <ApplicationSubmitActions
-                      job={job}
-                      submitting={submitting}
-                    />
-                  </form>
-                )}
+                  <ApplicationSubmitActions job={job} submitting={submitting} />
+                </form>
+              )}
 
               {pageState === 'submitted' && submittedApplication && (
                 <ApplicationResultState
@@ -413,7 +558,11 @@ export default function ApplyPage() {
               {pageState === 'alreadyApplied' && (
                 <ApplicationResultState
                   application={existingApplication}
-                  cvValue={existingApplication?.tepCvSnapshotUrl ?? cvValue}
+                  cvValue={
+                    existingApplication?.tenFileCvUngTuyen ??
+                    existingApplication?.tepCvSnapshotUrl ??
+                    cvValue
+                  }
                   job={job}
                   refHeading={resultHeadingRef}
                   type="alreadyApplied"
@@ -452,7 +601,21 @@ function ApplicationStepState({ state }: { state: ApplicationPageState }) {
   );
 }
 
-function ApplicantInformation({ profile }: { profile: WorkerProfile }) {
+function ApplicantInformation({
+  disabled,
+  form,
+  loadError,
+  loadingExistingProfile,
+  onChange,
+  onLoadExistingProfile,
+}: {
+  disabled: boolean;
+  form: ApplicantForm;
+  loadError: string;
+  loadingExistingProfile: boolean;
+  onChange: (field: keyof ApplicantForm, value: string) => void;
+  onLoadExistingProfile: () => void;
+}) {
   return (
     <section
       className="application-section"
@@ -461,41 +624,63 @@ function ApplicantInformation({ profile }: { profile: WorkerProfile }) {
       <div className="application-section-title">
         <div>
           <h2 id="applicant-info-title">Thông tin ứng viên</h2>
-          <p>Thông tin này được lấy từ hồ sơ cá nhân của bạn.</p>
+          <p>
+            Bạn có thể nhập thông tin cho lần ứng tuyển này hoặc dùng hồ sơ có
+            sẵn.
+          </p>
         </div>
-        <Link href="/ho-so">Cập nhật hồ sơ</Link>
+        <button
+          className="application-inline-action"
+          disabled={disabled || loadingExistingProfile}
+          onClick={onLoadExistingProfile}
+          type="button"
+        >
+          {loadingExistingProfile ? 'Đang tải...' : 'Cập nhật hồ sơ hiện có'}
+        </button>
       </div>
 
-      <div className="readonly-info-grid">
-        <ReadonlyInfo label="Họ và tên" value={profile.hoTen} />
-        <ReadonlyInfo
-          label="Số điện thoại"
-          value={formatPhone(profile.taiKhoan?.soDienThoai)}
-        />
-        <ReadonlyInfo
-          className="full"
-          label="Email"
-          value={profile.taiKhoan?.email}
-        />
+      <div className="applicant-input-grid">
+        <label className="application-input-field">
+          <span>Họ và tên *</span>
+          <input
+            autoComplete="name"
+            disabled={disabled}
+            onChange={(event) => onChange('hoTen', event.target.value)}
+            placeholder="Nhập họ và tên"
+            value={form.hoTen}
+          />
+        </label>
+        <label className="application-input-field">
+          <span>Số điện thoại *</span>
+          <input
+            autoComplete="tel"
+            disabled={disabled}
+            inputMode="tel"
+            onChange={(event) => onChange('soDienThoai', event.target.value)}
+            placeholder="Nhập số điện thoại"
+            value={form.soDienThoai}
+          />
+        </label>
+        <label className="application-input-field full">
+          <span>Email *</span>
+          <input
+            autoComplete="email"
+            disabled={disabled}
+            inputMode="email"
+            onChange={(event) => onChange('email', event.target.value)}
+            placeholder="Nhập email liên hệ"
+            type="email"
+            value={form.email}
+          />
+        </label>
       </div>
+
+      {loadError && (
+        <p className="field-error application-profile-load-error" role="alert">
+          {loadError}
+        </p>
+      )}
     </section>
-  );
-}
-
-function ReadonlyInfo({
-  className,
-  label,
-  value,
-}: {
-  className?: string;
-  label: string;
-  value?: string | null;
-}) {
-  return (
-    <div className={`readonly-info ${className ?? ''}`}>
-      <span>{label}</span>
-      <strong>{value || 'Chưa cập nhật'}</strong>
-    </div>
   );
 }
 
@@ -503,15 +688,14 @@ function ProfileNotice({ missingItems }: { missingItems: string[] }) {
   return (
     <div className="application-alert warning" role="note">
       <div>
-        <strong>Thông tin hồ sơ chưa đầy đủ</strong>
-        <p>Vui lòng cập nhật các thông tin bắt buộc trước khi nộp hồ sơ.</p>
+        <strong>Thông tin ứng viên chưa đầy đủ</strong>
+        <p>Vui lòng nhập các thông tin bắt buộc trước khi nộp hồ sơ.</p>
       </div>
       <ul>
         {missingItems.map((item) => (
           <li key={item}>{item}</li>
         ))}
       </ul>
-      <Link href="/ho-so">Hoàn thiện hồ sơ</Link>
     </div>
   );
 }
@@ -521,20 +705,23 @@ function ApplicationCvSelector({
   error,
   onChange,
   onKeyDown,
-  profileCvUrl,
+  onView,
+  profileHasCv,
   profileUpdatedAt,
   selectedCv,
+  viewing,
 }: {
   cvValue: string;
   error?: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
-  profileCvUrl?: string | null;
+  onView: () => void;
+  profileHasCv: boolean;
   profileUpdatedAt?: string | null;
   selectedCv: SelectedCv | null;
+  viewing: boolean;
 }) {
   const hasCv = Boolean(cvValue);
-  const canView = Boolean(profileCvUrl && isDownloadableUrl(profileCvUrl));
 
   return (
     <section
@@ -552,7 +739,7 @@ function ApplicationCvSelector({
         id="application-cv-upload"
         className="application-file-input"
         type="file"
-        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        accept=".pdf,application/pdf"
         onChange={onChange}
       />
 
@@ -570,12 +757,16 @@ function ApplicationCvSelector({
             </small>
           </div>
           <div className="application-cv-actions">
-            {canView && (
-              <a href={profileCvUrl ?? ''} target="_blank" rel="noreferrer">
-                Xem CV
-              </a>
-            )}
+            <button
+              className="application-cv-action"
+              disabled={viewing}
+              onClick={onView}
+              type="button"
+            >
+              {viewing ? 'Đang mở...' : 'Xem CV'}
+            </button>
             <label
+              className="application-cv-action"
               htmlFor="application-cv-upload"
               tabIndex={0}
               onKeyDown={onKeyDown}
@@ -594,7 +785,11 @@ function ApplicationCvSelector({
         >
           <Icon name="upload" />
           <strong>Kéo thả CV hoặc chọn tệp</strong>
-          <small>PDF hoặc DOCX, tối đa 5 MB</small>
+          <small>
+            {profileHasCv
+              ? 'PDF, tối đa 5 MB'
+              : 'Bạn có thể tải PDF mới hoặc bấm Cập nhật hồ sơ hiện có nếu đã có CV'}
+          </small>
         </label>
       )}
 
@@ -945,13 +1140,17 @@ function ApplicationErrorState({
 }
 
 function validateForm({
+  applicantForm,
   confirmed,
   coverLetter,
+  hasCv,
   job,
   missingProfileItems,
 }: {
+  applicantForm: ApplicantForm;
   confirmed: boolean;
   coverLetter: string;
+  hasCv: boolean;
   job: ApiJob;
   missingProfileItems: string[];
 }) {
@@ -959,11 +1158,17 @@ function validateForm({
 
   if (missingProfileItems.length) {
     nextErrors.profile =
-      'Vui lòng cập nhật các thông tin bắt buộc trước khi nộp hồ sơ.';
+      'Vui lòng nhập đầy đủ thông tin ứng viên trước khi nộp hồ sơ.';
+  } else if (!isValidEmail(applicantForm.email)) {
+    nextErrors.profile = 'Email liên hệ không hợp lệ.';
   }
 
   if (coverLetter.length > maxCoverLetterLength) {
     nextErrors.coverLetter = `Thư giới thiệu không được vượt quá ${maxCoverLetterLength} ký tự.`;
+  }
+
+  if (!hasCv) {
+    nextErrors.cv = 'Vui lòng chọn file CV hoặc cập nhật CV hiện có từ hồ sơ.';
   }
 
   if (!confirmed) {
@@ -980,7 +1185,7 @@ function validateForm({
 function focusFirstError(errors: ValidationErrors) {
   const target =
     (errors.profile &&
-      document.querySelector<HTMLElement>('.application-alert.warning a')) ||
+      document.querySelector<HTMLElement>('.applicant-input-grid input')) ||
     (errors.cv && document.getElementById('application-cv-upload')) ||
     (errors.coverLetter && document.getElementById('cover-letter')) ||
     (errors.confirm && document.getElementById('application-confirm')) ||
@@ -990,12 +1195,16 @@ function focusFirstError(errors: ValidationErrors) {
   target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
 
-function getMissingProfileItems(profile: WorkerProfile | null) {
+function getMissingApplicantItems(form: ApplicantForm) {
   const missing: string[] = [];
-  if (!profile?.hoTen?.trim()) missing.push('Họ và tên');
-  if (!profile?.taiKhoan?.email?.trim()) missing.push('Email');
-  if (!profile?.taiKhoan?.soDienThoai?.trim()) missing.push('Số điện thoại');
+  if (!form.hoTen.trim()) missing.push('Họ và tên');
+  if (!form.email.trim()) missing.push('Email');
+  if (!form.soDienThoai.trim()) missing.push('Số điện thoại');
   return missing;
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
 
 function validateCvFile(file: File) {
@@ -1003,15 +1212,11 @@ function validateCvFile(file: File) {
   if (file.size > maxCvSize) return 'Dung lượng CV không được vượt quá 5 MB.';
 
   const name = file.name.toLowerCase();
-  const validExtension = name.endsWith('.pdf') || name.endsWith('.docx');
-  const validMime =
-    file.type === 'application/pdf' ||
-    file.type ===
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-    file.type === '';
+  const validExtension = name.endsWith('.pdf');
+  const validMime = file.type === 'application/pdf';
 
   if (!validExtension || !validMime) {
-    return 'CV phải có định dạng PDF hoặc DOCX.';
+    return 'CV chỉ được phép có định dạng PDF.';
   }
 
   return '';

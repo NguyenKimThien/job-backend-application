@@ -43,10 +43,11 @@ export function getAccessToken() {
     : window.localStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
-export function getAuthHeaders(): HeadersInit {
+export function getAuthHeaders(options: { json?: boolean } = {}): HeadersInit {
   const token = getAccessToken();
+  const json = options.json ?? true;
   return {
-    "Content-Type": "application/json",
+    ...(json ? { "Content-Type": "application/json" } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }

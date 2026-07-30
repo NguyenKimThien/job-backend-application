@@ -5,6 +5,7 @@ import {
   ApiJob,
   jobTypeLabel,
   portalFetch,
+  portalFetchBlob,
   salaryLabel,
 } from '@/lib/portal-api';
 import Link from 'next/link';
@@ -74,6 +75,10 @@ type ApplicantApplication = {
   ngayNop: string;
   soDienThoaiSnapshot?: string | null;
   tepCvSnapshotUrl?: string | null;
+  tenFileCvUngTuyen?: string | null;
+  kichThuocCvUngTuyen?: number | null;
+  ngayNopCv?: string | null;
+  hasCv?: boolean;
   thuGioiThieu?: string | null;
   tinTuyenDungId: number;
   trangThaiHienTai: string;
@@ -665,18 +670,41 @@ function ApplicantTableRow({
   onOpenDialog: (dialog: DialogState) => void;
 }) {
   const name = getApplicantName(application);
-  const cvHref = validDocumentHref(
-    application.tepCvSnapshotUrl ?? application.hoSoNguoiLaoDong.tepCvUrl,
-  );
+  const hasCv = Boolean(application.hasCv || application.tenFileCvUngTuyen);
   const profileHref = `/nha-tuyen-dung/tin-tuyen-dung/${jobId}/ung-vien/${application.id}`;
   const canInvite = canMoveTo(application.trangThaiHienTai, 'MOI_PHONG_VAN');
   const canReject = canMoveTo(application.trangThaiHienTai, 'KHONG_PHU_HOP');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [cvBusy, setCvBusy] = useState(false);
+  const [cvError, setCvError] = useState('');
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
   function closeMenu() {
     setMenuOpen(false);
     requestAnimationFrame(() => menuButtonRef.current?.focus());
+  }
+
+  async function viewCv() {
+    if (cvBusy) return;
+    setCvBusy(true);
+    setCvError('');
+    try {
+      const { blob } = await portalFetchBlob(
+        `/employer/jobs/${jobId}/applicants/${application.id}/cv/view`,
+      );
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      setMenuOpen(false);
+    } catch (reason) {
+      setCvError(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể mở CV. Vui lòng thử lại.',
+      );
+    } finally {
+      setCvBusy(false);
+    }
   }
 
   return (
@@ -736,10 +764,15 @@ function ApplicantTableRow({
             </button>
             {menuOpen && (
               <div role="menu">
-                {cvHref && (
-                  <Link href={cvHref} role="menuitem" target="_blank">
-                    Xem CV
-                  </Link>
+                {hasCv && (
+                  <button
+                    disabled={cvBusy}
+                    onClick={viewCv}
+                    role="menuitem"
+                    type="button"
+                  >
+                    {cvBusy ? 'Đang mở CV...' : 'Xem CV'}
+                  </button>
                 )}
                 {canReject && (
                   <button
@@ -755,7 +788,8 @@ function ApplicantTableRow({
                     Từ chối hồ sơ
                   </button>
                 )}
-                {!cvHref && !canReject && <span>Không có thao tác khác</span>}
+                {cvError && <span>{cvError}</span>}
+                {!hasCv && !canReject && <span>Không có thao tác khác</span>}
               </div>
             )}
           </div>

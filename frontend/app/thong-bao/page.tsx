@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ReactNode,
+  KeyboardEvent,
+  MouseEvent,
   SVGProps,
   Suspense,
   useEffect,
@@ -456,6 +458,7 @@ function NotificationItem({
   item: PortalNotification;
   onMarkRead: (id: number) => void;
 }) {
+  const router = useRouter();
   const meta = getTypeMeta(item.loaiThongBao);
   const action = getNotificationAction(item, meta);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -472,9 +475,18 @@ function NotificationItem({
 
   function handleArticleClick() {
     if (!item.daDoc) onMarkRead(item.id);
+    if (action) router.push(action.href);
   }
 
-  function handleActionClick() {
+  function handleArticleKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    if (isInteractiveTarget(event.target)) return;
+    event.preventDefault();
+    handleArticleClick();
+  }
+
+  function handleActionClick(event: MouseEvent<HTMLAnchorElement>) {
+    event.stopPropagation();
     if (!item.daDoc) onMarkRead(item.id);
   }
 
@@ -485,6 +497,9 @@ function NotificationItem({
       }`}
       className={item.daDoc ? 'notification-row' : 'notification-row unread'}
       onClick={handleArticleClick}
+      onKeyDown={handleArticleKeyDown}
+      role={action ? 'link' : 'button'}
+      tabIndex={0}
     >
       <span className="notification-row-icon">
         <NotificationIcon name={meta.icon} />
@@ -704,6 +719,12 @@ function getFilterCounts(items: PortalNotification[]) {
       unread: 0,
     },
   );
+}
+
+function isInteractiveTarget(target: EventTarget) {
+  return target instanceof Element
+    ? Boolean(target.closest('a, button, input, select, textarea'))
+    : false;
 }
 
 function getTypeMeta(value: string): NotificationTypeMeta {

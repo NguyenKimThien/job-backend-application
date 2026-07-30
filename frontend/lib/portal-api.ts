@@ -10,12 +10,14 @@ export async function portalFetch<T>(
   init: RequestInit = {},
 ): Promise<T> {
   let response: Response;
+  const isFormData =
+    typeof FormData !== 'undefined' && init.body instanceof FormData;
 
   try {
     response = await fetch(`${BACKEND_API_URL}${path}`, {
       ...init,
       headers: {
-        ...getAuthHeaders(),
+        ...getAuthHeaders({ json: !isFormData }),
         ...(init.headers ?? {}),
       },
       cache: init.cache ?? 'no-store',
@@ -35,12 +37,66 @@ export async function portalFetch<T>(
   return payload.data as T;
 }
 
+export async function portalFetchBlob(
+  path: string,
+  init: RequestInit = {},
+): Promise<{ blob: Blob; fileName: string | null }> {
+  let response: Response;
+
+  try {
+    response = await fetch(`${BACKEND_API_URL}${path}`, {
+      ...init,
+      headers: {
+        ...getAuthHeaders({ json: false }),
+        ...(init.headers ?? {}),
+      },
+      cache: init.cache ?? 'no-store',
+    });
+  } catch {
+    throw new Error(
+      'Không thể kết nối đến backend. Vui lòng kiểm tra máy chủ API đang chạy ở http://localhost:3001.',
+    );
+  }
+
+  handleUnauthorizedResponse(response);
+
+  if (!response.ok) {
+    let payload: unknown = null;
+    try {
+      payload = await response.json();
+    } catch {
+      // Keep the domain-level fallback below when the response is not JSON.
+    }
+    throw new Error(getApiMessage(payload, 'Không thể tải file CV.'));
+  }
+
+  return {
+    blob: await response.blob(),
+    fileName: fileNameFromContentDisposition(
+      response.headers.get('Content-Disposition'),
+    ),
+  };
+}
+
 type ApiResponsePayload<T> = {
   data?: T;
   code?: string;
   message?: string | string[];
   error?: { code?: string; message?: string | string[] };
 };
+
+function fileNameFromContentDisposition(value: string | null) {
+  if (!value) return null;
+  const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return encoded;
+    }
+  }
+  return value.match(/filename="([^"]+)"/i)?.[1] ?? null;
+}
 
 export type ApiEmployerSummary = {
   id?: number;

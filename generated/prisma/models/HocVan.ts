@@ -506,14 +506,6 @@ export type HocVanUncheckedUpdateManyWithoutHoSoNguoiLaoDongNestedInput = {
   deleteMany?: Prisma.HocVanScalarWhereInput | Prisma.HocVanScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type HocVanCreateWithoutHoSoNguoiLaoDongInput = {
   trinhDo: string
   tenCoSoDaoTao: string

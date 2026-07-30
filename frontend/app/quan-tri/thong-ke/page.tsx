@@ -111,7 +111,7 @@ export default function StatisticsPage() {
     }
   }
 
-  const rows = data ? buildRows(data) : [];
+  const rows = data ? buildRows(data, reportType) : [];
 
   async function exportReport() {
     setExporting(true);
@@ -372,22 +372,40 @@ function reportQuery(
   return query ? `?${query}` : '';
 }
 
-function buildRows(data: StatisticsData): ReportRow[] {
-  return [
-    ...rowsFromRecord('Tài khoản', data.users?.byStatus, accountStatusLabels),
-    ...rowsFromRecord(
+function buildRows(data: StatisticsData, type: ReportType): ReportRow[] {
+  const sections: Record<ReportType, ReportRow[]> = {
+    summary: [
+      ...rowsFromRecord('Tài khoản', data.users?.byStatus, accountStatusLabels),
+      ...rowsFromRecord(
+        'Tin tuyển dụng',
+        data.jobStatistics?.byStatus,
+        jobStatusLabels,
+      ),
+      ...rowsFromRecord(
+        'Ứng tuyển',
+        data.applicationStatistics?.byStatus,
+        applicationStatusLabels,
+      ),
+    ],
+    users: rowsFromRecord(
+      'Tài khoản',
+      data.users?.byStatus,
+      accountStatusLabels,
+    ),
+    jobs: rowsFromRecord(
       'Tin tuyển dụng',
       data.jobStatistics?.byStatus,
       jobStatusLabels,
     ),
-    ...rowsFromRecord(
+    applications: rowsFromRecord(
       'Ứng tuyển',
       data.applicationStatistics?.byStatus,
       applicationStatusLabels,
     ),
-  ];
-}
+  };
 
+  return sections[type];
+}
 function rowsFromRecord(
   group: string,
   record: Record<string, number> | undefined,

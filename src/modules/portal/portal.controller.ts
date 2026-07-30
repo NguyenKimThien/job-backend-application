@@ -462,10 +462,16 @@ export class ProtectedPortalController {
     @Query() query: Record<string, string | undefined>,
     @Res({ passthrough: true }) response: Response,
   ) {
-    response.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    const format = query.format === 'json' ? 'json' : 'csv';
+    response.setHeader(
+      'Content-Type',
+      format === 'json'
+        ? 'application/json; charset=utf-8'
+        : 'text/csv; charset=utf-8',
+    );
     response.setHeader(
       'Content-Disposition',
-      `attachment; filename="bao-cao-viec-lam-${new Date().toISOString().slice(0, 10)}.csv"`,
+      `attachment; filename="bao-cao-viec-lam-${new Date().toISOString().slice(0, 10)}.${format}"`,
     );
     return this.portal.exportStatistics(query);
   }

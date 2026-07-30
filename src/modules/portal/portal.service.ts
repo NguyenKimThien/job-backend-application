@@ -1098,6 +1098,9 @@ export class PortalService {
 
   async adminJobs() {
     const items = await this.prisma.tinTuyenDung.findMany({
+      where: {
+        trangThaiKiemDuyet: { not: TrangThaiKiemDuyet.BAN_NHAP },
+      },
       include: this.jobInclude(),
       orderBy: { ngayTao: 'desc' },
     });
@@ -1278,39 +1281,99 @@ export class PortalService {
 
   async exportStatistics(query: Record<string, string | undefined> = {}) {
     const { data } = await this.statistics(query);
-    const rows: Array<[string, string, number]> = [
-      ['Tài khoản', 'Người lao động', data.workers],
-      ['Tài khoản', 'Nhà tuyển dụng', data.employers],
-      ['Tin tuyển dụng', 'Tổng số', data.jobs],
-      ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
-      ['Ứng tuyển', 'Tổng số', data.applications],
-      ...Object.entries(data.users.byStatus).map(
-        ([key, value]) =>
-          ['Trạng thái tài khoản', key, value as number] as [
-            string,
-            string,
-            number,
-          ],
-      ),
-      ...Object.entries(data.jobStatistics.byStatus).map(
-        ([key, value]) =>
-          ['Trạng thái tin', key, value as number] as [string, string, number],
-      ),
-      ...Object.entries(data.applicationStatistics.byStatus).map(
-        ([key, value]) =>
-          ['Trạng thái ứng tuyển', key, value as number] as [
-            string,
-            string,
-            number,
-          ],
-      ),
-    ];
+    const type = this.reportType(query.type);
+    const format = query.format === 'json' ? 'json' : 'csv';
+    const rowsByType: Record<
+      'summary' | 'users' | 'jobs' | 'applications',
+      Array<[string, string, number]>
+    > = {
+      summary: [
+        ['Tài khoản', 'Người lao động', data.workers],
+        ['Tài khoản', 'Nhà tuyển dụng', data.employers],
+        ['Tin tuyển dụng', 'Tổng số', data.jobs],
+        ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
+        ['Ứng tuyển', 'Tổng số', data.applications],
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái tài khoản',
+          data.users.byStatus,
+        ),
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái tin',
+          data.jobStatistics.byStatus,
+        ),
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái ứng tuyển',
+          data.applicationStatistics.byStatus,
+        ),
+      ],
+      users: [
+        ['Tài khoản', 'Người lao động', data.workers],
+        ['Tài khoản', 'Nhà tuyển dụng', data.employers],
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái tài khoản',
+          data.users.byStatus,
+        ),
+      ],
+      jobs: [
+        ['Tin tuyển dụng', 'Tổng số', data.jobs],
+        ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái tin',
+          data.jobStatistics.byStatus,
+        ),
+      ],
+      applications: [
+        ['Ứng tuyển', 'Tổng số', data.applications],
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái ứng tuyển',
+          data.applicationStatistics.byStatus,
+        ),
+      ],
+    };
+    const rows = rowsByType[type];
+
+    if (format === 'json') {
+      return JSON.stringify(
+        {
+          period: data.period,
+          type,
+          rows: rows.map(([group, label, value]) => ({ group, label, value })),
+        },
+        null,
+        2,
+      );
+    }
+
     const csv = [['Nhóm', 'Chỉ tiêu', 'Số lượng'], ...rows]
       .map((row) =>
         row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','),
       )
       .join('\r\n');
     return `\uFEFF${csv}`;
+  }
+
+  private reportType(
+    value?: string,
+  ): 'summary' | 'users' | 'jobs' | 'applications' {
+    if (
+      value === 'users' ||
+      value === 'jobs' ||
+      value === 'applications' ||
+      value === 'summary'
+    ) {
+      return value;
+    }
+    return 'summary';
+  }
+
+  private rowsFromStatisticsRecord(
+    group: string,
+    record: Record<string, unknown>,
+  ) {
+    return Object.entries(record).map(
+      ([key, value]) =>
+        [group, key, Number(value) || 0] as [string, string, number],
+    );
   }
 
   async changePassword(accountId: number, body: ChangePasswordDto) {

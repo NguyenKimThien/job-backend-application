@@ -410,6 +410,7 @@ export const ModelName = {
   TinTuyenDung: 'TinTuyenDung',
   TinTuyenDungKyNang: 'TinTuyenDungKyNang',
   UngTuyen: 'UngTuyen',
+  ThongTinPhongVan: 'ThongTinPhongVan',
   TinTuyenDungDaLuu: 'TinTuyenDungDaLuu',
   LichSuTrangThaiUngTuyen: 'LichSuTrangThaiUngTuyen',
   LichSuKiemDuyet: 'LichSuKiemDuyet',
@@ -429,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "taiKhoan" | "maXacThuc" | "hoSoNguoiLaoDong" | "hocVan" | "kinhNghiemLamViec" | "kyNang" | "hoSoKyNang" | "linhVuc" | "hoSoNhaTuyenDung" | "nganhNghe" | "tinTuyenDung" | "tinTuyenDungKyNang" | "ungTuyen" | "tinTuyenDungDaLuu" | "lichSuTrangThaiUngTuyen" | "lichSuKiemDuyet" | "thongBao"
+    modelProps: "taiKhoan" | "maXacThuc" | "hoSoNguoiLaoDong" | "hocVan" | "kinhNghiemLamViec" | "kyNang" | "hoSoKyNang" | "linhVuc" | "hoSoNhaTuyenDung" | "nganhNghe" | "tinTuyenDung" | "tinTuyenDungKyNang" | "ungTuyen" | "thongTinPhongVan" | "tinTuyenDungDaLuu" | "lichSuTrangThaiUngTuyen" | "lichSuKiemDuyet" | "thongBao"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1395,6 +1396,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ThongTinPhongVan: {
+      payload: Prisma.$ThongTinPhongVanPayload<ExtArgs>
+      fields: Prisma.ThongTinPhongVanFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ThongTinPhongVanFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ThongTinPhongVanFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>
+        }
+        findFirst: {
+          args: Prisma.ThongTinPhongVanFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ThongTinPhongVanFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>
+        }
+        findMany: {
+          args: Prisma.ThongTinPhongVanFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>[]
+        }
+        create: {
+          args: Prisma.ThongTinPhongVanCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>
+        }
+        createMany: {
+          args: Prisma.ThongTinPhongVanCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ThongTinPhongVanCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>[]
+        }
+        delete: {
+          args: Prisma.ThongTinPhongVanDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>
+        }
+        update: {
+          args: Prisma.ThongTinPhongVanUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>
+        }
+        deleteMany: {
+          args: Prisma.ThongTinPhongVanDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ThongTinPhongVanUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ThongTinPhongVanUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>[]
+        }
+        upsert: {
+          args: Prisma.ThongTinPhongVanUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ThongTinPhongVanPayload>
+        }
+        aggregate: {
+          args: Prisma.ThongTinPhongVanAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateThongTinPhongVan>
+        }
+        groupBy: {
+          args: Prisma.ThongTinPhongVanGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ThongTinPhongVanGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ThongTinPhongVanCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ThongTinPhongVanCountAggregateOutputType> | number
+        }
+      }
+    }
     TinTuyenDungDaLuu: {
       payload: Prisma.$TinTuyenDungDaLuuPayload<ExtArgs>
       fields: Prisma.TinTuyenDungDaLuuFieldRefs
@@ -1948,6 +2023,26 @@ export const UngTuyenScalarFieldEnum = {
 export type UngTuyenScalarFieldEnum = (typeof UngTuyenScalarFieldEnum)[keyof typeof UngTuyenScalarFieldEnum]
 
 
+export const ThongTinPhongVanScalarFieldEnum = {
+  id: 'id',
+  ungTuyenId: 'ungTuyenId',
+  thoiGianBatDau: 'thoiGianBatDau',
+  thoiGianKetThuc: 'thoiGianKetThuc',
+  hinhThucPhongVan: 'hinhThucPhongVan',
+  diaDiemPhongVan: 'diaDiemPhongVan',
+  duongDanPhongVan: 'duongDanPhongVan',
+  nguoiLienHe: 'nguoiLienHe',
+  soDienThoaiLienHe: 'soDienThoaiLienHe',
+  noiDungChuanBi: 'noiDungChuanBi',
+  ghiChuPhongVan: 'ghiChuPhongVan',
+  nguoiTaoId: 'nguoiTaoId',
+  ngayTao: 'ngayTao',
+  ngayCapNhat: 'ngayCapNhat'
+} as const
+
+export type ThongTinPhongVanScalarFieldEnum = (typeof ThongTinPhongVanScalarFieldEnum)[keyof typeof ThongTinPhongVanScalarFieldEnum]
+
+
 export const TinTuyenDungDaLuuScalarFieldEnum = {
   hoSoNguoiLaoDongId: 'hoSoNguoiLaoDongId',
   tinTuyenDungId: 'tinTuyenDungId',
@@ -2234,6 +2329,20 @@ export type ListEnumTrangThaiUngTuyenFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'HinhThucPhongVan'
+ */
+export type EnumHinhThucPhongVanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HinhThucPhongVan'>
+    
+
+
+/**
+ * Reference to a field of type 'HinhThucPhongVan[]'
+ */
+export type ListEnumHinhThucPhongVanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HinhThucPhongVan[]'>
+    
+
+
+/**
  * Reference to a field of type 'LoaiDoiTuongKiemDuyet'
  */
 export type EnumLoaiDoiTuongKiemDuyetFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LoaiDoiTuongKiemDuyet'>
@@ -2438,6 +2547,7 @@ export type GlobalOmitConfig = {
   tinTuyenDung?: Prisma.TinTuyenDungOmit
   tinTuyenDungKyNang?: Prisma.TinTuyenDungKyNangOmit
   ungTuyen?: Prisma.UngTuyenOmit
+  thongTinPhongVan?: Prisma.ThongTinPhongVanOmit
   tinTuyenDungDaLuu?: Prisma.TinTuyenDungDaLuuOmit
   lichSuTrangThaiUngTuyen?: Prisma.LichSuTrangThaiUngTuyenOmit
   lichSuKiemDuyet?: Prisma.LichSuKiemDuyetOmit

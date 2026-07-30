@@ -6,6 +6,7 @@ import { portalFetch, portalFetchBlob } from '@/lib/portal-api';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import {
+  MutableRefObject,
   ReactNode,
   SVGProps,
   useEffect,
@@ -45,6 +46,50 @@ type Experience = {
   moTaCongViec?: string | null;
 };
 
+type InterviewMode = 'TRUC_TIEP' | 'TRUC_TUYEN';
+
+type InterviewInfo = {
+  id: number;
+  thoiGianBatDau: string;
+  thoiGianKetThuc?: string | null;
+  hinhThucPhongVan: InterviewMode;
+  diaDiemPhongVan?: string | null;
+  duongDanPhongVan?: string | null;
+  nguoiLienHe: string;
+  soDienThoaiLienHe: string;
+  noiDungChuanBi?: string | null;
+  ghiChuPhongVan?: string | null;
+  ngayTao?: string | null;
+  ngayCapNhat?: string | null;
+};
+
+type InterviewForm = {
+  ngayPhongVan: string;
+  gioBatDau: string;
+  gioKetThuc: string;
+  hinhThucPhongVan: InterviewMode;
+  diaDiemPhongVan: string;
+  duongDanPhongVan: string;
+  nguoiLienHe: string;
+  soDienThoaiLienHe: string;
+  noiDungChuanBi: string;
+  ghiChuPhongVan: string;
+};
+
+type InterviewFormErrors = Partial<Record<keyof InterviewForm, string>>;
+
+type InterviewInvitationPayload = {
+  thoiGianBatDau: string;
+  thoiGianKetThuc?: string;
+  hinhThucPhongVan: InterviewMode;
+  diaDiemPhongVan?: string;
+  duongDanPhongVan?: string;
+  nguoiLienHe: string;
+  soDienThoaiLienHe: string;
+  noiDungChuanBi?: string;
+  ghiChuPhongVan?: string;
+};
+
 type ApplicantDetail = {
   id: number;
   hoTenSnapshot: string;
@@ -63,6 +108,12 @@ type ApplicantDetail = {
     title?: string | null;
     diaDiemLamViec?: string | null;
     location?: string | null;
+    nhaTuyenDung?: {
+      tenDonVi?: string | null;
+      nguoiDaiDien?: string | null;
+      soDienThoaiLienHe?: string | null;
+      taiKhoan?: { soDienThoai?: string | null } | null;
+    } | null;
   } | null;
   trangThaiHienTai: ApplicationStatus;
   lyDoTuChoi?: string | null;
@@ -96,6 +147,7 @@ type ApplicantDetail = {
     ghiChu?: string | null;
     ngayThayDoi: string;
   }>;
+  thongTinPhongVan?: InterviewInfo | null;
 };
 
 type ApplicationStatusHistory =
@@ -128,11 +180,21 @@ export default function ApplicantDetailPage() {
   const [error, setError] = useState('');
   const [rejectError, setRejectError] = useState('');
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [interviewForm, setInterviewForm] =
+    useState<InterviewForm>(emptyInterviewForm());
+  const [interviewErrors, setInterviewErrors] = useState<InterviewFormErrors>(
+    {},
+  );
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<ApplicationStatus | null>(null);
+  const [interviewSaving, setInterviewSaving] = useState(false);
   const [cvBusy, setCvBusy] = useState<'view' | 'download' | null>(null);
   const rejectTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const rejectButtonRef = useRef<HTMLButtonElement | null>(null);
+  const interviewFieldRefs = useRef<
+    Partial<Record<keyof InterviewForm, HTMLElement | null>>
+  >({});
 
   useEffect(() => {
     let active = true;
@@ -174,6 +236,16 @@ export default function ApplicantDetailPage() {
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [rejectDialogOpen, updating]);
+
+  useEffect(() => {
+    if (!interviewDialogOpen) return;
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !interviewSaving) closeInterviewDialog();
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [interviewDialogOpen, interviewSaving]);
 
   async function updateStatus(status: ApplicationStatus) {
     if (!item || !allowedTransitions.includes(status)) return false;
@@ -249,6 +321,72 @@ export default function ApplicantDetailPage() {
   async function confirmReject() {
     const success = await updateStatus('KHONG_PHU_HOP');
     if (success) closeRejectDialog();
+  }
+
+  function requestInterview() {
+    if (!item || interviewSaving) return;
+    setError('');
+    setInterviewErrors({});
+    setInterviewForm(createInterviewForm(item));
+    setInterviewDialogOpen(true);
+  }
+
+  function closeInterviewDialog() {
+    if (interviewSaving) return;
+    setInterviewDialogOpen(false);
+    setInterviewErrors({});
+  }
+
+  function changeInterviewField<K extends keyof InterviewForm>(
+    field: K,
+    value: InterviewForm[K],
+  ) {
+    setInterviewForm((current) => ({ ...current, [field]: value }));
+    setInterviewErrors((current) => {
+      if (!current[field]) return current;
+      const rest = { ...current };
+      delete rest[field];
+      return rest;
+    });
+  }
+
+  async function submitInterviewInvitation() {
+    if (!item || interviewSaving) return;
+    const validation = validateInterviewForm(interviewForm);
+    setInterviewErrors(validation.errors);
+    if (!validation.isValid || !validation.payload) {
+      const firstField = validation.firstError;
+      requestAnimationFrame(() =>
+        firstField ? interviewFieldRefs.current[firstField]?.focus() : null,
+      );
+      return;
+    }
+
+    try {
+      setInterviewSaving(true);
+      setError('');
+      setMessage('');
+      const updated = await portalFetch<ApplicantDetail>(
+        `/employer/jobs/${jobId}/applicants/${id}/interview`,
+        {
+          method: 'POST',
+          body: JSON.stringify(validation.payload),
+        },
+      );
+      setItem(updated);
+      setInterviewDialogOpen(false);
+      setInterviewForm(emptyInterviewForm());
+      setInterviewErrors({});
+      setMessage('Đã gửi lời mời phỏng vấn đến ứng viên.');
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Không thể gửi lời mời phỏng vấn. Vui lòng thử lại.',
+      );
+    } finally {
+      setInterviewSaving(false);
+    }
   }
 
   async function viewCv() {
@@ -342,6 +480,10 @@ export default function ApplicantDetailPage() {
   const visibleStatusHistory = getVisibleStatusHistory(
     item.lichSuTrangThaiUngTuyens,
   );
+  const interviewInfo = item.thongTinPhongVan ?? null;
+  const canInviteInterview = allowedTransitions.includes('MOI_PHONG_VAN');
+  const canEditInterview =
+    item.trangThaiHienTai === 'MOI_PHONG_VAN' && Boolean(interviewInfo);
 
   return (
     <SiteShell
@@ -612,18 +754,22 @@ export default function ApplicantDetailPage() {
             {message && <div className="form-message success">{message}</div>}
             {error && <div className="form-message error">{error}</div>}
 
-            {allowedTransitions.includes('MOI_PHONG_VAN') && (
+            {interviewInfo && (
+              <InterviewInfoCard
+                info={interviewInfo}
+                onEdit={canEditInterview ? requestInterview : undefined}
+              />
+            )}
+
+            {canInviteInterview && !interviewInfo && (
               <button
                 className="decision interview"
-                disabled={updating !== null}
-                onClick={() => {
-                  void updateStatus('MOI_PHONG_VAN');
-                }}
+                disabled={updating !== null || interviewSaving}
+                onClick={requestInterview}
+                type="button"
               >
                 <DetailIcon name="calendar" />
-                {updating === 'MOI_PHONG_VAN'
-                  ? 'Đang cập nhật...'
-                  : 'Mời phỏng vấn'}
+                Mời phỏng vấn
               </button>
             )}
             {allowedTransitions.includes('DA_PHONG_VAN') && (
@@ -661,8 +807,12 @@ export default function ApplicantDetailPage() {
                   className="form-group applicant-note-field"
                   htmlFor="reject-note"
                 >
-                  <span>Ghi chú xử lý</span>
-                  <small>Bắt buộc nhập khi từ chối hồ sơ.</small>
+                  <span>Lý do từ chối</span>
+                  <small
+                    className={rejectError ? 'applicant-note-help error' : ''}
+                  >
+                    Bắt buộc nhập khi từ chối hồ sơ.
+                  </small>
                   <textarea
                     aria-describedby={
                       rejectError ? 'reject-note-error' : undefined
@@ -672,7 +822,7 @@ export default function ApplicantDetailPage() {
                     ref={rejectTextareaRef}
                     value={note}
                     onChange={(event) => handleNoteChange(event.target.value)}
-                    placeholder="Nhập ghi chú hoặc lý do từ chối ứng viên..."
+                    placeholder="Nhập lý do từ chối hồ sơ ứng viên..."
                     rows={4}
                   />
                   {rejectError && (
@@ -726,6 +876,19 @@ export default function ApplicantDetailPage() {
           }}
         />
       )}
+      {interviewDialogOpen && (
+        <InterviewInvitationDialog
+          errors={interviewErrors}
+          fieldRefs={interviewFieldRefs}
+          form={interviewForm}
+          isSaving={interviewSaving}
+          onCancel={closeInterviewDialog}
+          onChange={changeInterviewField}
+          onSubmit={() => {
+            void submitInterviewInvitation();
+          }}
+        />
+      )}
     </SiteShell>
   );
 }
@@ -756,6 +919,373 @@ function Info({ label, value }: { label: string; value?: string | null }) {
 
 function EmptyText({ text }: { text: string }) {
   return <p className="applicant-empty-text">{text}</p>;
+}
+
+function InterviewInfoCard({
+  info,
+  onEdit,
+}: {
+  info: InterviewInfo;
+  onEdit?: () => void;
+}) {
+  const isOnline = info.hinhThucPhongVan === 'TRUC_TUYEN';
+  const hasValidUrl = isValidHttpUrl(info.duongDanPhongVan);
+
+  return (
+    <section className="applicant-interview-info">
+      <div className="applicant-interview-info-header">
+        <div>
+          <span>Thông tin phỏng vấn</span>
+          <strong>{formatInterviewTimeRange(info)}</strong>
+        </div>
+        {onEdit && (
+          <button onClick={onEdit} type="button">
+            <DetailIcon name="edit" />
+            Chỉnh sửa
+          </button>
+        )}
+      </div>
+      <div className="applicant-interview-detail-list">
+        <InterviewDetail
+          icon="calendar"
+          label="Hình thức"
+          value={interviewModeLabel(info.hinhThucPhongVan)}
+        />
+        {isOnline ? (
+          hasValidUrl && (
+            <div className="applicant-interview-detail">
+              <DetailIcon name="link" />
+              <div>
+                <span>Đường dẫn tham gia</span>
+                <a
+                  href={info.duongDanPhongVan ?? undefined}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {info.duongDanPhongVan}
+                </a>
+              </div>
+            </div>
+          )
+        ) : (
+          <InterviewDetail
+            icon="mapPin"
+            label="Địa điểm"
+            value={info.diaDiemPhongVan}
+          />
+        )}
+        <InterviewDetail
+          icon="user"
+          label="Người liên hệ"
+          value={info.nguoiLienHe}
+        />
+        <InterviewDetail
+          icon="phone"
+          label="Số điện thoại"
+          value={info.soDienThoaiLienHe}
+        />
+        <InterviewDetail
+          icon="fileText"
+          label="Nội dung chuẩn bị"
+          value={info.noiDungChuanBi}
+        />
+        <InterviewDetail
+          icon="fileText"
+          label="Ghi chú"
+          value={info.ghiChuPhongVan}
+        />
+      </div>
+    </section>
+  );
+}
+
+function InterviewDetail({
+  icon,
+  label,
+  value,
+}: {
+  icon: DetailIconName;
+  label: string;
+  value?: string | null;
+}) {
+  if (!value) return null;
+  return (
+    <div className="applicant-interview-detail">
+      <DetailIcon name={icon} />
+      <div>
+        <span>{label}</span>
+        <p>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function InterviewInvitationDialog({
+  errors,
+  fieldRefs,
+  form,
+  isSaving,
+  onCancel,
+  onChange,
+  onSubmit,
+}: {
+  errors: InterviewFormErrors;
+  fieldRefs: MutableRefObject<
+    Partial<Record<keyof InterviewForm, HTMLElement | null>>
+  >;
+  form: InterviewForm;
+  isSaving: boolean;
+  onCancel: () => void;
+  onChange: <K extends keyof InterviewForm>(
+    field: K,
+    value: InterviewForm[K],
+  ) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <div
+      className="job-applicant-dialog-backdrop applicant-interview-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSaving) onCancel();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-labelledby="applicant-interview-dialog-title"
+        aria-modal="true"
+        className="job-applicant-dialog applicant-interview-dialog"
+        role="dialog"
+      >
+        <div className="applicant-interview-dialog-header">
+          <div>
+            <h2 id="applicant-interview-dialog-title">
+              Mời ứng viên phỏng vấn
+            </h2>
+            <p>
+              Vui lòng nhập đầy đủ thông tin để ứng viên có thể tham gia phỏng
+              vấn đúng thời gian và địa điểm.
+            </p>
+          </div>
+          <button
+            aria-label="Đóng hộp thoại mời phỏng vấn"
+            className="job-applicant-dialog-close"
+            disabled={isSaving}
+            onClick={onCancel}
+            type="button"
+          >
+            <DetailIcon name="xCircle" />
+          </button>
+        </div>
+
+        <div className="applicant-interview-form">
+          <InterviewField error={errors.ngayPhongVan} label="Ngày phỏng vấn">
+            <input
+              aria-invalid={Boolean(errors.ngayPhongVan)}
+              ref={(element) => {
+                fieldRefs.current.ngayPhongVan = element;
+              }}
+              type="date"
+              value={form.ngayPhongVan}
+              onChange={(event) => onChange('ngayPhongVan', event.target.value)}
+            />
+          </InterviewField>
+          <InterviewField error={errors.gioBatDau} label="Giờ bắt đầu">
+            <input
+              aria-invalid={Boolean(errors.gioBatDau)}
+              ref={(element) => {
+                fieldRefs.current.gioBatDau = element;
+              }}
+              type="time"
+              value={form.gioBatDau}
+              onChange={(event) => onChange('gioBatDau', event.target.value)}
+            />
+          </InterviewField>
+          <InterviewField error={errors.gioKetThuc} label="Giờ kết thúc">
+            <input
+              aria-invalid={Boolean(errors.gioKetThuc)}
+              ref={(element) => {
+                fieldRefs.current.gioKetThuc = element;
+              }}
+              type="time"
+              value={form.gioKetThuc}
+              onChange={(event) => onChange('gioKetThuc', event.target.value)}
+            />
+          </InterviewField>
+          <InterviewField
+            error={errors.hinhThucPhongVan}
+            label="Hình thức phỏng vấn"
+          >
+            <select
+              aria-invalid={Boolean(errors.hinhThucPhongVan)}
+              ref={(element) => {
+                fieldRefs.current.hinhThucPhongVan = element;
+              }}
+              value={form.hinhThucPhongVan}
+              onChange={(event) =>
+                onChange(
+                  'hinhThucPhongVan',
+                  event.target.value as InterviewMode,
+                )
+              }
+            >
+              <option value="TRUC_TIEP">Phỏng vấn trực tiếp</option>
+              <option value="TRUC_TUYEN">Phỏng vấn trực tuyến</option>
+            </select>
+          </InterviewField>
+
+          {form.hinhThucPhongVan === 'TRUC_TIEP' ? (
+            <InterviewField
+              className="span-full"
+              error={errors.diaDiemPhongVan}
+              label="Địa điểm phỏng vấn"
+            >
+              <textarea
+                aria-invalid={Boolean(errors.diaDiemPhongVan)}
+                placeholder="Ví dụ: Tầng 5, số 123 phố X, quận Y, Hà Nội"
+                ref={(element) => {
+                  fieldRefs.current.diaDiemPhongVan = element;
+                }}
+                rows={3}
+                value={form.diaDiemPhongVan}
+                onChange={(event) =>
+                  onChange('diaDiemPhongVan', event.target.value)
+                }
+              />
+            </InterviewField>
+          ) : (
+            <InterviewField
+              className="span-full"
+              error={errors.duongDanPhongVan}
+              label="Đường dẫn tham gia phỏng vấn trực tuyến"
+            >
+              <input
+                aria-invalid={Boolean(errors.duongDanPhongVan)}
+                placeholder="https://meet.google.com/..."
+                ref={(element) => {
+                  fieldRefs.current.duongDanPhongVan = element;
+                }}
+                type="url"
+                value={form.duongDanPhongVan}
+                onChange={(event) =>
+                  onChange('duongDanPhongVan', event.target.value)
+                }
+              />
+            </InterviewField>
+          )}
+
+          <InterviewField error={errors.nguoiLienHe} label="Người liên hệ">
+            <input
+              aria-invalid={Boolean(errors.nguoiLienHe)}
+              ref={(element) => {
+                fieldRefs.current.nguoiLienHe = element;
+              }}
+              value={form.nguoiLienHe}
+              onChange={(event) => onChange('nguoiLienHe', event.target.value)}
+            />
+          </InterviewField>
+          <InterviewField
+            error={errors.soDienThoaiLienHe}
+            label="Số điện thoại liên hệ"
+          >
+            <input
+              aria-invalid={Boolean(errors.soDienThoaiLienHe)}
+              inputMode="tel"
+              ref={(element) => {
+                fieldRefs.current.soDienThoaiLienHe = element;
+              }}
+              value={form.soDienThoaiLienHe}
+              onChange={(event) =>
+                onChange(
+                  'soDienThoaiLienHe',
+                  event.target.value.replace(/[^\d+\s().-]/g, ''),
+                )
+              }
+            />
+          </InterviewField>
+          <InterviewField
+            className="span-full"
+            error={errors.noiDungChuanBi}
+            label="Nội dung cần chuẩn bị"
+          >
+            <textarea
+              aria-invalid={Boolean(errors.noiDungChuanBi)}
+              placeholder="Ví dụ: Mang theo CCCD, bản in CV, hồ sơ năng lực hoặc máy tính cá nhân..."
+              ref={(element) => {
+                fieldRefs.current.noiDungChuanBi = element;
+              }}
+              rows={3}
+              value={form.noiDungChuanBi}
+              onChange={(event) =>
+                onChange('noiDungChuanBi', event.target.value)
+              }
+            />
+          </InterviewField>
+          <InterviewField
+            className="span-full"
+            error={errors.ghiChuPhongVan}
+            label="Ghi chú bổ sung"
+          >
+            <textarea
+              aria-invalid={Boolean(errors.ghiChuPhongVan)}
+              placeholder="Nhập thêm hướng dẫn dành cho ứng viên..."
+              ref={(element) => {
+                fieldRefs.current.ghiChuPhongVan = element;
+              }}
+              rows={3}
+              value={form.ghiChuPhongVan}
+              onChange={(event) =>
+                onChange('ghiChuPhongVan', event.target.value)
+              }
+            />
+          </InterviewField>
+        </div>
+
+        <div className="applicant-interview-dialog-footer">
+          <button disabled={isSaving} onClick={onCancel} type="button">
+            Hủy
+          </button>
+          <button
+            className="primary"
+            disabled={isSaving}
+            onClick={onSubmit}
+            type="button"
+          >
+            {isSaving ? 'Đang gửi lời mời...' : 'Gửi lời mời phỏng vấn'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function InterviewField({
+  children,
+  className,
+  error,
+  label,
+}: {
+  children: ReactNode;
+  className?: string;
+  error?: string;
+  label: string;
+}) {
+  const id = `interview-${label
+    .toLocaleLowerCase('vi-VN')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-')}`;
+  return (
+    <label className={`applicant-interview-field ${className ?? ''}`.trim()}>
+      <span>{label}</span>
+      {children}
+      {error && (
+        <small id={`${id}-error`} role="alert">
+          {error}
+        </small>
+      )}
+    </label>
+  );
 }
 
 function RejectConfirmDialog({
@@ -896,6 +1426,199 @@ function parseDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function emptyInterviewForm(): InterviewForm {
+  return {
+    ngayPhongVan: '',
+    gioBatDau: '',
+    gioKetThuc: '',
+    hinhThucPhongVan: 'TRUC_TIEP',
+    diaDiemPhongVan: '',
+    duongDanPhongVan: '',
+    nguoiLienHe: '',
+    soDienThoaiLienHe: '',
+    noiDungChuanBi: '',
+    ghiChuPhongVan: '',
+  };
+}
+
+function createInterviewForm(item: ApplicantDetail): InterviewForm {
+  const interview = item.thongTinPhongVan;
+  const employer = item.tinTuyenDung?.nhaTuyenDung;
+  return {
+    ngayPhongVan: interview ? toDateInputValue(interview.thoiGianBatDau) : '',
+    gioBatDau: interview ? toTimeInputValue(interview.thoiGianBatDau) : '',
+    gioKetThuc: interview?.thoiGianKetThuc
+      ? toTimeInputValue(interview.thoiGianKetThuc)
+      : '',
+    hinhThucPhongVan: interview?.hinhThucPhongVan ?? 'TRUC_TIEP',
+    diaDiemPhongVan: interview?.diaDiemPhongVan ?? '',
+    duongDanPhongVan: interview?.duongDanPhongVan ?? '',
+    nguoiLienHe:
+      interview?.nguoiLienHe ||
+      employer?.nguoiDaiDien ||
+      employer?.tenDonVi ||
+      '',
+    soDienThoaiLienHe:
+      interview?.soDienThoaiLienHe ||
+      employer?.soDienThoaiLienHe ||
+      employer?.taiKhoan?.soDienThoai ||
+      '',
+    noiDungChuanBi: interview?.noiDungChuanBi ?? '',
+    ghiChuPhongVan: interview?.ghiChuPhongVan ?? '',
+  };
+}
+
+function validateInterviewForm(form: InterviewForm): {
+  errors: InterviewFormErrors;
+  firstError?: keyof InterviewForm;
+  isValid: boolean;
+  payload?: InterviewInvitationPayload;
+} {
+  const errors: InterviewFormErrors = {};
+  const fields: Array<keyof InterviewForm> = [
+    'ngayPhongVan',
+    'gioBatDau',
+    'gioKetThuc',
+    'hinhThucPhongVan',
+    'diaDiemPhongVan',
+    'duongDanPhongVan',
+    'nguoiLienHe',
+    'soDienThoaiLienHe',
+  ];
+
+  if (!form.ngayPhongVan) {
+    errors.ngayPhongVan = 'Vui lòng chọn ngày phỏng vấn.';
+  }
+  if (!form.gioBatDau) {
+    errors.gioBatDau = 'Vui lòng chọn giờ bắt đầu.';
+  }
+
+  const start = getLocalDateTime(form.ngayPhongVan, form.gioBatDau);
+  const end = form.gioKetThuc
+    ? getLocalDateTime(form.ngayPhongVan, form.gioKetThuc)
+    : null;
+  if (start && start <= new Date()) {
+    errors.ngayPhongVan =
+      'Thời gian phỏng vấn phải lớn hơn thời gian hiện tại.';
+  }
+  if (start && end && end <= start) {
+    errors.gioKetThuc = 'Giờ kết thúc phải sau giờ bắt đầu.';
+  }
+  if (!form.hinhThucPhongVan) {
+    errors.hinhThucPhongVan = 'Vui lòng chọn hình thức phỏng vấn.';
+  }
+  if (form.hinhThucPhongVan === 'TRUC_TIEP' && !form.diaDiemPhongVan.trim()) {
+    errors.diaDiemPhongVan = 'Vui lòng nhập địa điểm phỏng vấn trực tiếp.';
+  }
+  if (form.hinhThucPhongVan === 'TRUC_TUYEN') {
+    if (!form.duongDanPhongVan.trim()) {
+      errors.duongDanPhongVan = 'Vui lòng nhập đường dẫn tham gia phỏng vấn.';
+    } else if (!isValidHttpUrl(form.duongDanPhongVan)) {
+      errors.duongDanPhongVan = 'Đường dẫn phỏng vấn không hợp lệ.';
+    }
+  }
+  if (!form.nguoiLienHe.trim()) {
+    errors.nguoiLienHe = 'Vui lòng nhập tên người liên hệ.';
+  }
+  const phone = normalizePhoneInput(form.soDienThoaiLienHe);
+  if (!phone) {
+    errors.soDienThoaiLienHe = 'Vui lòng nhập số điện thoại liên hệ.';
+  } else if (!/^\+84\d{9}$/.test(phone)) {
+    errors.soDienThoaiLienHe = 'Số điện thoại liên hệ không hợp lệ.';
+  }
+
+  const firstError = fields.find((field) => errors[field]);
+  if (firstError || !start) {
+    return { errors, firstError, isValid: false };
+  }
+
+  const payload: InterviewInvitationPayload = {
+    thoiGianBatDau: toLocalIsoString(start),
+    hinhThucPhongVan: form.hinhThucPhongVan,
+    nguoiLienHe: form.nguoiLienHe.trim(),
+    soDienThoaiLienHe: phone,
+  };
+  if (end) payload.thoiGianKetThuc = toLocalIsoString(end);
+  if (form.hinhThucPhongVan === 'TRUC_TIEP') {
+    payload.diaDiemPhongVan = form.diaDiemPhongVan.trim();
+  } else {
+    payload.duongDanPhongVan = form.duongDanPhongVan.trim();
+  }
+  if (form.noiDungChuanBi.trim()) {
+    payload.noiDungChuanBi = form.noiDungChuanBi.trim();
+  }
+  if (form.ghiChuPhongVan.trim()) {
+    payload.ghiChuPhongVan = form.ghiChuPhongVan.trim();
+  }
+
+  return { errors, isValid: true, payload };
+}
+
+function getLocalDateTime(dateValue: string, timeValue: string) {
+  if (!dateValue || !timeValue) return null;
+  const date = new Date(`${dateValue}T${timeValue}:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function toDateInputValue(value?: string | null) {
+  const date = parseDate(value);
+  if (!date) return '';
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(
+    date.getDate(),
+  )}`;
+}
+
+function toTimeInputValue(value?: string | null) {
+  const date = parseDate(value);
+  if (!date) return '';
+  return `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
+}
+
+function toLocalIsoString(date: Date) {
+  const offset = -date.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const absolute = Math.abs(offset);
+  const hours = padDatePart(Math.floor(absolute / 60));
+  const minutes = padDatePart(absolute % 60);
+  return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(
+    date.getDate(),
+  )}T${padDatePart(date.getHours())}:${padDatePart(
+    date.getMinutes(),
+  )}:00${sign}${hours}:${minutes}`;
+}
+
+function padDatePart(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+function normalizePhoneInput(value: string) {
+  const compact = value.trim().replace(/[\s().-]/g, '');
+  if (!compact) return '';
+  if (/^0\d{9}$/.test(compact)) return `+84${compact.slice(1)}`;
+  if (/^84\d{9}$/.test(compact)) return `+${compact}`;
+  return compact;
+}
+
+function interviewModeLabel(value: InterviewMode) {
+  return value === 'TRUC_TIEP' ? 'Phỏng vấn trực tiếp' : 'Phỏng vấn trực tuyến';
+}
+
+function formatInterviewTimeRange(info: InterviewInfo) {
+  const start = formatDateTime(info.thoiGianBatDau);
+  const end = info.thoiGianKetThuc ? formatDateTime(info.thoiGianKetThuc) : '';
+  return end ? `${start} - ${end}` : start;
+}
+
+function isValidHttpUrl(value?: string | null) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function getVisibleStatusHistory(histories: ApplicationStatusHistory[]) {
   return [...histories]
     .sort(
@@ -985,10 +1708,14 @@ type DetailIconName =
   | 'calendar'
   | 'checkCircle'
   | 'download'
+  | 'edit'
   | 'eye'
   | 'fileText'
+  | 'link'
   | 'mail'
+  | 'mapPin'
   | 'phone'
+  | 'user'
   | 'xCircle';
 
 function DetailIcon({
@@ -1009,6 +1736,7 @@ function DetailIcon({
       </>
     ),
     download: <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" />,
+    edit: <path d="M12 20h9M16.5 3.5l4 4L8 20H4v-4L16.5 3.5Z" />,
     eye: (
       <>
         <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
@@ -1016,9 +1744,24 @@ function DetailIcon({
       </>
     ),
     fileText: <path d="M6 3h8l4 4v14H6V3Zm8 0v5h5M9 13h6M9 17h6" />,
+    link: (
+      <path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1" />
+    ),
     mail: <path d="M4 6h16v12H4V6Zm0 1 8 6 8-6" />,
+    mapPin: (
+      <>
+        <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </>
+    ),
     phone: (
       <path d="M6 4h4l2 5-3 2a11 11 0 0 0 4 4l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2Z" />
+    ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </>
     ),
     xCircle: (
       <>

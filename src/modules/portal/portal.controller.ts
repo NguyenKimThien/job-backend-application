@@ -33,6 +33,7 @@ import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
 import { Roles } from '../../common/auth/roles.decorator.js';
 import { RolesGuard } from '../../common/auth/roles.guard.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { InviteCandidateInterviewDto } from './dto/invite-candidate-interview.dto.js';
 import { PortalService } from './portal.service.js';
 
 const cvUploadInterceptor = FileInterceptor('file', {
@@ -320,7 +321,28 @@ export class ProtectedPortalController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: Record<string, any>,
   ) {
-    return this.portal.updateApplicationStatus(request.user.sub, jobId, id, body);
+    return this.portal.updateApplicationStatus(
+      request.user.sub,
+      jobId,
+      id,
+      body,
+    );
+  }
+
+  @Post('employer/jobs/:jobId/applicants/:id/interview')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  inviteCandidateInterview(
+    @Req() request: AuthenticatedRequest,
+    @Param('jobId', ParseIntPipe) jobId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: InviteCandidateInterviewDto,
+  ) {
+    return this.portal.inviteCandidateInterview(
+      request.user.sub,
+      jobId,
+      id,
+      body,
+    );
   }
 
   @Get('notifications')
@@ -343,7 +365,10 @@ export class ProtectedPortalController {
 
   @Post('account/logout')
   logout() {
-    return { success: true, message: 'Đăng xuất thành công. Hãy xóa access token ở trình duyệt.' };
+    return {
+      success: true,
+      message: 'Đăng xuất thành công. Hãy xóa access token ở trình duyệt.',
+    };
   }
 
   @Patch('account/password')
@@ -465,7 +490,10 @@ function streamCv(
   return new StreamableFile(createReadStream(file.absolutePath));
 }
 
-function contentDisposition(disposition: 'inline' | 'attachment', fileName: string) {
+function contentDisposition(
+  disposition: 'inline' | 'attachment',
+  fileName: string,
+) {
   const fallback = fileName
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')

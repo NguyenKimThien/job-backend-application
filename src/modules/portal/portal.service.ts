@@ -1,9 +1,17 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcrypt';
 import { randomInt, randomUUID } from 'node:crypto';
-import { copyFile, mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import {
+  copyFile,
+  mkdir,
+  readFile,
+  stat,
+  unlink,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
 import {
+  HinhThucPhongVan,
   HinhThucLamViec,
   LoaiDoiTuongKiemDuyet,
   LoaiThongBao,
@@ -18,6 +26,7 @@ import { ApiError } from '../../common/api-error.js';
 import { MailService } from '../mail/mail.service.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { InviteCandidateInterviewDto } from './dto/invite-candidate-interview.dto.js';
 
 const maxCvSize = 5 * 1024 * 1024;
 const workerCvDir = 'uploads/cv';
@@ -228,7 +237,9 @@ export class PortalService {
         }
       }
       if (Array.isArray(body.hocVans)) {
-        await tx.hocVan.deleteMany({ where: { hoSoNguoiLaoDongId: profile.id } });
+        await tx.hocVan.deleteMany({
+          where: { hoSoNguoiLaoDongId: profile.id },
+        });
         if (body.hocVans.length) {
           await tx.hocVan.createMany({
             data: body.hocVans.map((item: any) => ({
@@ -237,7 +248,9 @@ export class PortalService {
               tenCoSoDaoTao: item.tenCoSoDaoTao,
               chuyenNganh: item.chuyenNganh || null,
               namBatDau: Number(item.namBatDau),
-              namTotNghiep: item.namTotNghiep ? Number(item.namTotNghiep) : null,
+              namTotNghiep: item.namTotNghiep
+                ? Number(item.namTotNghiep)
+                : null,
               dangHoc: Boolean(item.dangHoc),
               xepLoai: item.xepLoai || null,
             })),
@@ -345,7 +358,8 @@ export class PortalService {
       where: { taiKhoanId: accountId },
       include: { taiKhoan: true },
     });
-    if (!profile) this.notFound('Bạn cần hoàn thiện hồ sơ trước khi ứng tuyển.');
+    if (!profile)
+      this.notFound('Bạn cần hoàn thiện hồ sơ trước khi ứng tuyển.');
     const job = await this.prisma.tinTuyenDung.findUnique({
       where: { id: jobId },
       include: { nhaTuyenDung: true },
@@ -447,7 +461,10 @@ export class PortalService {
   async workerApplications(accountId: number) {
     const items = await this.prisma.ungTuyen.findMany({
       where: { hoSoNguoiLaoDong: { taiKhoanId: accountId } },
-      include: { tinTuyenDung: { include: this.jobInclude() } },
+      include: {
+        thongTinPhongVan: true,
+        tinTuyenDung: { include: this.jobInclude() },
+      },
       orderBy: { ngayNop: 'desc' },
     });
     return {
@@ -516,18 +533,26 @@ export class PortalService {
         website: body.website || null,
         logoUrl: body.logoUrl || null,
         moTaDonVi: body.moTaDonVi || null,
-        tepGiayPhepUrl: body.tepGiayPhepUrl || body.tepGiayPhepKinhDoanh || null,
+        tepGiayPhepUrl:
+          body.tepGiayPhepUrl || body.tepGiayPhepKinhDoanh || null,
         trangThaiDuyet: TrangThaiKiemDuyet.CHO_DUYET,
         ngayGuiDuyet: new Date(),
       },
     });
-    return { success: true, message: 'Đã cập nhật và gửi hồ sơ chờ duyệt.', data: profile };
+    return {
+      success: true,
+      message: 'Đã cập nhật và gửi hồ sơ chờ duyệt.',
+      data: profile,
+    };
   }
 
   async employerJobs(accountId: number) {
     const items = await this.prisma.tinTuyenDung.findMany({
       where: { nhaTuyenDung: { taiKhoanId: accountId } },
-      include: { ...this.jobInclude(), _count: { select: { ungTuyens: true } } },
+      include: {
+        ...this.jobInclude(),
+        _count: { select: { ungTuyens: true } },
+      },
       orderBy: { ngayTao: 'desc' },
     });
     return {
@@ -578,7 +603,11 @@ export class PortalService {
       );
       return created;
     });
-    return { success: true, message: 'Đã gửi tin tuyển dụng chờ duyệt.', data: job };
+    return {
+      success: true,
+      message: 'Đã gửi tin tuyển dụng chờ duyệt.',
+      data: job,
+    };
   }
 
   async updateEmployerJob(
@@ -590,7 +619,8 @@ export class PortalService {
       where: { id: jobId, nhaTuyenDung: { taiKhoanId: accountId } },
       include: { nhaTuyenDung: true },
     });
-    if (!current) this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
+    if (!current)
+      this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
     if (current.trangThaiKiemDuyet !== TrangThaiKiemDuyet.TU_CHOI) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_EDITABLE',
@@ -622,7 +652,11 @@ export class PortalService {
       );
       return item;
     });
-    return { success: true, message: 'Đã cập nhật và gửi lại tin chờ duyệt.', data: updated };
+    return {
+      success: true,
+      message: 'Đã cập nhật và gửi lại tin chờ duyệt.',
+      data: updated,
+    };
   }
 
   async employerApplicants(accountId: number, jobId: number) {
@@ -632,7 +666,10 @@ export class PortalService {
       include: { hoSoNguoiLaoDong: true },
       orderBy: { ngayNop: 'desc' },
     });
-    return { success: true, data: items.map((item) => this.mapApplication(item)) };
+    return {
+      success: true,
+      data: items.map((item) => this.mapApplication(item)),
+    };
   }
 
   async employerApplicant(accountId: number, jobId: number, id: number) {
@@ -648,6 +685,22 @@ export class PortalService {
             hoSoKyNangs: { include: { kyNang: true } },
           },
         },
+        tinTuyenDung: {
+          select: {
+            id: true,
+            viTriTuyenDung: true,
+            diaDiemLamViec: true,
+            nhaTuyenDung: {
+              select: {
+                tenDonVi: true,
+                nguoiDaiDien: true,
+                soDienThoaiLienHe: true,
+                taiKhoan: { select: { soDienThoai: true } },
+              },
+            },
+          },
+        },
+        thongTinPhongVan: true,
         lichSuTrangThaiUngTuyens: true,
       },
     });
@@ -716,18 +769,9 @@ export class PortalService {
     if (!current) this.notFound('Không tìm thấy ứng viên.');
     const status = body.status as TrangThaiUngTuyen;
     const allowed: Partial<Record<TrangThaiUngTuyen, TrangThaiUngTuyen[]>> = {
-      [TrangThaiUngTuyen.DA_NOP]: [
-        TrangThaiUngTuyen.MOI_PHONG_VAN,
-        TrangThaiUngTuyen.KHONG_PHU_HOP,
-      ],
-      [TrangThaiUngTuyen.DA_XEM]: [
-        TrangThaiUngTuyen.MOI_PHONG_VAN,
-        TrangThaiUngTuyen.KHONG_PHU_HOP,
-      ],
-      [TrangThaiUngTuyen.DUOC_CHON_SO_BO]: [
-        TrangThaiUngTuyen.MOI_PHONG_VAN,
-        TrangThaiUngTuyen.KHONG_PHU_HOP,
-      ],
+      [TrangThaiUngTuyen.DA_NOP]: [TrangThaiUngTuyen.KHONG_PHU_HOP],
+      [TrangThaiUngTuyen.DA_XEM]: [TrangThaiUngTuyen.KHONG_PHU_HOP],
+      [TrangThaiUngTuyen.DUOC_CHON_SO_BO]: [TrangThaiUngTuyen.KHONG_PHU_HOP],
       [TrangThaiUngTuyen.MOI_PHONG_VAN]: [
         TrangThaiUngTuyen.DA_PHONG_VAN,
         TrangThaiUngTuyen.TRUNG_TUYEN,
@@ -738,8 +782,10 @@ export class PortalService {
         TrangThaiUngTuyen.KHONG_PHU_HOP,
       ],
     };
-    if (!Object.values(TrangThaiUngTuyen).includes(status) ||
-        !allowed[current.trangThaiHienTai]?.includes(status)) {
+    if (
+      !Object.values(TrangThaiUngTuyen).includes(status) ||
+      !allowed[current.trangThaiHienTai]?.includes(status)
+    ) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_APPLICATION_TRANSITION',
         message: 'Chuyển trạng thái ứng tuyển không hợp lệ.',
@@ -753,7 +799,7 @@ export class PortalService {
           ngayCapNhatTrangThai: new Date(),
           lyDoTuChoi:
             status === TrangThaiUngTuyen.KHONG_PHU_HOP
-              ? body.reason ?? body.note ?? null
+              ? (body.reason ?? body.note ?? null)
               : null,
         },
       });
@@ -793,6 +839,137 @@ export class PortalService {
     };
   }
 
+  async inviteCandidateInterview(
+    accountId: number,
+    jobId: number,
+    id: number,
+    dto: InviteCandidateInterviewDto,
+  ) {
+    const current = await this.prisma.ungTuyen.findFirst({
+      where: {
+        id,
+        tinTuyenDungId: jobId,
+        tinTuyenDung: { nhaTuyenDung: { taiKhoanId: accountId } },
+      },
+      include: {
+        hoSoNguoiLaoDong: {
+          include: { taiKhoan: { select: { email: true, soDienThoai: true } } },
+        },
+        tinTuyenDung: {
+          include: {
+            nhaTuyenDung: {
+              include: {
+                taiKhoan: { select: { email: true, soDienThoai: true } },
+              },
+            },
+          },
+        },
+        thongTinPhongVan: true,
+      },
+    });
+    if (!current) this.notFound('Không tìm thấy ứng viên.');
+
+    const allowedStatuses: TrangThaiUngTuyen[] = [
+      TrangThaiUngTuyen.DA_NOP,
+      TrangThaiUngTuyen.DA_XEM,
+      TrangThaiUngTuyen.DUOC_CHON_SO_BO,
+      TrangThaiUngTuyen.MOI_PHONG_VAN,
+    ];
+    if (!allowedStatuses.includes(current.trangThaiHienTai)) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INTERVIEW_INVITATION_NOT_ALLOWED',
+        message: 'Trạng thái hồ sơ hiện tại không cho phép mời phỏng vấn.',
+      });
+    }
+
+    const interviewData = this.validateInterviewInvitation(dto);
+    const updatedAt = new Date();
+    const updated = await this.prisma.$transaction(async (tx) => {
+      await tx.thongTinPhongVan.upsert({
+        where: { ungTuyenId: id },
+        create: {
+          ungTuyenId: id,
+          nguoiTaoId: accountId,
+          ...interviewData,
+        },
+        update: {
+          nguoiTaoId: accountId,
+          ...interviewData,
+        },
+      });
+
+      const application = await tx.ungTuyen.update({
+        where: { id },
+        data: {
+          trangThaiHienTai: TrangThaiUngTuyen.MOI_PHONG_VAN,
+          ngayCapNhatTrangThai: updatedAt,
+          lyDoTuChoi: null,
+        },
+        include: {
+          hoSoNguoiLaoDong: {
+            include: {
+              taiKhoan: { select: { email: true, soDienThoai: true } },
+              hocVans: true,
+              kinhNghiemLamViecs: true,
+              hoSoKyNangs: { include: { kyNang: true } },
+            },
+          },
+          tinTuyenDung: {
+            select: {
+              id: true,
+              viTriTuyenDung: true,
+              diaDiemLamViec: true,
+              nhaTuyenDung: {
+                select: {
+                  tenDonVi: true,
+                  nguoiDaiDien: true,
+                  soDienThoaiLienHe: true,
+                  taiKhoan: { select: { email: true, soDienThoai: true } },
+                },
+              },
+            },
+          },
+          thongTinPhongVan: true,
+          lichSuTrangThaiUngTuyens: true,
+        },
+      });
+
+      if (current.trangThaiHienTai !== TrangThaiUngTuyen.MOI_PHONG_VAN) {
+        await tx.lichSuTrangThaiUngTuyen.create({
+          data: {
+            ungTuyenId: id,
+            nguoiThucHienId: accountId,
+            trangThaiTruoc: current.trangThaiHienTai,
+            trangThaiSau: TrangThaiUngTuyen.MOI_PHONG_VAN,
+            ghiChu: dto.ghiChuPhongVan ?? null,
+          },
+        });
+      }
+
+      await tx.thongBao.create({
+        data: {
+          taiKhoanId: current.hoSoNguoiLaoDong.taiKhoanId,
+          tieuDe: 'Hồ sơ của bạn đã được mời phỏng vấn',
+          noiDung: `Nhà tuyển dụng đã gửi lời mời phỏng vấn cho vị trí ${current.tinTuyenDung.viTriTuyenDung}. Thời gian: ${this.formatInterviewDateTime(interviewData.thoiGianBatDau)}. Vui lòng xem chi tiết để biết địa điểm và thông tin liên hệ.`,
+          loaiThongBao: LoaiThongBao.UNG_TUYEN,
+          duongDanDich: '/viec-lam-da-ung-tuyen?status=interview',
+        },
+      });
+
+      return application;
+    });
+
+    this.sendInterviewInvitationEmail(updated).catch((error: unknown) => {
+      console.error('Failed to send interview invitation email', error);
+    });
+
+    return {
+      success: true,
+      message: 'Đã gửi lời mời phỏng vấn đến ứng viên.',
+      data: this.mapApplication(updated),
+    };
+  }
+
   async adminCategories() {
     return this.categories(false);
   }
@@ -824,12 +1001,18 @@ export class PortalService {
       where: { id },
       data: { trangThaiHienThi: false },
     });
-    return { success: true, message: 'Đã ẩn ngành nghề. Dữ liệu liên kết được giữ nguyên.' };
+    return {
+      success: true,
+      message: 'Đã ẩn ngành nghề. Dữ liệu liên kết được giữ nguyên.',
+    };
   }
 
   async adminEmployers() {
     const items = await this.prisma.hoSoNhaTuyenDung.findMany({
-      include: { taiKhoan: { select: { email: true, soDienThoai: true } }, linhVuc: true },
+      include: {
+        taiKhoan: { select: { email: true, soDienThoai: true } },
+        linhVuc: true,
+      },
       orderBy: { ngayTao: 'desc' },
     });
     return { success: true, data: items };
@@ -838,7 +1021,10 @@ export class PortalService {
   async adminEmployer(id: number) {
     const item = await this.prisma.hoSoNhaTuyenDung.findUnique({
       where: { id },
-      include: { taiKhoan: { select: { email: true, soDienThoai: true } }, linhVuc: true },
+      include: {
+        taiKhoan: { select: { email: true, soDienThoai: true } },
+        linhVuc: true,
+      },
     });
     if (!item) this.notFound('Không tìm thấy nhà tuyển dụng.');
     return { success: true, data: item };
@@ -846,7 +1032,9 @@ export class PortalService {
 
   async reviewEmployer(adminId: number, id: number, body: Record<string, any>) {
     const status = this.reviewStatus(body.action ?? body.hanhDong);
-    const current = await this.prisma.hoSoNhaTuyenDung.findUnique({ where: { id } });
+    const current = await this.prisma.hoSoNhaTuyenDung.findUnique({
+      where: { id },
+    });
     if (!current) this.notFound('Không tìm thấy nhà tuyển dụng.');
     const item = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.hoSoNhaTuyenDung.update({
@@ -871,9 +1059,10 @@ export class PortalService {
         data: {
           taiKhoanId: current.taiKhoanId,
           tieuDe: 'Kết quả duyệt hồ sơ nhà tuyển dụng',
-          noiDung: status === TrangThaiKiemDuyet.DA_DUYET
-            ? 'Hồ sơ nhà tuyển dụng đã được phê duyệt.'
-            : `Hồ sơ chưa được duyệt: ${body.reason ?? body.lyDo ?? 'Cần bổ sung thông tin.'}`,
+          noiDung:
+            status === TrangThaiKiemDuyet.DA_DUYET
+              ? 'Hồ sơ nhà tuyển dụng đã được phê duyệt.'
+              : `Hồ sơ chưa được duyệt: ${body.reason ?? body.lyDo ?? 'Cần bổ sung thông tin.'}`,
           loaiThongBao: LoaiThongBao.KIEM_DUYET,
           duongDanDich: '/nha-tuyen-dung/ho-so',
         },
@@ -902,7 +1091,9 @@ export class PortalService {
 
   async reviewJob(adminId: number, id: number, body: Record<string, any>) {
     const status = this.reviewStatus(body.action ?? body.hanhDong);
-    const current = await this.prisma.tinTuyenDung.findUnique({ where: { id } });
+    const current = await this.prisma.tinTuyenDung.findUnique({
+      where: { id },
+    });
     if (!current) this.notFound('Không tìm thấy tin tuyển dụng.');
     const item = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.tinTuyenDung.update({
@@ -936,9 +1127,10 @@ export class PortalService {
           data: {
             taiKhoanId: employer.taiKhoanId,
             tieuDe: 'Kết quả kiểm duyệt tin tuyển dụng',
-            noiDung: status === TrangThaiKiemDuyet.DA_DUYET
-              ? `Tin “${current.viTriTuyenDung}” đã được duyệt và hiển thị.`
-              : `Tin “${current.viTriTuyenDung}” chưa được duyệt: ${body.reason ?? body.lyDo ?? 'Cần bổ sung thông tin.'}`,
+            noiDung:
+              status === TrangThaiKiemDuyet.DA_DUYET
+                ? `Tin “${current.viTriTuyenDung}” đã được duyệt và hiển thị.`
+                : `Tin “${current.viTriTuyenDung}” chưa được duyệt: ${body.reason ?? body.lyDo ?? 'Cần bổ sung thông tin.'}`,
             loaiThongBao: LoaiThongBao.KIEM_DUYET,
             duongDanDich: '/nha-tuyen-dung/tin-tuyen-dung',
           },
@@ -970,43 +1162,89 @@ export class PortalService {
       where: { taiKhoanId: accountId, daDoc: false },
       data: { daDoc: true, ngayDoc: new Date() },
     });
-    return { success: true, message: 'Đã đánh dấu tất cả thông báo là đã đọc.' };
+    return {
+      success: true,
+      message: 'Đã đánh dấu tất cả thông báo là đã đọc.',
+    };
   }
 
   async statistics(query: Record<string, string | undefined> = {}) {
     const createdAt = this.dateFilter(query.from, query.to);
     const [workers, employers, jobs, applications, approvedJobs] =
       await this.prisma.$transaction([
-        this.prisma.taiKhoan.count({ where: { vaiTro: VaiTroTaiKhoan.NGUOI_LAO_DONG, ...(createdAt ? { ngayTao: createdAt } : {}) } }),
-        this.prisma.taiKhoan.count({ where: { vaiTro: VaiTroTaiKhoan.NHA_TUYEN_DUNG, ...(createdAt ? { ngayTao: createdAt } : {}) } }),
-        this.prisma.tinTuyenDung.count({ where: createdAt ? { ngayTao: createdAt } : {} }),
-        this.prisma.ungTuyen.count({ where: createdAt ? { ngayNop: createdAt } : {} }),
+        this.prisma.taiKhoan.count({
+          where: {
+            vaiTro: VaiTroTaiKhoan.NGUOI_LAO_DONG,
+            ...(createdAt ? { ngayTao: createdAt } : {}),
+          },
+        }),
+        this.prisma.taiKhoan.count({
+          where: {
+            vaiTro: VaiTroTaiKhoan.NHA_TUYEN_DUNG,
+            ...(createdAt ? { ngayTao: createdAt } : {}),
+          },
+        }),
         this.prisma.tinTuyenDung.count({
-          where: { trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET, ...(createdAt ? { ngayTao: createdAt } : {}) },
+          where: createdAt ? { ngayTao: createdAt } : {},
+        }),
+        this.prisma.ungTuyen.count({
+          where: createdAt ? { ngayNop: createdAt } : {},
+        }),
+        this.prisma.tinTuyenDung.count({
+          where: {
+            trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
+            ...(createdAt ? { ngayTao: createdAt } : {}),
+          },
         }),
       ]);
-    const [userByStatus, jobByStatus, applicationByStatus] = await this.prisma.$transaction([
-      this.prisma.taiKhoan.groupBy({ by: ['trangThaiTaiKhoan'], where: createdAt ? { ngayTao: createdAt } : {}, _count: true, orderBy: { trangThaiTaiKhoan: 'asc' } }),
-      this.prisma.tinTuyenDung.groupBy({ by: ['trangThaiKiemDuyet'], where: createdAt ? { ngayTao: createdAt } : {}, _count: true, orderBy: { trangThaiKiemDuyet: 'asc' } }),
-      this.prisma.ungTuyen.groupBy({ by: ['trangThaiHienTai'], where: createdAt ? { ngayNop: createdAt } : {}, _count: true, orderBy: { trangThaiHienTai: 'asc' } }),
-    ]);
+    const [userByStatus, jobByStatus, applicationByStatus] =
+      await this.prisma.$transaction([
+        this.prisma.taiKhoan.groupBy({
+          by: ['trangThaiTaiKhoan'],
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _count: true,
+          orderBy: { trangThaiTaiKhoan: 'asc' },
+        }),
+        this.prisma.tinTuyenDung.groupBy({
+          by: ['trangThaiKiemDuyet'],
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _count: true,
+          orderBy: { trangThaiKiemDuyet: 'asc' },
+        }),
+        this.prisma.ungTuyen.groupBy({
+          by: ['trangThaiHienTai'],
+          where: createdAt ? { ngayNop: createdAt } : {},
+          _count: true,
+          orderBy: { trangThaiHienTai: 'asc' },
+        }),
+      ]);
     return {
       success: true,
       data: {
-        workers, employers, jobs, applications, approvedJobs,
+        workers,
+        employers,
+        jobs,
+        applications,
+        approvedJobs,
         period: { from: query.from ?? null, to: query.to ?? null },
         users: {
           total: workers + employers,
           byRole: { NGUOI_LAO_DONG: workers, NHA_TUYEN_DUNG: employers },
-          byStatus: Object.fromEntries(userByStatus.map((x) => [x.trangThaiTaiKhoan, x._count])),
+          byStatus: Object.fromEntries(
+            userByStatus.map((x) => [x.trangThaiTaiKhoan, x._count]),
+          ),
         },
         jobStatistics: {
           total: jobs,
-          byStatus: Object.fromEntries(jobByStatus.map((x) => [x.trangThaiKiemDuyet, x._count])),
+          byStatus: Object.fromEntries(
+            jobByStatus.map((x) => [x.trangThaiKiemDuyet, x._count]),
+          ),
         },
         applicationStatistics: {
           total: applications,
-          byStatus: Object.fromEntries(applicationByStatus.map((x) => [x.trangThaiHienTai, x._count])),
+          byStatus: Object.fromEntries(
+            applicationByStatus.map((x) => [x.trangThaiHienTai, x._count]),
+          ),
         },
       },
     };
@@ -1020,18 +1258,39 @@ export class PortalService {
       ['Tin tuyển dụng', 'Tổng số', data.jobs],
       ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
       ['Ứng tuyển', 'Tổng số', data.applications],
-      ...Object.entries(data.users.byStatus).map(([key, value]) => ['Trạng thái tài khoản', key, value as number] as [string, string, number]),
-      ...Object.entries(data.jobStatistics.byStatus).map(([key, value]) => ['Trạng thái tin', key, value as number] as [string, string, number]),
-      ...Object.entries(data.applicationStatistics.byStatus).map(([key, value]) => ['Trạng thái ứng tuyển', key, value as number] as [string, string, number]),
+      ...Object.entries(data.users.byStatus).map(
+        ([key, value]) =>
+          ['Trạng thái tài khoản', key, value as number] as [
+            string,
+            string,
+            number,
+          ],
+      ),
+      ...Object.entries(data.jobStatistics.byStatus).map(
+        ([key, value]) =>
+          ['Trạng thái tin', key, value as number] as [string, string, number],
+      ),
+      ...Object.entries(data.applicationStatistics.byStatus).map(
+        ([key, value]) =>
+          ['Trạng thái ứng tuyển', key, value as number] as [
+            string,
+            string,
+            number,
+          ],
+      ),
     ];
     const csv = [['Nhóm', 'Chỉ tiêu', 'Số lượng'], ...rows]
-      .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','))
+      .map((row) =>
+        row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','),
+      )
       .join('\r\n');
     return `\uFEFF${csv}`;
   }
 
   async changePassword(accountId: number, body: ChangePasswordDto) {
-    const account = await this.prisma.taiKhoan.findUnique({ where: { id: accountId } });
+    const account = await this.prisma.taiKhoan.findUnique({
+      where: { id: accountId },
+    });
     if (!account) this.notFound('Không tìm thấy tài khoản.');
     if (body.newPassword !== body.confirmPassword) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
@@ -1039,7 +1298,10 @@ export class PortalService {
         message: 'Mật khẩu xác nhận không khớp.',
       });
     }
-    const matches = await bcrypt.compare(body.currentPassword, account.matKhauHash);
+    const matches = await bcrypt.compare(
+      body.currentPassword,
+      account.matKhauHash,
+    );
     if (!matches) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_CURRENT_PASSWORD',
@@ -1061,14 +1323,23 @@ export class PortalService {
   }
 
   async forgotPassword(body: Record<string, any>) {
-    const email = String(body.email ?? '').trim().toLowerCase();
+    const email = String(body.email ?? '')
+      .trim()
+      .toLowerCase();
     const account = await this.prisma.taiKhoan.findUnique({ where: { email } });
     const expiresIn = 600;
-    const generic = { success: true, message: 'Nếu email tồn tại, mã OTP đã được gửi.' };
+    const generic = {
+      success: true,
+      message: 'Nếu email tồn tại, mã OTP đã được gửi.',
+    };
     if (!account) return generic;
     const otp = String(randomInt(100000, 1000000));
     await this.prisma.maXacThuc.updateMany({
-      where: { taiKhoanId: account.id, mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU, daSuDung: false },
+      where: {
+        taiKhoanId: account.id,
+        mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU,
+        daSuDung: false,
+      },
       data: { daSuDung: true },
     });
     const otpRecord = await this.prisma.maXacThuc.create({
@@ -1102,22 +1373,47 @@ export class PortalService {
   }
 
   async resetPassword(body: Record<string, any>) {
-    const email = String(body.email ?? '').trim().toLowerCase();
-    if (body.newPassword !== body.confirmPassword || String(body.newPassword).length < 8) {
-      throw new ApiError(HttpStatus.BAD_REQUEST, { code: 'INVALID_PASSWORD', message: 'Mật khẩu xác nhận không khớp hoặc chưa đủ 8 ký tự.' });
+    const email = String(body.email ?? '')
+      .trim()
+      .toLowerCase();
+    if (
+      body.newPassword !== body.confirmPassword ||
+      String(body.newPassword).length < 8
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_PASSWORD',
+        message: 'Mật khẩu xác nhận không khớp hoặc chưa đủ 8 ký tự.',
+      });
     }
     const account = await this.prisma.taiKhoan.findUnique({ where: { email } });
     if (!account) this.notFound('Mã OTP không hợp lệ.');
     const record = await this.prisma.maXacThuc.findFirst({
-      where: { taiKhoanId: account.id, mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU, daSuDung: false, hanSuDung: { gt: new Date() } },
+      where: {
+        taiKhoanId: account.id,
+        mucDich: MucDichMaXacThuc.QUEN_MAT_KHAU,
+        daSuDung: false,
+        hanSuDung: { gt: new Date() },
+      },
       orderBy: { ngayTao: 'desc' },
     });
-    if (!record || !(await bcrypt.compare(String(body.otp), record.maXacThucHash))) {
-      throw new ApiError(HttpStatus.BAD_REQUEST, { code: 'INVALID_OTP', message: 'Mã OTP không hợp lệ hoặc đã hết hạn.' });
+    if (
+      !record ||
+      !(await bcrypt.compare(String(body.otp), record.maXacThucHash))
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_OTP',
+        message: 'Mã OTP không hợp lệ hoặc đã hết hạn.',
+      });
     }
     await this.prisma.$transaction([
-      this.prisma.taiKhoan.update({ where: { id: account.id }, data: { matKhauHash: await bcrypt.hash(body.newPassword, 12) } }),
-      this.prisma.maXacThuc.update({ where: { id: record.id }, data: { daSuDung: true } }),
+      this.prisma.taiKhoan.update({
+        where: { id: account.id },
+        data: { matKhauHash: await bcrypt.hash(body.newPassword, 12) },
+      }),
+      this.prisma.maXacThuc.update({
+        where: { id: record.id },
+        data: { daSuDung: true },
+      }),
     ]);
     return { success: true, message: 'Đặt lại mật khẩu thành công.' };
   }
@@ -1156,7 +1452,9 @@ export class PortalService {
       rejectionReason: item.lyDoTuChoi,
       editCount: item.soLanChinhSua,
       postedAt: item.ngayDang ?? item.ngayTao,
-      skills: item.tinTuyenDungKyNangs.map((skill: any) => skill.kyNang.tenKyNang),
+      skills: item.tinTuyenDungKyNangs.map(
+        (skill: any) => skill.kyNang.tenKyNang,
+      ),
       employer: item.nhaTuyenDung,
     };
   }
@@ -1183,8 +1481,13 @@ export class PortalService {
 
   private validateJobBody(body: Record<string, any>) {
     const required = [
-      'nganhNgheId', 'viTriTuyenDung', 'moTaCongViec', 'yeuCauUngVien',
-      'diaDiemLamViec', 'hinhThucLamViec', 'thoiHanNhanHoSo',
+      'nganhNgheId',
+      'viTriTuyenDung',
+      'moTaCongViec',
+      'yeuCauUngVien',
+      'diaDiemLamViec',
+      'hinhThucLamViec',
+      'thoiHanNhanHoSo',
     ];
     if (required.some((key) => !body[key])) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
@@ -1198,8 +1501,10 @@ export class PortalService {
         message: 'Hình thức làm việc không hợp lệ.',
       });
     }
-    if (Number.isNaN(new Date(body.thoiHanNhanHoSo).getTime()) ||
-        new Date(body.thoiHanNhanHoSo) <= new Date()) {
+    if (
+      Number.isNaN(new Date(body.thoiHanNhanHoSo).getTime()) ||
+      new Date(body.thoiHanNhanHoSo) <= new Date()
+    ) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_DEADLINE',
         message: 'Thời hạn nhận hồ sơ phải sau thời điểm hiện tại.',
@@ -1225,9 +1530,7 @@ export class PortalService {
         message: 'Mức lương từ không được lớn hơn mức lương đến.',
       });
     }
-    const minimumExperience = this.numberOrNull(
-      body.soNamKinhNghiemToiThieu,
-    );
+    const minimumExperience = this.numberOrNull(body.soNamKinhNghiemToiThieu);
     if (minimumExperience !== null && minimumExperience < 0) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_EXPERIENCE',
@@ -1267,10 +1570,14 @@ export class PortalService {
     skills: unknown,
   ) {
     if (!Array.isArray(skills)) return;
-    await tx.tinTuyenDungKyNang.deleteMany({ where: { tinTuyenDungId: jobId } });
+    await tx.tinTuyenDungKyNang.deleteMany({
+      where: { tinTuyenDungId: jobId },
+    });
     for (const raw of skills) {
       const value = raw as string | { name?: string; required?: boolean };
-      const name = String(typeof value === 'string' ? value : value.name ?? '').trim();
+      const name = String(
+        typeof value === 'string' ? value : (value.name ?? ''),
+      ).trim();
       if (!name) continue;
       const skill = await tx.kyNang.upsert({
         where: { tenKyNang: name },
@@ -1326,6 +1633,125 @@ export class PortalService {
     if (!job) this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
   }
 
+  private validateInterviewInvitation(dto: InviteCandidateInterviewDto) {
+    const thoiGianBatDau = new Date(dto.thoiGianBatDau);
+    const thoiGianKetThuc = dto.thoiGianKetThuc
+      ? new Date(dto.thoiGianKetThuc)
+      : null;
+
+    if (
+      Number.isNaN(thoiGianBatDau.getTime()) ||
+      thoiGianBatDau <= new Date()
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_INTERVIEW_START_TIME',
+        message: 'Thời gian phỏng vấn phải lớn hơn thời gian hiện tại.',
+      });
+    }
+
+    if (
+      thoiGianKetThuc &&
+      (Number.isNaN(thoiGianKetThuc.getTime()) ||
+        thoiGianKetThuc <= thoiGianBatDau)
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_INTERVIEW_END_TIME',
+        message: 'Giờ kết thúc phải sau giờ bắt đầu.',
+      });
+    }
+
+    const diaDiemPhongVan = dto.diaDiemPhongVan ?? null;
+    const duongDanPhongVan = dto.duongDanPhongVan ?? null;
+
+    if (dto.hinhThucPhongVan === HinhThucPhongVan.TRUC_TIEP) {
+      if (!diaDiemPhongVan) {
+        throw new ApiError(HttpStatus.BAD_REQUEST, {
+          code: 'INTERVIEW_LOCATION_REQUIRED',
+          message: 'Vui lòng nhập địa điểm phỏng vấn trực tiếp.',
+        });
+      }
+      return {
+        thoiGianBatDau,
+        thoiGianKetThuc,
+        hinhThucPhongVan: dto.hinhThucPhongVan,
+        diaDiemPhongVan,
+        duongDanPhongVan: null,
+        nguoiLienHe: dto.nguoiLienHe,
+        soDienThoaiLienHe: dto.soDienThoaiLienHe,
+        noiDungChuanBi: dto.noiDungChuanBi ?? null,
+        ghiChuPhongVan: dto.ghiChuPhongVan ?? null,
+      };
+    }
+
+    if (!duongDanPhongVan || !this.isHttpUrl(duongDanPhongVan)) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_INTERVIEW_URL',
+        message: duongDanPhongVan
+          ? 'Đường dẫn phỏng vấn không hợp lệ.'
+          : 'Vui lòng nhập đường dẫn tham gia phỏng vấn.',
+      });
+    }
+
+    return {
+      thoiGianBatDau,
+      thoiGianKetThuc,
+      hinhThucPhongVan: dto.hinhThucPhongVan,
+      diaDiemPhongVan: null,
+      duongDanPhongVan,
+      nguoiLienHe: dto.nguoiLienHe,
+      soDienThoaiLienHe: dto.soDienThoaiLienHe,
+      noiDungChuanBi: dto.noiDungChuanBi ?? null,
+      ghiChuPhongVan: dto.ghiChuPhongVan ?? null,
+    };
+  }
+
+  private isHttpUrl(value: string) {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
+  private formatInterviewDateTime(value: Date) {
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      hour: '2-digit',
+      hour12: false,
+      minute: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(value);
+  }
+
+  private async sendInterviewInvitationEmail(application: any) {
+    const interview = application.thongTinPhongVan;
+    if (!interview) return;
+    await this.mailService.sendInterviewInvitation({
+      email: application.hoSoNguoiLaoDong.taiKhoan.email,
+      candidateName: application.hoTenSnapshot,
+      employerName: application.tinTuyenDung.nhaTuyenDung.tenDonVi,
+      jobTitle: application.tinTuyenDung.viTriTuyenDung,
+      startTime: this.formatInterviewDateTime(interview.thoiGianBatDau),
+      endTime: interview.thoiGianKetThuc
+        ? this.formatInterviewDateTime(interview.thoiGianKetThuc)
+        : null,
+      interviewMode:
+        interview.hinhThucPhongVan === HinhThucPhongVan.TRUC_TIEP
+          ? 'Phỏng vấn trực tiếp'
+          : 'Phỏng vấn trực tuyến',
+      location: interview.diaDiemPhongVan,
+      meetingUrl: this.isHttpUrl(String(interview.duongDanPhongVan ?? ''))
+        ? interview.duongDanPhongVan
+        : null,
+      contactName: interview.nguoiLienHe,
+      contactPhone: interview.soDienThoaiLienHe,
+      preparation: interview.noiDungChuanBi,
+      note: interview.ghiChuPhongVan,
+    });
+  }
+
   private mapWorkerProfile(profile: any) {
     const { duongDanCv, tepCvUrl, ...safeProfile } = profile;
     return {
@@ -1339,14 +1765,21 @@ export class PortalService {
   }
 
   private mapApplication(item: any, job?: any) {
-    const { duongDanCvUngTuyen, tepCvSnapshotUrl, hoSoNguoiLaoDong, tinTuyenDung, ...safe } =
-      item;
+    const {
+      duongDanCvUngTuyen,
+      tepCvSnapshotUrl,
+      hoSoNguoiLaoDong,
+      tinTuyenDung,
+      ...safe
+    } = item;
     const safeProfile = hoSoNguoiLaoDong
       ? this.mapWorkerProfile(hoSoNguoiLaoDong)
       : undefined;
     const cvName =
       item.tenFileCvUngTuyen ??
-      this.fileNameFromStoredPath(item.duongDanCvUngTuyen ?? item.tepCvSnapshotUrl);
+      this.fileNameFromStoredPath(
+        item.duongDanCvUngTuyen ?? item.tepCvSnapshotUrl,
+      );
 
     return {
       ...safe,
@@ -1363,8 +1796,7 @@ export class PortalService {
     const pathValue = profile.duongDanCv ?? profile.tepCvUrl;
     return {
       hasCv: Boolean(pathValue),
-      tenFileCv:
-        profile.tenFileCv ?? this.fileNameFromStoredPath(pathValue),
+      tenFileCv: profile.tenFileCv ?? this.fileNameFromStoredPath(pathValue),
       loaiFileCv: profile.loaiFileCv ?? 'application/pdf',
       kichThuocCv: profile.kichThuocCv ?? null,
       ngayTaiCv: profile.ngayTaiCv ?? null,
@@ -1377,7 +1809,9 @@ export class PortalService {
     file?: UploadedCvFile,
   ) {
     const source = String(
-      body.nguonCv ?? body.cvSource ?? (file ? 'UPLOADED_CV' : 'CURRENT_PROFILE_CV'),
+      body.nguonCv ??
+        body.cvSource ??
+        (file ? 'UPLOADED_CV' : 'CURRENT_PROFILE_CV'),
     );
 
     if (file) return this.storeUploadedCv(file, applicationCvDir);
@@ -1422,7 +1856,10 @@ export class PortalService {
     };
   }
 
-  private async storeUploadedCv(file: UploadedCvFile | undefined, targetDir: string) {
+  private async storeUploadedCv(
+    file: UploadedCvFile | undefined,
+    targetDir: string,
+  ) {
     this.validateUploadedCv(file);
 
     const relativePath = this.relativeCvPath(targetDir);
@@ -1530,7 +1967,8 @@ export class PortalService {
 
     return {
       absolutePath,
-      fileName: fileName || this.fileNameFromStoredPath(relativePath) || 'CV.pdf',
+      fileName:
+        fileName || this.fileNameFromStoredPath(relativePath) || 'CV.pdf',
       mimeType: mimeType || 'application/pdf',
       size: size ?? Number(fileStat.size),
     };
@@ -1560,7 +1998,10 @@ export class PortalService {
     return target;
   }
 
-  private async safeUnlink(relativePath: string | null | undefined, allowedDir: string) {
+  private async safeUnlink(
+    relativePath: string | null | undefined,
+    allowedDir: string,
+  ) {
     if (!relativePath) return;
     try {
       await unlink(this.safeAbsolutePath(relativePath, allowedDir));
@@ -1578,7 +2019,9 @@ export class PortalService {
   }
 
   private cleanOriginalFileName(value?: string) {
-    const name = path.basename(String(value || 'CV.pdf')).replace(/[\r\n]/g, ' ');
+    const name = path
+      .basename(String(value || 'CV.pdf'))
+      .replace(/[\r\n]/g, ' ');
     return name.slice(0, 255) || 'CV.pdf';
   }
 

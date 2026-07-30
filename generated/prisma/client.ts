@@ -107,6 +107,11 @@ export type TinTuyenDungKyNang = Prisma.TinTuyenDungKyNangModel
  */
 export type UngTuyen = Prisma.UngTuyenModel
 /**
+ * Model ThongTinPhongVan
+ * 
+ */
+export type ThongTinPhongVan = Prisma.ThongTinPhongVanModel
+/**
  * Model TinTuyenDungDaLuu
  * 
  */

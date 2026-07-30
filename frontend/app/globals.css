@@ -2841,6 +2841,168 @@ td small {
   color: #fff;
   background: #c23548;
 }
+.applicant-note-field .applicant-note-help.error {
+  color: #a83247;
+}
+.applicant-interview-info {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid #d8e7f6;
+  border-radius: 10px;
+  background: #f8fbff;
+}
+.applicant-interview-info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.applicant-interview-info-header > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.applicant-interview-info-header span,
+.applicant-interview-detail span {
+  color: #64778d;
+  font-size: 12px;
+  font-weight: 750;
+}
+.applicant-interview-info-header strong {
+  color: #092c57;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.applicant-interview-info-header button {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #bfd5ec;
+  border-radius: 8px;
+  color: #0f67cf;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.applicant-interview-detail-list {
+  display: grid;
+  gap: 10px;
+}
+.applicant-interview-detail {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  color: #253b55;
+}
+.applicant-interview-detail .detail-icon {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+}
+.applicant-interview-detail p,
+.applicant-interview-detail a {
+  margin: 2px 0 0;
+  color: #173b66;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.applicant-interview-detail a {
+  color: #0f67cf;
+  font-weight: 750;
+}
+.applicant-interview-dialog {
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.job-applicant-dialog.applicant-interview-dialog > div {
+  display: grid;
+  justify-content: stretch;
+}
+.applicant-interview-dialog-header {
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 14px;
+  padding: 22px 22px 16px;
+  border-bottom: 1px solid #e3edf7;
+}
+.applicant-interview-dialog-header .job-applicant-dialog-close {
+  position: static;
+}
+.applicant-interview-dialog-header h2 {
+  padding-right: 0;
+}
+.applicant-interview-dialog-header p {
+  margin-top: 6px;
+}
+.applicant-interview-form {
+  max-height: min(62vh, 620px);
+  overflow: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 18px 22px;
+}
+.applicant-interview-field.span-full {
+  grid-column: 1 / -1;
+}
+.applicant-interview-field input,
+.applicant-interview-field select,
+.applicant-interview-field textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #cfddeb;
+  border-radius: 9px;
+  color: #1d3048;
+  background: #fff;
+  font: inherit;
+  line-height: 1.45;
+}
+.applicant-interview-field textarea {
+  min-height: 86px;
+  resize: vertical;
+}
+.applicant-interview-field input:focus-visible,
+.applicant-interview-field select:focus-visible,
+.applicant-interview-field textarea:focus-visible {
+  border-color: #7fb2ea;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(15, 103, 207, 0.12);
+}
+.applicant-interview-field input[aria-invalid='true'],
+.applicant-interview-field select[aria-invalid='true'],
+.applicant-interview-field textarea[aria-invalid='true'] {
+  border-color: #c93a50;
+  box-shadow: 0 0 0 3px rgba(201, 58, 80, 0.1);
+}
+.applicant-interview-field small {
+  color: #a83247;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.applicant-interview-dialog-footer {
+  grid-template-columns: auto auto;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px 22px;
+  border-top: 1px solid #e3edf7;
+  background: #fbfdff;
+}
+.job-applicant-dialog.applicant-interview-dialog
+  .applicant-interview-dialog-footer
+  button {
+  min-height: 42px;
+}
 .detail-icon {
   width: 16px;
   height: 16px;
@@ -2909,6 +3071,18 @@ td small {
     flex-direction: column;
     gap: 4px;
   }
+  .applicant-interview-dialog {
+    width: min(100% - 24px, 720px);
+  }
+  .applicant-interview-form {
+    grid-template-columns: 1fr;
+  }
+  .applicant-interview-dialog-footer {
+    grid-template-columns: 1fr;
+  }
+  .applicant-interview-dialog-footer button {
+    width: 100%;
+  }
 }
 @media (max-width: 420px) {
   .applicant-detail-page {
@@ -2943,6 +3117,18 @@ td small {
   .applicant-reject-dialog {
     max-height: calc(100vh - 32px);
     overflow: auto;
+  }
+  .applicant-interview-dialog {
+    width: calc(100% - 20px);
+  }
+  .applicant-interview-dialog-header,
+  .applicant-interview-form,
+  .applicant-interview-dialog-footer {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+  .applicant-interview-info-header {
+    flex-direction: column;
   }
 }
 .moderation-banner {
@@ -13642,6 +13828,88 @@ td small {
   border-color: #88b7e9;
   background: #f2f8ff;
 }
+.applied-interview-row td {
+  padding-top: 0;
+  background: #f8fbff;
+}
+.worker-interview-card {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #cfe0f2;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(13, 48, 86, 0.06);
+}
+.worker-interview-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.worker-interview-card-header h3 {
+  margin: 0;
+  color: #092c57;
+  font-size: 18px;
+  line-height: 1.35;
+}
+.worker-interview-card-header p {
+  margin: 4px 0 0;
+  color: #65768a;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.worker-interview-join {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 13px;
+  border-radius: 8px;
+  color: #fff;
+  background: #0f67cf;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.worker-interview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px 18px;
+}
+.worker-interview-detail {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 9px;
+  min-width: 0;
+}
+.worker-interview-detail svg,
+.worker-interview-join svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+.worker-interview-detail span {
+  display: block;
+  color: #64778d;
+  font-size: 12px;
+  font-weight: 750;
+}
+.worker-interview-detail p,
+.worker-interview-detail a {
+  margin: 3px 0 0;
+  color: #173b66;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.worker-interview-detail a {
+  color: #0f67cf;
+  font-weight: 750;
+}
 .applied-primary {
   border-color: #0f67cf;
   color: #fff;
@@ -13837,6 +14105,26 @@ td small {
     width: 100%;
     min-height: 44px;
   }
+  .applied-interview-row {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .applied-interview-row td {
+    padding: 0;
+  }
+  .worker-interview-card {
+    padding: 14px;
+  }
+  .worker-interview-card-header {
+    flex-direction: column;
+  }
+  .worker-interview-join {
+    width: 100%;
+  }
+  .worker-interview-grid {
+    grid-template-columns: 1fr;
+  }
 }
 @media (max-width: 420px) {
   .applied-toolbar,
@@ -13858,6 +14146,9 @@ td small {
     width: 100%;
     min-width: 0;
     height: 100%;
+  }
+  .worker-interview-card {
+    padding: 12px;
   }
 }
 

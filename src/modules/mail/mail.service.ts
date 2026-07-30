@@ -13,6 +13,22 @@ type SendRegistrationOtpParams = {
 
 type SendPasswordResetOtpParams = SendRegistrationOtpParams;
 
+type SendInterviewInvitationParams = {
+  email: string;
+  candidateName: string;
+  employerName: string;
+  jobTitle: string;
+  startTime: string;
+  endTime?: string | null;
+  interviewMode: string;
+  location?: string | null;
+  meetingUrl?: string | null;
+  contactName: string;
+  contactPhone: string;
+  preparation?: string | null;
+  note?: string | null;
+};
+
 @Injectable()
 export class MailService {
   private readonly transporter: Transporter;
@@ -88,6 +104,59 @@ export class MailService {
       <p style="font-size: 24px; font-weight: 700; letter-spacing: 4px;">${params.otp}</p>
       <p>Mã OTP hết hạn sau ${params.expiresInMinutes} phút.</p>
       <p>Vui lòng không chia sẻ mã OTP này cho bất kỳ ai.</p>
+    `;
+
+    await this.transporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to: params.email,
+      subject,
+      text,
+      html,
+    });
+  }
+
+  async sendInterviewInvitation(
+    params: SendInterviewInvitationParams,
+  ): Promise<void> {
+    const fromName = this.configService.getOrThrow<string>('SMTP_FROM_NAME');
+    const fromEmail = this.configService.getOrThrow<string>('SMTP_FROM_EMAIL');
+    const subject = `Thư mời phỏng vấn - ${params.jobTitle}`;
+    const rawDetails: Array<[string, string | null | undefined]> = [
+      ['Tên ứng viên', params.candidateName],
+      ['Đơn vị tuyển dụng', params.employerName],
+      ['Vị trí ứng tuyển', params.jobTitle],
+      ['Thời gian bắt đầu', params.startTime],
+      ['Thời gian kết thúc', params.endTime],
+      ['Hình thức phỏng vấn', params.interviewMode],
+      ['Địa điểm', params.location],
+      ['Đường dẫn tham gia', params.meetingUrl],
+      ['Người liên hệ', params.contactName],
+      ['Số điện thoại liên hệ', params.contactPhone],
+      ['Nội dung cần chuẩn bị', params.preparation],
+      ['Ghi chú', params.note],
+    ];
+    const details = rawDetails.filter(
+      (item): item is [string, string] =>
+        typeof item[1] === 'string' && Boolean(item[1].trim()),
+    );
+
+    const text = [
+      `Xin chào ${params.candidateName},`,
+      '',
+      `Bạn đã nhận được lời mời phỏng vấn cho vị trí ${params.jobTitle} tại ${params.employerName}.`,
+      '',
+      ...details.map(([label, value]) => `${label}: ${value}`),
+    ].join('\n');
+    const htmlDetails = details
+      .map(
+        ([label, value]) =>
+          `<li><strong>${this.escapeHtml(label)}:</strong> ${this.escapeHtml(value)}</li>`,
+      )
+      .join('');
+    const html = `
+      <p>Xin chào ${this.escapeHtml(params.candidateName)},</p>
+      <p>Bạn đã nhận được lời mời phỏng vấn cho vị trí <strong>${this.escapeHtml(params.jobTitle)}</strong> tại ${this.escapeHtml(params.employerName)}.</p>
+      <ul>${htmlDetails}</ul>
     `;
 
     await this.transporter.sendMail({

@@ -62,6 +62,11 @@ enum HinhThucLamViec {
   TU_XA
 }
 
+enum HinhThucPhongVan {
+  TRUC_TIEP
+  TRUC_TUYEN
+}
+
 enum TrangThaiHienThiTin {
   CHUA_DANG
   DANG_HIEN_THI
@@ -112,6 +117,7 @@ model TaiKhoan {
   thongBaos                ThongBao[]
   lichSuTrangThaiUngTuyens LichSuTrangThaiUngTuyen[] @relation("NguoiThucHienTrangThaiUngTuyen")
   lichSuKiemDuyets         LichSuKiemDuyet[]         @relation("NguoiThucHienKiemDuyet")
+  thongTinPhongVans        ThongTinPhongVan[]        @relation("NguoiTaoThongTinPhongVan")
 
   @@index([vaiTro], map: "idx_tai_khoan_vai_tro")
   @@index([trangThaiTaiKhoan], map: "idx_tai_khoan_trang_thai")
@@ -351,6 +357,7 @@ model UngTuyen {
   hoSoNguoiLaoDong         HoSoNguoiLaoDong          @relation(fields: [hoSoNguoiLaoDongId], references: [id], onDelete: Restrict)
   tinTuyenDung             TinTuyenDung              @relation(fields: [tinTuyenDungId], references: [id], onDelete: Restrict)
   lichSuTrangThaiUngTuyens LichSuTrangThaiUngTuyen[]
+  thongTinPhongVan         ThongTinPhongVan?
 
   @@unique([hoSoNguoiLaoDongId, tinTuyenDungId], map: "uq_ung_tuyen_ho_so_tin")
   @@index([hoSoNguoiLaoDongId], map: "idx_ung_tuyen_ho_so_nguoi_lao_dong_id")
@@ -358,6 +365,29 @@ model UngTuyen {
   @@index([tinTuyenDungId, trangThaiHienTai], map: "idx_ung_tuyen_tin_trang_thai")
   @@index([ngayNop], map: "idx_ung_tuyen_ngay_nop")
   @@map("ung_tuyen")
+}
+
+model ThongTinPhongVan {
+  id                Int              @id @default(autoincrement()) @map("id")
+  ungTuyenId        Int              @unique @map("ung_tuyen_id")
+  thoiGianBatDau    DateTime         @map("thoi_gian_bat_dau") @db.Timestamptz(6)
+  thoiGianKetThuc   DateTime?        @map("thoi_gian_ket_thuc") @db.Timestamptz(6)
+  hinhThucPhongVan  HinhThucPhongVan @map("hinh_thuc_phong_van")
+  diaDiemPhongVan   String?          @map("dia_diem_phong_van") @db.Text
+  duongDanPhongVan  String?          @map("duong_dan_phong_van") @db.Text
+  nguoiLienHe       String           @map("nguoi_lien_he") @db.VarChar(255)
+  soDienThoaiLienHe String           @map("so_dien_thoai_lien_he") @db.VarChar(20)
+  noiDungChuanBi    String?          @map("noi_dung_chuan_bi") @db.Text
+  ghiChuPhongVan    String?          @map("ghi_chu_phong_van") @db.Text
+  nguoiTaoId        Int?             @map("nguoi_tao_id")
+  ngayTao           DateTime         @default(now()) @map("ngay_tao") @db.Timestamptz(6)
+  ngayCapNhat       DateTime         @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
+  ungTuyen          UngTuyen         @relation(fields: [ungTuyenId], references: [id], onDelete: Cascade)
+  nguoiTao          TaiKhoan?        @relation("NguoiTaoThongTinPhongVan", fields: [nguoiTaoId], references: [id], onDelete: SetNull)
+
+  @@index([nguoiTaoId], map: "idx_thong_tin_phong_van_nguoi_tao_id")
+  @@index([thoiGianBatDau], map: "idx_thong_tin_phong_van_thoi_gian_bat_dau")
+  @@map("thong_tin_phong_van")
 }
 
 model TinTuyenDungDaLuu {

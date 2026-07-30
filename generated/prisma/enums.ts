@@ -88,6 +88,14 @@ export const HinhThucLamViec = {
 export type HinhThucLamViec = (typeof HinhThucLamViec)[keyof typeof HinhThucLamViec]
 
 
+export const HinhThucPhongVan = {
+  TRUC_TIEP: 'TRUC_TIEP',
+  TRUC_TUYEN: 'TRUC_TUYEN'
+} as const
+
+export type HinhThucPhongVan = (typeof HinhThucPhongVan)[keyof typeof HinhThucPhongVan]
+
+
 export const TrangThaiHienThiTin = {
   CHUA_DANG: 'CHUA_DANG',
   DANG_HIEN_THI: 'DANG_HIEN_THI',

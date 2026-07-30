@@ -64,6 +64,7 @@ export const ModelName = {
   TinTuyenDung: 'TinTuyenDung',
   TinTuyenDungKyNang: 'TinTuyenDungKyNang',
   UngTuyen: 'UngTuyen',
+  ThongTinPhongVan: 'ThongTinPhongVan',
   TinTuyenDungDaLuu: 'TinTuyenDungDaLuu',
   LichSuTrangThaiUngTuyen: 'LichSuTrangThaiUngTuyen',
   LichSuKiemDuyet: 'LichSuKiemDuyet',
@@ -302,6 +303,26 @@ export const UngTuyenScalarFieldEnum = {
 } as const
 
 export type UngTuyenScalarFieldEnum = (typeof UngTuyenScalarFieldEnum)[keyof typeof UngTuyenScalarFieldEnum]
+
+
+export const ThongTinPhongVanScalarFieldEnum = {
+  id: 'id',
+  ungTuyenId: 'ungTuyenId',
+  thoiGianBatDau: 'thoiGianBatDau',
+  thoiGianKetThuc: 'thoiGianKetThuc',
+  hinhThucPhongVan: 'hinhThucPhongVan',
+  diaDiemPhongVan: 'diaDiemPhongVan',
+  duongDanPhongVan: 'duongDanPhongVan',
+  nguoiLienHe: 'nguoiLienHe',
+  soDienThoaiLienHe: 'soDienThoaiLienHe',
+  noiDungChuanBi: 'noiDungChuanBi',
+  ghiChuPhongVan: 'ghiChuPhongVan',
+  nguoiTaoId: 'nguoiTaoId',
+  ngayTao: 'ngayTao',
+  ngayCapNhat: 'ngayCapNhat'
+} as const
+
+export type ThongTinPhongVanScalarFieldEnum = (typeof ThongTinPhongVanScalarFieldEnum)[keyof typeof ThongTinPhongVanScalarFieldEnum]
 
 
 export const TinTuyenDungDaLuuScalarFieldEnum = {

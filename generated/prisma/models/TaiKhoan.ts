@@ -270,6 +270,7 @@ export type TaiKhoanWhereInput = {
   thongBaos?: Prisma.ThongBaoListRelationFilter
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenListRelationFilter
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetListRelationFilter
+  thongTinPhongVans?: Prisma.ThongTinPhongVanListRelationFilter
 }
 
 export type TaiKhoanOrderByWithRelationInput = {
@@ -290,6 +291,7 @@ export type TaiKhoanOrderByWithRelationInput = {
   thongBaos?: Prisma.ThongBaoOrderByRelationAggregateInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenOrderByRelationAggregateInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetOrderByRelationAggregateInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanOrderByRelationAggregateInput
 }
 
 export type TaiKhoanWhereUniqueInput = Prisma.AtLeast<{
@@ -313,6 +315,7 @@ export type TaiKhoanWhereUniqueInput = Prisma.AtLeast<{
   thongBaos?: Prisma.ThongBaoListRelationFilter
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenListRelationFilter
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetListRelationFilter
+  thongTinPhongVans?: Prisma.ThongTinPhongVanListRelationFilter
 }, "id" | "tenDangNhap" | "email" | "soDienThoai">
 
 export type TaiKhoanOrderByWithAggregationInput = {
@@ -368,6 +371,7 @@ export type TaiKhoanCreateInput = {
   thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateInput = {
@@ -388,6 +392,7 @@ export type TaiKhoanUncheckedCreateInput = {
   thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUpdateInput = {
@@ -407,6 +412,7 @@ export type TaiKhoanUpdateInput = {
   thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateInput = {
@@ -427,6 +433,7 @@ export type TaiKhoanUncheckedUpdateInput = {
   thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanCreateManyInput = {
@@ -604,6 +611,22 @@ export type TaiKhoanUpdateOneRequiredWithoutHoSoNhaTuyenDungNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TaiKhoanUpdateToOneWithWhereWithoutHoSoNhaTuyenDungInput, Prisma.TaiKhoanUpdateWithoutHoSoNhaTuyenDungInput>, Prisma.TaiKhoanUncheckedUpdateWithoutHoSoNhaTuyenDungInput>
 }
 
+export type TaiKhoanCreateNestedOneWithoutThongTinPhongVansInput = {
+  create?: Prisma.XOR<Prisma.TaiKhoanCreateWithoutThongTinPhongVansInput, Prisma.TaiKhoanUncheckedCreateWithoutThongTinPhongVansInput>
+  connectOrCreate?: Prisma.TaiKhoanCreateOrConnectWithoutThongTinPhongVansInput
+  connect?: Prisma.TaiKhoanWhereUniqueInput
+}
+
+export type TaiKhoanUpdateOneWithoutThongTinPhongVansNestedInput = {
+  create?: Prisma.XOR<Prisma.TaiKhoanCreateWithoutThongTinPhongVansInput, Prisma.TaiKhoanUncheckedCreateWithoutThongTinPhongVansInput>
+  connectOrCreate?: Prisma.TaiKhoanCreateOrConnectWithoutThongTinPhongVansInput
+  upsert?: Prisma.TaiKhoanUpsertWithoutThongTinPhongVansInput
+  disconnect?: Prisma.TaiKhoanWhereInput | boolean
+  delete?: Prisma.TaiKhoanWhereInput | boolean
+  connect?: Prisma.TaiKhoanWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TaiKhoanUpdateToOneWithWhereWithoutThongTinPhongVansInput, Prisma.TaiKhoanUpdateWithoutThongTinPhongVansInput>, Prisma.TaiKhoanUncheckedUpdateWithoutThongTinPhongVansInput>
+}
+
 export type TaiKhoanCreateNestedOneWithoutLichSuTrangThaiUngTuyensInput = {
   create?: Prisma.XOR<Prisma.TaiKhoanCreateWithoutLichSuTrangThaiUngTuyensInput, Prisma.TaiKhoanUncheckedCreateWithoutLichSuTrangThaiUngTuyensInput>
   connectOrCreate?: Prisma.TaiKhoanCreateOrConnectWithoutLichSuTrangThaiUngTuyensInput
@@ -664,6 +687,7 @@ export type TaiKhoanCreateWithoutMaXacThucsInput = {
   thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateWithoutMaXacThucsInput = {
@@ -683,6 +707,7 @@ export type TaiKhoanUncheckedCreateWithoutMaXacThucsInput = {
   thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanCreateOrConnectWithoutMaXacThucsInput = {
@@ -717,6 +742,7 @@ export type TaiKhoanUpdateWithoutMaXacThucsInput = {
   thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateWithoutMaXacThucsInput = {
@@ -736,6 +762,7 @@ export type TaiKhoanUncheckedUpdateWithoutMaXacThucsInput = {
   thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanCreateWithoutHoSoNguoiLaoDongInput = {
@@ -754,6 +781,7 @@ export type TaiKhoanCreateWithoutHoSoNguoiLaoDongInput = {
   thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateWithoutHoSoNguoiLaoDongInput = {
@@ -773,6 +801,7 @@ export type TaiKhoanUncheckedCreateWithoutHoSoNguoiLaoDongInput = {
   thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanCreateOrConnectWithoutHoSoNguoiLaoDongInput = {
@@ -807,6 +836,7 @@ export type TaiKhoanUpdateWithoutHoSoNguoiLaoDongInput = {
   thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateWithoutHoSoNguoiLaoDongInput = {
@@ -826,6 +856,7 @@ export type TaiKhoanUncheckedUpdateWithoutHoSoNguoiLaoDongInput = {
   thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanCreateWithoutHoSoNhaTuyenDungInput = {
@@ -844,6 +875,7 @@ export type TaiKhoanCreateWithoutHoSoNhaTuyenDungInput = {
   thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateWithoutHoSoNhaTuyenDungInput = {
@@ -863,6 +895,7 @@ export type TaiKhoanUncheckedCreateWithoutHoSoNhaTuyenDungInput = {
   thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanCreateOrConnectWithoutHoSoNhaTuyenDungInput = {
@@ -897,6 +930,7 @@ export type TaiKhoanUpdateWithoutHoSoNhaTuyenDungInput = {
   thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateWithoutHoSoNhaTuyenDungInput = {
@@ -913,6 +947,101 @@ export type TaiKhoanUncheckedUpdateWithoutHoSoNhaTuyenDungInput = {
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   maXacThucs?: Prisma.MaXacThucUncheckedUpdateManyWithoutTaiKhoanNestedInput
   hoSoNguoiLaoDong?: Prisma.HoSoNguoiLaoDongUncheckedUpdateOneWithoutTaiKhoanNestedInput
+  thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
+  lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
+  lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
+}
+
+export type TaiKhoanCreateWithoutThongTinPhongVansInput = {
+  tenDangNhap: string
+  email: string
+  soDienThoai?: string | null
+  matKhauHash: string
+  vaiTro: $Enums.VaiTroTaiKhoan
+  trangThaiTaiKhoan?: $Enums.TrangThaiTaiKhoan
+  emailXacThucLuc?: Date | string | null
+  lanDangNhapCuoi?: Date | string | null
+  ngayTao?: Date | string
+  ngayCapNhat?: Date | string
+  maXacThucs?: Prisma.MaXacThucCreateNestedManyWithoutTaiKhoanInput
+  hoSoNguoiLaoDong?: Prisma.HoSoNguoiLaoDongCreateNestedOneWithoutTaiKhoanInput
+  hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTaiKhoanInput
+  thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
+  lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
+  lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+}
+
+export type TaiKhoanUncheckedCreateWithoutThongTinPhongVansInput = {
+  id?: number
+  tenDangNhap: string
+  email: string
+  soDienThoai?: string | null
+  matKhauHash: string
+  vaiTro: $Enums.VaiTroTaiKhoan
+  trangThaiTaiKhoan?: $Enums.TrangThaiTaiKhoan
+  emailXacThucLuc?: Date | string | null
+  lanDangNhapCuoi?: Date | string | null
+  ngayTao?: Date | string
+  ngayCapNhat?: Date | string
+  maXacThucs?: Prisma.MaXacThucUncheckedCreateNestedManyWithoutTaiKhoanInput
+  hoSoNguoiLaoDong?: Prisma.HoSoNguoiLaoDongUncheckedCreateNestedOneWithoutTaiKhoanInput
+  hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedCreateNestedOneWithoutTaiKhoanInput
+  thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
+  lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
+  lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+}
+
+export type TaiKhoanCreateOrConnectWithoutThongTinPhongVansInput = {
+  where: Prisma.TaiKhoanWhereUniqueInput
+  create: Prisma.XOR<Prisma.TaiKhoanCreateWithoutThongTinPhongVansInput, Prisma.TaiKhoanUncheckedCreateWithoutThongTinPhongVansInput>
+}
+
+export type TaiKhoanUpsertWithoutThongTinPhongVansInput = {
+  update: Prisma.XOR<Prisma.TaiKhoanUpdateWithoutThongTinPhongVansInput, Prisma.TaiKhoanUncheckedUpdateWithoutThongTinPhongVansInput>
+  create: Prisma.XOR<Prisma.TaiKhoanCreateWithoutThongTinPhongVansInput, Prisma.TaiKhoanUncheckedCreateWithoutThongTinPhongVansInput>
+  where?: Prisma.TaiKhoanWhereInput
+}
+
+export type TaiKhoanUpdateToOneWithWhereWithoutThongTinPhongVansInput = {
+  where?: Prisma.TaiKhoanWhereInput
+  data: Prisma.XOR<Prisma.TaiKhoanUpdateWithoutThongTinPhongVansInput, Prisma.TaiKhoanUncheckedUpdateWithoutThongTinPhongVansInput>
+}
+
+export type TaiKhoanUpdateWithoutThongTinPhongVansInput = {
+  tenDangNhap?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  soDienThoai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  matKhauHash?: Prisma.StringFieldUpdateOperationsInput | string
+  vaiTro?: Prisma.EnumVaiTroTaiKhoanFieldUpdateOperationsInput | $Enums.VaiTroTaiKhoan
+  trangThaiTaiKhoan?: Prisma.EnumTrangThaiTaiKhoanFieldUpdateOperationsInput | $Enums.TrangThaiTaiKhoan
+  emailXacThucLuc?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lanDangNhapCuoi?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  maXacThucs?: Prisma.MaXacThucUpdateManyWithoutTaiKhoanNestedInput
+  hoSoNguoiLaoDong?: Prisma.HoSoNguoiLaoDongUpdateOneWithoutTaiKhoanNestedInput
+  hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneWithoutTaiKhoanNestedInput
+  thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
+  lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
+  lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+}
+
+export type TaiKhoanUncheckedUpdateWithoutThongTinPhongVansInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  tenDangNhap?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  soDienThoai?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  matKhauHash?: Prisma.StringFieldUpdateOperationsInput | string
+  vaiTro?: Prisma.EnumVaiTroTaiKhoanFieldUpdateOperationsInput | $Enums.VaiTroTaiKhoan
+  trangThaiTaiKhoan?: Prisma.EnumTrangThaiTaiKhoanFieldUpdateOperationsInput | $Enums.TrangThaiTaiKhoan
+  emailXacThucLuc?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  lanDangNhapCuoi?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  maXacThucs?: Prisma.MaXacThucUncheckedUpdateManyWithoutTaiKhoanNestedInput
+  hoSoNguoiLaoDong?: Prisma.HoSoNguoiLaoDongUncheckedUpdateOneWithoutTaiKhoanNestedInput
+  hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedUpdateOneWithoutTaiKhoanNestedInput
   thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
@@ -934,6 +1063,7 @@ export type TaiKhoanCreateWithoutLichSuTrangThaiUngTuyensInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTaiKhoanInput
   thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateWithoutLichSuTrangThaiUngTuyensInput = {
@@ -953,6 +1083,7 @@ export type TaiKhoanUncheckedCreateWithoutLichSuTrangThaiUngTuyensInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedCreateNestedOneWithoutTaiKhoanInput
   thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanCreateOrConnectWithoutLichSuTrangThaiUngTuyensInput = {
@@ -987,6 +1118,7 @@ export type TaiKhoanUpdateWithoutLichSuTrangThaiUngTuyensInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneWithoutTaiKhoanNestedInput
   thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateWithoutLichSuTrangThaiUngTuyensInput = {
@@ -1006,6 +1138,7 @@ export type TaiKhoanUncheckedUpdateWithoutLichSuTrangThaiUngTuyensInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedUpdateOneWithoutTaiKhoanNestedInput
   thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanCreateWithoutLichSuKiemDuyetsInput = {
@@ -1024,6 +1157,7 @@ export type TaiKhoanCreateWithoutLichSuKiemDuyetsInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTaiKhoanInput
   thongBaos?: Prisma.ThongBaoCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateWithoutLichSuKiemDuyetsInput = {
@@ -1043,6 +1177,7 @@ export type TaiKhoanUncheckedCreateWithoutLichSuKiemDuyetsInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedCreateNestedOneWithoutTaiKhoanInput
   thongBaos?: Prisma.ThongBaoUncheckedCreateNestedManyWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanCreateOrConnectWithoutLichSuKiemDuyetsInput = {
@@ -1077,6 +1212,7 @@ export type TaiKhoanUpdateWithoutLichSuKiemDuyetsInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneWithoutTaiKhoanNestedInput
   thongBaos?: Prisma.ThongBaoUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateWithoutLichSuKiemDuyetsInput = {
@@ -1096,6 +1232,7 @@ export type TaiKhoanUncheckedUpdateWithoutLichSuKiemDuyetsInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedUpdateOneWithoutTaiKhoanNestedInput
   thongBaos?: Prisma.ThongBaoUncheckedUpdateManyWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanCreateWithoutThongBaosInput = {
@@ -1114,6 +1251,7 @@ export type TaiKhoanCreateWithoutThongBaosInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanUncheckedCreateWithoutThongBaosInput = {
@@ -1133,6 +1271,7 @@ export type TaiKhoanUncheckedCreateWithoutThongBaosInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedCreateNestedOneWithoutTaiKhoanInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedCreateNestedManyWithoutNguoiThucHienInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedCreateNestedManyWithoutNguoiKiemDuyetInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedCreateNestedManyWithoutNguoiTaoInput
 }
 
 export type TaiKhoanCreateOrConnectWithoutThongBaosInput = {
@@ -1167,6 +1306,7 @@ export type TaiKhoanUpdateWithoutThongBaosInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUpdateManyWithoutNguoiTaoNestedInput
 }
 
 export type TaiKhoanUncheckedUpdateWithoutThongBaosInput = {
@@ -1186,6 +1326,7 @@ export type TaiKhoanUncheckedUpdateWithoutThongBaosInput = {
   hoSoNhaTuyenDung?: Prisma.HoSoNhaTuyenDungUncheckedUpdateOneWithoutTaiKhoanNestedInput
   lichSuTrangThaiUngTuyens?: Prisma.LichSuTrangThaiUngTuyenUncheckedUpdateManyWithoutNguoiThucHienNestedInput
   lichSuKiemDuyets?: Prisma.LichSuKiemDuyetUncheckedUpdateManyWithoutNguoiKiemDuyetNestedInput
+  thongTinPhongVans?: Prisma.ThongTinPhongVanUncheckedUpdateManyWithoutNguoiTaoNestedInput
 }
 
 
@@ -1198,6 +1339,7 @@ export type TaiKhoanCountOutputType = {
   thongBaos: number
   lichSuTrangThaiUngTuyens: number
   lichSuKiemDuyets: number
+  thongTinPhongVans: number
 }
 
 export type TaiKhoanCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1205,6 +1347,7 @@ export type TaiKhoanCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   thongBaos?: boolean | TaiKhoanCountOutputTypeCountThongBaosArgs
   lichSuTrangThaiUngTuyens?: boolean | TaiKhoanCountOutputTypeCountLichSuTrangThaiUngTuyensArgs
   lichSuKiemDuyets?: boolean | TaiKhoanCountOutputTypeCountLichSuKiemDuyetsArgs
+  thongTinPhongVans?: boolean | TaiKhoanCountOutputTypeCountThongTinPhongVansArgs
 }
 
 /**
@@ -1245,6 +1388,13 @@ export type TaiKhoanCountOutputTypeCountLichSuKiemDuyetsArgs<ExtArgs extends run
   where?: Prisma.LichSuKiemDuyetWhereInput
 }
 
+/**
+ * TaiKhoanCountOutputType without action
+ */
+export type TaiKhoanCountOutputTypeCountThongTinPhongVansArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ThongTinPhongVanWhereInput
+}
+
 
 export type TaiKhoanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1264,6 +1414,7 @@ export type TaiKhoanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   thongBaos?: boolean | Prisma.TaiKhoan$thongBaosArgs<ExtArgs>
   lichSuTrangThaiUngTuyens?: boolean | Prisma.TaiKhoan$lichSuTrangThaiUngTuyensArgs<ExtArgs>
   lichSuKiemDuyets?: boolean | Prisma.TaiKhoan$lichSuKiemDuyetsArgs<ExtArgs>
+  thongTinPhongVans?: boolean | Prisma.TaiKhoan$thongTinPhongVansArgs<ExtArgs>
   _count?: boolean | Prisma.TaiKhoanCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["taiKhoan"]>
 
@@ -1317,6 +1468,7 @@ export type TaiKhoanInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   thongBaos?: boolean | Prisma.TaiKhoan$thongBaosArgs<ExtArgs>
   lichSuTrangThaiUngTuyens?: boolean | Prisma.TaiKhoan$lichSuTrangThaiUngTuyensArgs<ExtArgs>
   lichSuKiemDuyets?: boolean | Prisma.TaiKhoan$lichSuKiemDuyetsArgs<ExtArgs>
+  thongTinPhongVans?: boolean | Prisma.TaiKhoan$thongTinPhongVansArgs<ExtArgs>
   _count?: boolean | Prisma.TaiKhoanCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TaiKhoanIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1331,6 +1483,7 @@ export type $TaiKhoanPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     thongBaos: Prisma.$ThongBaoPayload<ExtArgs>[]
     lichSuTrangThaiUngTuyens: Prisma.$LichSuTrangThaiUngTuyenPayload<ExtArgs>[]
     lichSuKiemDuyets: Prisma.$LichSuKiemDuyetPayload<ExtArgs>[]
+    thongTinPhongVans: Prisma.$ThongTinPhongVanPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1744,6 +1897,7 @@ export interface Prisma__TaiKhoanClient<T, Null = never, ExtArgs extends runtime
   thongBaos<T extends Prisma.TaiKhoan$thongBaosArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaiKhoan$thongBaosArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ThongBaoPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   lichSuTrangThaiUngTuyens<T extends Prisma.TaiKhoan$lichSuTrangThaiUngTuyensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaiKhoan$lichSuTrangThaiUngTuyensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LichSuTrangThaiUngTuyenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   lichSuKiemDuyets<T extends Prisma.TaiKhoan$lichSuKiemDuyetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaiKhoan$lichSuKiemDuyetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LichSuKiemDuyetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  thongTinPhongVans<T extends Prisma.TaiKhoan$thongTinPhongVansArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.TaiKhoan$thongTinPhongVansArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ThongTinPhongVanPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2308,6 +2462,30 @@ export type TaiKhoan$lichSuKiemDuyetsArgs<ExtArgs extends runtime.Types.Extensio
   take?: number
   skip?: number
   distinct?: Prisma.LichSuKiemDuyetScalarFieldEnum | Prisma.LichSuKiemDuyetScalarFieldEnum[]
+}
+
+/**
+ * TaiKhoan.thongTinPhongVans
+ */
+export type TaiKhoan$thongTinPhongVansArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ThongTinPhongVan
+   */
+  select?: Prisma.ThongTinPhongVanSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ThongTinPhongVan
+   */
+  omit?: Prisma.ThongTinPhongVanOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ThongTinPhongVanInclude<ExtArgs> | null
+  where?: Prisma.ThongTinPhongVanWhereInput
+  orderBy?: Prisma.ThongTinPhongVanOrderByWithRelationInput | Prisma.ThongTinPhongVanOrderByWithRelationInput[]
+  cursor?: Prisma.ThongTinPhongVanWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ThongTinPhongVanScalarFieldEnum | Prisma.ThongTinPhongVanScalarFieldEnum[]
 }
 
 /**

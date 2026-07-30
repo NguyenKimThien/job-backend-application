@@ -28,6 +28,21 @@ type ApplicationStatus =
   | 'KHONG_PHU_HOP'
   | 'DA_RUT';
 
+type InterviewMode = 'TRUC_TIEP' | 'TRUC_TUYEN';
+
+type InterviewInfo = {
+  id: number;
+  thoiGianBatDau: string;
+  thoiGianKetThuc?: string | null;
+  hinhThucPhongVan: InterviewMode;
+  diaDiemPhongVan?: string | null;
+  duongDanPhongVan?: string | null;
+  nguoiLienHe: string;
+  soDienThoaiLienHe: string;
+  noiDungChuanBi?: string | null;
+  ghiChuPhongVan?: string | null;
+};
+
 type AppliedJob = {
   id: number;
   ngayNop?: string | null;
@@ -35,6 +50,7 @@ type AppliedJob = {
   trangThaiHienTai: ApplicationStatus;
   tepCvSnapshotUrl?: string | null;
   lyDoTuChoi?: string | null;
+  thongTinPhongVan?: InterviewInfo | null;
   job: ApiJob;
 };
 
@@ -379,12 +395,30 @@ function AppliedJobsList({ items }: { items: AppliedJob[] }) {
           </thead>
           <tbody>
             {items.map((item) => (
-              <AppliedJobRow item={item} key={item.id} />
+              <AppliedJobRows item={item} key={item.id} />
             ))}
           </tbody>
         </table>
       </div>
     </div>
+  );
+}
+
+function AppliedJobRows({ item }: { item: AppliedJob }) {
+  const showInterview =
+    item.trangThaiHienTai === 'MOI_PHONG_VAN' && item.thongTinPhongVan;
+
+  return (
+    <>
+      <AppliedJobRow item={item} />
+      {showInterview && (
+        <tr className="applied-interview-row">
+          <td colSpan={5}>
+            <WorkerInterviewCard info={item.thongTinPhongVan!} item={item} />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -438,6 +472,121 @@ function AppliedJobRow({ item }: { item: AppliedJob }) {
         </div>
       </td>
     </tr>
+  );
+}
+
+function WorkerInterviewCard({
+  info,
+  item,
+}: {
+  info: InterviewInfo;
+  item: AppliedJob;
+}) {
+  const isOnline = info.hinhThucPhongVan === 'TRUC_TUYEN';
+  const hasValidUrl = isValidHttpUrl(info.duongDanPhongVan);
+
+  return (
+    <section className="worker-interview-card">
+      <div className="worker-interview-card-header">
+        <div>
+          <h3>Thông tin phỏng vấn</h3>
+          <p>
+            {item.job.title} · {item.job.company}
+          </p>
+        </div>
+        {isOnline && hasValidUrl && (
+          <a
+            className="worker-interview-join"
+            href={info.duongDanPhongVan ?? undefined}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <Icon name="externalLink" />
+            Tham gia phỏng vấn
+          </a>
+        )}
+      </div>
+      <div className="worker-interview-grid">
+        <WorkerInterviewDetail
+          icon="calendar"
+          label="Thời gian phỏng vấn"
+          value={formatInterviewTimeRange(info)}
+        />
+        <WorkerInterviewDetail
+          icon="briefcase"
+          label="Hình thức phỏng vấn"
+          value={interviewModeLabel(info.hinhThucPhongVan)}
+        />
+        {isOnline ? (
+          hasValidUrl && (
+            <div className="worker-interview-detail">
+              <Icon name="link" />
+              <div>
+                <span>Đường dẫn tham gia</span>
+                <a
+                  href={info.duongDanPhongVan ?? undefined}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {info.duongDanPhongVan}
+                </a>
+              </div>
+            </div>
+          )
+        ) : (
+          <WorkerInterviewDetail
+            icon="mapPin"
+            label="Địa điểm"
+            value={info.diaDiemPhongVan}
+          />
+        )}
+        <WorkerInterviewDetail
+          icon="user"
+          label="Người liên hệ"
+          value={info.nguoiLienHe}
+        />
+        <div className="worker-interview-detail">
+          <Icon name="phone" />
+          <div>
+            <span>Số điện thoại liên hệ</span>
+            <a href={`tel:${info.soDienThoaiLienHe}`}>
+              {info.soDienThoaiLienHe}
+            </a>
+          </div>
+        </div>
+        <WorkerInterviewDetail
+          icon="file"
+          label="Nội dung cần chuẩn bị"
+          value={info.noiDungChuanBi}
+        />
+        <WorkerInterviewDetail
+          icon="file"
+          label="Ghi chú từ Nhà tuyển dụng"
+          value={info.ghiChuPhongVan}
+        />
+      </div>
+    </section>
+  );
+}
+
+function WorkerInterviewDetail({
+  icon,
+  label,
+  value,
+}: {
+  icon: IconName;
+  label: string;
+  value?: string | null;
+}) {
+  if (!value) return null;
+  return (
+    <div className="worker-interview-detail">
+      <Icon name={icon} />
+      <div>
+        <span>{label}</span>
+        <p>{value}</p>
+      </div>
+    </div>
   );
 }
 
@@ -594,6 +743,26 @@ function formatDateTime(value?: string | null) {
   });
 }
 
+function formatInterviewTimeRange(info: InterviewInfo) {
+  const start = formatDateTime(info.thoiGianBatDau);
+  const end = info.thoiGianKetThuc ? formatDateTime(info.thoiGianKetThuc) : '';
+  return end ? `${start} - ${end}` : start;
+}
+
+function interviewModeLabel(value: InterviewMode) {
+  return value === 'TRUC_TIEP' ? 'Phỏng vấn trực tiếp' : 'Phỏng vấn trực tuyến';
+}
+
+function isValidHttpUrl(value?: string | null) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function relativeDate(value?: string | null) {
   if (!value) return 'chưa có dữ liệu';
   const date = new Date(value);
@@ -660,7 +829,18 @@ function isSortKey(value: string | null): value is SortKey {
   return sortOptions.some((item) => item.key === value);
 }
 
-type IconName = 'alertCircle' | 'file' | 'search' | 'x';
+type IconName =
+  | 'alertCircle'
+  | 'briefcase'
+  | 'calendar'
+  | 'externalLink'
+  | 'file'
+  | 'link'
+  | 'mapPin'
+  | 'phone'
+  | 'search'
+  | 'user'
+  | 'x';
 
 function Icon({
   name,
@@ -676,16 +856,41 @@ function Icon({
         <path d="M12 16h.01" />
       </>
     ),
+    briefcase: (
+      <path d="M10 6V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v1m-9 0h14v13H5V6Zm0 5h14" />
+    ),
+    calendar: (
+      <path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Zm4 8h2m3 0h2m-7 4h2" />
+    ),
+    externalLink: <path d="M14 4h6v6m0-6-9 9M20 14v5H5V4h5" />,
     file: (
       <>
         <path d="M7 3h7l4 4v14H7V3Z" />
         <path d="M14 3v5h4" />
       </>
     ),
+    link: (
+      <path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1" />
+    ),
+    mapPin: (
+      <>
+        <path d="M12 21s7-5.2 7-11a7 7 0 1 0-14 0c0 5.8 7 11 7 11Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </>
+    ),
+    phone: (
+      <path d="M6 4h4l2 5-3 2a11 11 0 0 0 4 4l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2Z" />
+    ),
     search: (
       <>
         <circle cx="11" cy="11" r="6" />
         <path d="m16 16 4 4" />
+      </>
+    ),
+    user: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
       </>
     ),
     x: <path d="M6 6l12 12M18 6 6 18" />,

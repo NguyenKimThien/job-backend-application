@@ -158,6 +158,9 @@ export default function AppliedJobsPage() {
   const [pageState, setPageState] = useState<PageState>('loading');
   const [filter, setFilter] = useState<FilterKey>('all');
   const [query, setQuery] = useState('');
+  const [selectedApplicationId, setSelectedApplicationId] = useState<
+    number | null
+  >(null);
   const [sort, setSort] = useState<SortKey>('updated-desc');
 
   useEffect(() => {
@@ -169,6 +172,15 @@ export default function AppliedJobsPage() {
   useEffect(() => {
     void loadApplications();
   }, []);
+
+  useEffect(() => {
+    if (pageState !== 'ready' || !selectedApplicationId) return;
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`applied-application-${selectedApplicationId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }, [items, pageState, selectedApplicationId]);
 
   async function loadApplications() {
     setPageState('loading');
@@ -185,19 +197,30 @@ export default function AppliedJobsPage() {
     const params = new URLSearchParams(window.location.search);
     const nextFilter = params.get('status');
     const nextSort = params.get('sort');
+    const nextApplicationId = parseApplicationId(params.get('applicationId'));
 
     setFilter(isFilterKey(nextFilter) ? nextFilter : 'all');
     setSort(isSortKey(nextSort) ? nextSort : 'updated-desc');
+    setSelectedApplicationId(nextApplicationId);
     setQuery(params.get('q') ?? '');
   }
 
   function updateUrl(
-    next: { filter?: FilterKey; query?: string; sort?: SortKey },
+    next: {
+      filter?: FilterKey;
+      query?: string;
+      selectedApplicationId?: number | null;
+      sort?: SortKey;
+    },
     mode: 'push' | 'replace',
   ) {
     const params = new URLSearchParams(window.location.search);
     const nextFilter = next.filter ?? filter;
     const nextQuery = next.query ?? query;
+    const nextSelectedApplicationId =
+      next.selectedApplicationId === undefined
+        ? selectedApplicationId
+        : next.selectedApplicationId;
     const nextSort = next.sort ?? sort;
 
     if (nextFilter === 'all') params.delete('status');
@@ -205,6 +228,12 @@ export default function AppliedJobsPage() {
 
     if (nextQuery.trim()) params.set('q', nextQuery.trim());
     else params.delete('q');
+
+    if (nextSelectedApplicationId) {
+      params.set('applicationId', String(nextSelectedApplicationId));
+    } else {
+      params.delete('applicationId');
+    }
 
     if (nextSort === 'updated-desc') params.delete('sort');
     else params.set('sort', nextSort);
@@ -219,7 +248,8 @@ export default function AppliedJobsPage() {
 
   function changeFilter(value: FilterKey) {
     setFilter(value);
-    updateUrl({ filter: value }, 'push');
+    setSelectedApplicationId(null);
+    updateUrl({ filter: value, selectedApplicationId: null }, 'push');
   }
 
   function changeSort(value: SortKey) {
@@ -249,7 +279,13 @@ export default function AppliedJobsPage() {
     const statuses = selectedFilter?.statuses;
 
     return [...items]
-      .filter((item) => !statuses || statuses.includes(item.trangThaiHienTai))
+      .filter(
+        (item) =>
+          !selectedApplicationId ||
+          item.id === selectedApplicationId ||
+          !statuses ||
+          statuses.includes(item.trangThaiHienTai),
+      )
       .filter((item) => {
         if (!keyword) return true;
         return normalizeText(
@@ -257,12 +293,23 @@ export default function AppliedJobsPage() {
         ).includes(keyword);
       })
       .sort((a, b) => compareApplications(a, b, sort));
-  }, [filter, items, query, sort]);
+  }, [filter, items, query, selectedApplicationId, sort]);
 
   const resultLabel =
     query.trim() || filter !== 'all'
       ? `${shown.length}/${items.length} hồ sơ phù hợp`
       : `${items.length} hồ sơ trong tài khoản của bạn`;
+
+  const selectedMissing =
+    pageState === 'ready' &&
+    Boolean(selectedApplicationId) &&
+    !items.some((item) => item.id === selectedApplicationId);
+
+  function toggleApplicationDetails(id: number) {
+    const nextId = selectedApplicationId === id ? null : id;
+    setSelectedApplicationId(nextId);
+    updateUrl({ selectedApplicationId: nextId }, 'push');
+  }
 
   return (
     <SiteShell
@@ -345,6 +392,13 @@ export default function AppliedJobsPage() {
           className="applied-panel"
           role="tabpanel"
         >
+          {selectedMissing && (
+            <div className="applied-inline-alert" role="alert">
+              {
+                'H\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n kh\u00f4ng c\u00f2n t\u1ed3n t\u1ea1i ho\u1eb7c b\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n truy c\u1eadp.'
+              }
+            </div>
+          )}
           {pageState === 'loading' && <AppliedJobsSkeleton />}
           {pageState === 'error' && (
             <AppliedJobsError
@@ -355,7 +409,13 @@ export default function AppliedJobsPage() {
           )}
           {pageState === 'ready' &&
             Boolean(items.length) &&
-            Boolean(shown.length) && <AppliedJobsList items={shown} />}
+            Boolean(shown.length) && (
+              <AppliedJobsList
+                items={shown}
+                onToggleDetails={toggleApplicationDetails}
+                selectedApplicationId={selectedApplicationId}
+              />
+            )}
           {pageState === 'ready' && !items.length && <AppliedJobsEmpty />}
           {pageState === 'ready' && Boolean(items.length) && !shown.length && (
             <AppliedJobsNoResults
@@ -379,7 +439,15 @@ export default function AppliedJobsPage() {
   );
 }
 
-function AppliedJobsList({ items }: { items: AppliedJob[] }) {
+function AppliedJobsList({
+  items,
+  onToggleDetails,
+  selectedApplicationId,
+}: {
+  items: AppliedJob[];
+  onToggleDetails: (id: number) => void;
+  selectedApplicationId: number | null;
+}) {
   return (
     <div className="content-card applied-table-card">
       <div className="applied-table-wrap">
@@ -395,7 +463,12 @@ function AppliedJobsList({ items }: { items: AppliedJob[] }) {
           </thead>
           <tbody>
             {items.map((item) => (
-              <AppliedJobRows item={item} key={item.id} />
+              <AppliedJobRows
+                isSelected={item.id === selectedApplicationId}
+                item={item}
+                key={item.id}
+                onToggleDetails={onToggleDetails}
+              />
             ))}
           </tbody>
         </table>
@@ -404,17 +477,33 @@ function AppliedJobsList({ items }: { items: AppliedJob[] }) {
   );
 }
 
-function AppliedJobRows({ item }: { item: AppliedJob }) {
-  const showInterview =
-    item.trangThaiHienTai === 'MOI_PHONG_VAN' && item.thongTinPhongVan;
+function AppliedJobRows({
+  isSelected,
+  item,
+  onToggleDetails,
+}: {
+  isSelected: boolean;
+  item: AppliedJob;
+  onToggleDetails: (id: number) => void;
+}) {
+  const detailId = `applied-application-detail-${item.id}`;
 
   return (
     <>
-      <AppliedJobRow item={item} />
-      {showInterview && (
-        <tr className="applied-interview-row">
+      <AppliedJobRow
+        detailId={detailId}
+        isSelected={isSelected}
+        item={item}
+        onToggleDetails={onToggleDetails}
+      />
+      {isSelected && (
+        <tr className="applied-detail-row">
           <td colSpan={5}>
-            <WorkerInterviewCard info={item.thongTinPhongVan!} item={item} />
+            <WorkerApplicationDetail
+              detailId={detailId}
+              item={item}
+              onClose={() => onToggleDetails(item.id)}
+            />
           </td>
         </tr>
       )}
@@ -422,12 +511,25 @@ function AppliedJobRows({ item }: { item: AppliedJob }) {
   );
 }
 
-function AppliedJobRow({ item }: { item: AppliedJob }) {
+function AppliedJobRow({
+  detailId,
+  isSelected,
+  item,
+  onToggleDetails,
+}: {
+  detailId: string;
+  isSelected: boolean;
+  item: AppliedJob;
+  onToggleDetails: (id: number) => void;
+}) {
   const meta = applicationStatusMeta[item.trangThaiHienTai];
   const updatedAt = item.ngayCapNhatTrangThai;
 
   return (
-    <tr>
+    <tr
+      className={isSelected ? 'applied-selected-row' : undefined}
+      id={`applied-application-${item.id}`}
+    >
       <td>
         <div className="applied-job-cell">
           <CompanyLogo
@@ -468,6 +570,16 @@ function AppliedJobRow({ item }: { item: AppliedJob }) {
       </td>
       <td>
         <div className="applied-actions">
+          <button
+            aria-controls={detailId}
+            aria-expanded={isSelected}
+            className="applied-detail-toggle"
+            onClick={() => onToggleDetails(item.id)}
+            type="button"
+          >
+            {isSelected ? 'Ẩn kết quả' : 'Xem kết quả'}
+            <Icon name={isSelected ? 'chevronUp' : 'chevronDown'} />
+          </button>
           <Link href={`/viec-lam/${item.job.id}`}>Xem tin tuyển dụng</Link>
         </div>
       </td>
@@ -475,13 +587,118 @@ function AppliedJobRow({ item }: { item: AppliedJob }) {
   );
 }
 
+function WorkerApplicationDetail({
+  detailId,
+  item,
+  onClose,
+}: {
+  detailId: string;
+  item: AppliedJob;
+  onClose: () => void;
+}) {
+  const meta = applicationStatusMeta[item.trangThaiHienTai];
+  const isInterview = item.trangThaiHienTai === 'MOI_PHONG_VAN';
+  const isRejected = item.trangThaiHienTai === 'KHONG_PHU_HOP';
+
+  return (
+    <section
+      aria-labelledby={`${detailId}-title`}
+      className="worker-application-detail"
+      id={detailId}
+    >
+      <div className="worker-detail-header">
+        <span className={`worker-detail-icon ${meta.tone}`}>
+          <Icon
+            name={
+              isRejected ? 'alertCircle' : isInterview ? 'calendar' : 'file'
+            }
+          />
+        </span>
+        <div>
+          <h3 id={`${detailId}-title`}>Kết quả hồ sơ ứng tuyển</h3>
+          <p>
+            {item.job.title} {'\u00b7'} {item.job.company}
+          </p>
+        </div>
+        <span className={`applied-status ${meta.tone}`}>{meta.label}</span>
+        <button
+          aria-label="Đóng chi tiết hồ sơ"
+          className="worker-detail-close"
+          onClick={onClose}
+          type="button"
+        >
+          <Icon name="chevronUp" />
+        </button>
+      </div>
+
+      <div className="worker-detail-overview">
+        <WorkerInterviewDetail
+          icon="briefcase"
+          label="Vị trí ứng tuyển"
+          value={item.job.title}
+        />
+        <WorkerInterviewDetail
+          icon="user"
+          label="Đơn vị tuyển dụng"
+          value={item.job.company}
+        />
+        <WorkerInterviewDetail
+          icon="calendar"
+          label="Ngày nộp hồ sơ"
+          value={formatDate(item.ngayNop)}
+        />
+        <WorkerInterviewDetail
+          icon="calendar"
+          label="Ngày cập nhật kết quả"
+          value={formatDateTime(item.ngayCapNhatTrangThai)}
+        />
+      </div>
+
+      {isInterview ? (
+        <WorkerInterviewCard info={item.thongTinPhongVan} item={item} />
+      ) : isRejected ? (
+        <WorkerRejectionCard item={item} />
+      ) : (
+        <section className="worker-status-card">
+          <h4>{meta.label}</h4>
+          <p>{meta.description}</p>
+          <p>{meta.nextAction}</p>
+        </section>
+      )}
+    </section>
+  );
+}
+
 function WorkerInterviewCard({
   info,
   item,
 }: {
-  info: InterviewInfo;
+  info?: InterviewInfo | null;
   item: AppliedJob;
 }) {
+  if (!info) {
+    return (
+      <section className="worker-interview-card">
+        <div className="worker-interview-card-header">
+          <div>
+            <h3>{'Th\u00f4ng tin ph\u1ecfng v\u1ea5n'}</h3>
+            <p>
+              {item.job.title} {'\u00b7'} {item.job.company}
+            </p>
+          </div>
+          <span className="applied-status warning">
+            {'M\u1eddi ph\u1ecfng v\u1ea5n'}
+          </span>
+        </div>
+        <p className="worker-interview-missing">
+          {
+            'Nh\u00e0 tuy\u1ec3n d\u1ee5ng ch\u01b0a cung c\u1ea5p th\u00f4ng tin chi ti\u1ebft cho bu\u1ed5i ph\u1ecfng v\u1ea5n n\u00e0y.'
+          }
+        </p>
+      </section>
+    );
+  }
+
   const isOnline = info.hinhThucPhongVan === 'TRUC_TUYEN';
   const hasValidUrl = isValidHttpUrl(info.duongDanPhongVan);
 
@@ -565,6 +782,29 @@ function WorkerInterviewCard({
           value={info.ghiChuPhongVan}
         />
       </div>
+    </section>
+  );
+}
+
+function WorkerRejectionCard({ item }: { item: AppliedJob }) {
+  const reason = item.lyDoTuChoi?.trim();
+
+  return (
+    <section className="worker-rejection-card">
+      <div className="worker-rejection-card-header">
+        <Icon name="alertCircle" />
+        <h4>{'L\u00fd do t\u1eeb ch\u1ed1i'}</h4>
+      </div>
+      <div className="worker-rejection-reason">
+        <p>
+          {reason ||
+            'Nh\u00e0 tuy\u1ec3n d\u1ee5ng ch\u01b0a cung c\u1ea5p l\u00fd do t\u1eeb ch\u1ed1i cho h\u1ed3 s\u01a1 n\u00e0y.'}
+        </p>
+      </div>
+      <p className="worker-rejection-note">
+        Bạn có thể tiếp tục cập nhật hồ sơ và tìm kiếm những vị trí phù hợp
+        khác.
+      </p>
     </section>
   );
 }
@@ -737,20 +977,33 @@ function formatDateTime(value?: string | null) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('vi-VN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
+  const time = date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
   });
+  return `${time}, ${formatDate(value)}`;
 }
 
 function formatInterviewTimeRange(info: InterviewInfo) {
-  const start = formatDateTime(info.thoiGianBatDau);
-  const end = info.thoiGianKetThuc ? formatDateTime(info.thoiGianKetThuc) : '';
-  return end ? `${start} - ${end}` : start;
+  const start = new Date(info.thoiGianBatDau);
+  if (Number.isNaN(start.getTime())) return '';
+  const startTime = formatTime(start);
+  const end = info.thoiGianKetThuc ? new Date(info.thoiGianKetThuc) : null;
+  const endTime = end && !Number.isNaN(end.getTime()) ? formatTime(end) : '';
+  return endTime
+    ? `${startTime} - ${endTime}, ngày ${formatDate(info.thoiGianBatDau)}`
+    : `${startTime}, ngày ${formatDate(info.thoiGianBatDau)}`;
 }
 
 function interviewModeLabel(value: InterviewMode) {
   return value === 'TRUC_TIEP' ? 'Phỏng vấn trực tiếp' : 'Phỏng vấn trực tuyến';
+}
+
+function formatTime(date: Date) {
+  return date.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function isValidHttpUrl(value?: string | null) {
@@ -821,6 +1074,11 @@ function normalizeText(value: string) {
     .replace(/đ/g, 'd');
 }
 
+function parseApplicationId(value: string | null) {
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 function isFilterKey(value: string | null): value is FilterKey {
   return filters.some((item) => item.key === value);
 }
@@ -833,6 +1091,8 @@ type IconName =
   | 'alertCircle'
   | 'briefcase'
   | 'calendar'
+  | 'chevronDown'
+  | 'chevronUp'
   | 'externalLink'
   | 'file'
   | 'link'
@@ -862,6 +1122,8 @@ function Icon({
     calendar: (
       <path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Zm4 8h2m3 0h2m-7 4h2" />
     ),
+    chevronDown: <path d="m6 9 6 6 6-6" />,
+    chevronUp: <path d="m18 15-6-6-6 6" />,
     externalLink: <path d="M14 4h6v6m0-6-9 9M20 14v5H5V4h5" />,
     file: (
       <>

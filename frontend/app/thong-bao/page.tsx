@@ -760,12 +760,15 @@ function getNotificationAction(
 function normalizeDestination(value?: string | null) {
   if (!value || !value.startsWith('/')) return null;
   if (value === '/nguoi-lao-dong/ung-tuyen') return '/viec-lam-da-ung-tuyen';
+  if (value.startsWith('/nguoi-lao-dong/ung-tuyen?')) {
+    return value.replace('/nguoi-lao-dong/ung-tuyen', '/viec-lam-da-ung-tuyen');
+  }
   return value;
 }
 
 function actionLabelForHref(href: string, fallback: string) {
   if (href.includes('/ung-vien')) return 'Xem hồ sơ ứng viên';
-  if (href === '/viec-lam-da-ung-tuyen') return 'Theo dõi hồ sơ';
+  if (href.startsWith('/viec-lam-da-ung-tuyen')) return 'Theo dõi hồ sơ';
   if (href.includes('/tin-tuyen-dung')) return 'Quản lý tin tuyển dụng';
   if (href.includes('/ho-so')) return 'Xem hồ sơ';
   if (href.includes('/viec-lam')) return 'Xem việc làm';

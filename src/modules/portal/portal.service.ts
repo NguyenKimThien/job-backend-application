@@ -791,6 +791,19 @@ export class PortalService {
         message: 'Chuyển trạng thái ứng tuyển không hợp lệ.',
       });
     }
+    const rejectionReason =
+      status === TrangThaiUngTuyen.KHONG_PHU_HOP
+        ? String(body.reason ?? body.note ?? '').trim()
+        : null;
+
+    if (status === TrangThaiUngTuyen.KHONG_PHU_HOP && !rejectionReason) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'APPLICATION_REJECTION_REASON_REQUIRED',
+        message:
+          'Vui l\u00f2ng nh\u1eadp l\u00fd do t\u1eeb ch\u1ed1i h\u1ed3 s\u01a1.',
+      });
+    }
+
     const updated = await this.prisma.$transaction(async (tx) => {
       const result = await tx.ungTuyen.update({
         where: { id },
@@ -798,9 +811,7 @@ export class PortalService {
           trangThaiHienTai: status,
           ngayCapNhatTrangThai: new Date(),
           lyDoTuChoi:
-            status === TrangThaiUngTuyen.KHONG_PHU_HOP
-              ? (body.reason ?? body.note ?? null)
-              : null,
+            status === TrangThaiUngTuyen.KHONG_PHU_HOP ? rejectionReason : null,
         },
       });
       await tx.lichSuTrangThaiUngTuyen.create({
@@ -809,7 +820,7 @@ export class PortalService {
           nguoiThucHienId: accountId,
           trangThaiTruoc: current.trangThaiHienTai,
           trangThaiSau: status,
-          ghiChu: body.note || null,
+          ghiChu: rejectionReason ?? body.note ?? null,
         },
       });
       const application = await tx.ungTuyen.findUnique({
@@ -820,13 +831,26 @@ export class PortalService {
         },
       });
       if (application) {
+        const notificationTitle =
+          status === TrangThaiUngTuyen.KHONG_PHU_HOP
+            ? 'K\u1ebft qu\u1ea3 h\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n'
+            : 'Tr\u1ea1ng th\u00e1i h\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n \u0111\u00e3 thay \u0111\u1ed5i';
+        const notificationContent =
+          status === TrangThaiUngTuyen.KHONG_PHU_HOP
+            ? `H\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n v\u1ecb tr\u00ed ${application.tinTuyenDung.viTriTuyenDung} \u0111\u00e3 \u0111\u01b0\u1ee3c Nh\u00e0 tuy\u1ec3n d\u1ee5ng c\u1eadp nh\u1eadt k\u1ebft qu\u1ea3. Nh\u1ea5n \u0111\u1ec3 xem chi ti\u1ebft.`
+            : `H\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n v\u1ecb tr\u00ed ${application.tinTuyenDung.viTriTuyenDung} \u0111\u00e3 chuy\u1ec3n sang ${status}.`;
+        const notificationLink =
+          status === TrangThaiUngTuyen.KHONG_PHU_HOP
+            ? `/viec-lam-da-ung-tuyen?applicationId=${id}&status=rejected`
+            : `/viec-lam-da-ung-tuyen?applicationId=${id}`;
+
         await tx.thongBao.create({
           data: {
             taiKhoanId: application.hoSoNguoiLaoDong.taiKhoanId,
-            tieuDe: 'Trạng thái hồ sơ ứng tuyển đã thay đổi',
-            noiDung: `Hồ sơ ứng tuyển vị trí ${application.tinTuyenDung.viTriTuyenDung} đã chuyển sang ${status}.`,
+            tieuDe: notificationTitle,
+            noiDung: notificationContent,
             loaiThongBao: LoaiThongBao.UNG_TUYEN,
-            duongDanDich: '/nguoi-lao-dong/ung-tuyen',
+            duongDanDich: notificationLink,
           },
         });
       }
@@ -952,7 +976,7 @@ export class PortalService {
           tieuDe: 'Hồ sơ của bạn đã được mời phỏng vấn',
           noiDung: `Nhà tuyển dụng đã gửi lời mời phỏng vấn cho vị trí ${current.tinTuyenDung.viTriTuyenDung}. Thời gian: ${this.formatInterviewDateTime(interviewData.thoiGianBatDau)}. Vui lòng xem chi tiết để biết địa điểm và thông tin liên hệ.`,
           loaiThongBao: LoaiThongBao.UNG_TUYEN,
-          duongDanDich: '/viec-lam-da-ung-tuyen?status=interview',
+          duongDanDich: `/viec-lam-da-ung-tuyen?applicationId=${id}&status=interview`,
         },
       });
 
@@ -1150,10 +1174,12 @@ export class PortalService {
   }
 
   async readNotification(accountId: number, id: number) {
-    await this.prisma.thongBao.updateMany({
+    const result = await this.prisma.thongBao.updateMany({
       where: { id, taiKhoanId: accountId },
       data: { daDoc: true, ngayDoc: new Date() },
     });
+    if (!result.count)
+      this.notFound('Kh\u00f4ng t\u00ecm th\u1ea5y th\u00f4ng b\u00e1o.');
     return { success: true };
   }
 

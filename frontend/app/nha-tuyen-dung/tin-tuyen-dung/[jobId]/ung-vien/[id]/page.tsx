@@ -5,7 +5,14 @@ import { BACKEND_API_URL } from '@/lib/backend-api';
 import { portalFetch, portalFetchBlob } from '@/lib/portal-api';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import {
+  ReactNode,
+  SVGProps,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 type ApplicationStatus =
   | 'DA_NOP'
@@ -49,6 +56,14 @@ type ApplicantDetail = {
   ngayNopCv?: string | null;
   hasCv?: boolean;
   thuGioiThieu?: string | null;
+  tinTuyenDungId?: number;
+  tinTuyenDung?: {
+    id?: number;
+    viTriTuyenDung?: string | null;
+    title?: string | null;
+    diaDiemLamViec?: string | null;
+    location?: string | null;
+  } | null;
   trangThaiHienTai: ApplicationStatus;
   lyDoTuChoi?: string | null;
   ngayNop: string;
@@ -83,10 +98,10 @@ type ApplicantDetail = {
   }>;
 };
 
-const statusMeta: Record<
-  ApplicationStatus,
-  { label: string; tone: string }
-> = {
+type ApplicationStatusHistory =
+  ApplicantDetail['lichSuTrangThaiUngTuyens'][number];
+
+const statusMeta: Record<ApplicationStatus, { label: string; tone: string }> = {
   DA_NOP: { label: 'Hồ sơ mới', tone: 'info' },
   DA_XEM: { label: 'Đang xem xét', tone: 'warning' },
   DUOC_CHON_SO_BO: { label: 'Qua sơ tuyển', tone: 'primary' },
@@ -97,9 +112,7 @@ const statusMeta: Record<
   DA_RUT: { label: 'Đã rút hồ sơ', tone: 'neutral' },
 };
 
-const transitions: Partial<
-  Record<ApplicationStatus, ApplicationStatus[]>
-> = {
+const transitions: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
   DA_NOP: ['MOI_PHONG_VAN', 'KHONG_PHU_HOP'],
   DA_XEM: ['MOI_PHONG_VAN', 'KHONG_PHU_HOP'],
   DUOC_CHON_SO_BO: ['MOI_PHONG_VAN', 'KHONG_PHU_HOP'],
@@ -113,16 +126,18 @@ export default function ApplicantDetailPage() {
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [rejectError, setRejectError] = useState('');
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<ApplicationStatus | null>(null);
   const [cvBusy, setCvBusy] = useState<'view' | 'download' | null>(null);
+  const rejectTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const rejectButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    portalFetch<ApplicantDetail>(
-      `/employer/jobs/${jobId}/applicants/${id}`,
-    )
+    portalFetch<ApplicantDetail>(`/employer/jobs/${jobId}/applicants/${id}`)
       .then((data) => {
         if (active) setItem(data);
       })
@@ -144,15 +159,28 @@ export default function ApplicantDetailPage() {
   }, [jobId, id]);
 
   const allowedTransitions = useMemo(
-    () => (item ? transitions[item.trangThaiHienTai] ?? [] : []),
+    () => (item ? (transitions[item.trangThaiHienTai] ?? []) : []),
     [item],
   );
 
+  useEffect(() => {
+    if (!rejectDialogOpen) return;
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && updating !== 'KHONG_PHU_HOP') {
+        closeRejectDialog();
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [rejectDialogOpen, updating]);
+
   async function updateStatus(status: ApplicationStatus) {
-    if (!item || !allowedTransitions.includes(status)) return;
+    if (!item || !allowedTransitions.includes(status)) return false;
     if (status === 'KHONG_PHU_HOP' && !note.trim()) {
-      setError('Vui lòng nhập lý do từ chối hồ sơ.');
-      return;
+      setRejectError('Vui lòng nhập lý do từ chối hồ sơ.');
+      requestAnimationFrame(() => rejectTextareaRef.current?.focus());
+      return false;
     }
     try {
       setUpdating(status);
@@ -181,16 +209,46 @@ export default function ApplicantDetailPage() {
           : current,
       );
       setNote('');
+      setRejectError('');
       setMessage(`Đã chuyển hồ sơ sang “${statusMeta[status].label}”.`);
+      return true;
     } catch (reason) {
       setError(
         reason instanceof Error
           ? reason.message
           : 'Không thể cập nhật trạng thái hồ sơ.',
       );
+      return false;
     } finally {
       setUpdating(null);
     }
+  }
+
+  function handleNoteChange(value: string) {
+    setNote(value);
+    if (value.trim()) setRejectError('');
+  }
+
+  function requestReject() {
+    if (updating !== null) return;
+    if (!note.trim()) {
+      setRejectError('Vui lòng nhập lý do từ chối hồ sơ.');
+      requestAnimationFrame(() => rejectTextareaRef.current?.focus());
+      return;
+    }
+    setError('');
+    setRejectDialogOpen(true);
+  }
+
+  function closeRejectDialog() {
+    if (updating === 'KHONG_PHU_HOP') return;
+    setRejectDialogOpen(false);
+    requestAnimationFrame(() => rejectButtonRef.current?.focus());
+  }
+
+  async function confirmReject() {
+    const success = await updateStatus('KHONG_PHU_HOP');
+    if (success) closeRejectDialog();
   }
 
   async function viewCv() {
@@ -223,7 +281,10 @@ export default function ApplicantDetailPage() {
       const { blob, fileName } = await portalFetchBlob(
         `/employer/jobs/${jobId}/applicants/${id}/cv/download`,
       );
-      downloadBlob(blob, fileName || item?.tenFileCvUngTuyen || 'CV_Ung_Vien.pdf');
+      downloadBlob(
+        blob,
+        fileName || item?.tenFileCvUngTuyen || 'CV_Ung_Vien.pdf',
+      );
     } catch (reason) {
       setError(
         reason instanceof Error
@@ -267,17 +328,34 @@ export default function ApplicantDetailPage() {
   const currentStatus = statusMeta[item.trangThaiHienTai];
   const hasCv = Boolean(item.hasCv || item.tenFileCvUngTuyen);
   const avatarUrl = documentUrl(profile.anhDaiDienUrl);
+  const email = item.emailSnapshot || profile.taiKhoan.email;
+  const phone =
+    item.soDienThoaiSnapshot ||
+    profile.taiKhoan.soDienThoai ||
+    'Chưa có số điện thoại';
+  const submittedJob = item.tinTuyenDung;
+  const submittedJobTitle =
+    submittedJob?.viTriTuyenDung || submittedJob?.title || null;
+  const submittedJobLocation =
+    submittedJob?.diaDiemLamViec || submittedJob?.location || null;
+  const jobCode = formatJobCode(item.tinTuyenDungId ?? jobId);
+  const visibleStatusHistory = getVisibleStatusHistory(
+    item.lichSuTrangThaiUngTuyens,
+  );
 
   return (
     <SiteShell
+      breadcrumb={`Trang chủ / Danh sách ứng viên / ${displayName}`}
+      pageClassName="applicant-detail-page-shell"
       role="employer"
       title={`Chi tiết ứng viên: ${displayName}`}
       action={
         <Link
-          className="btn btn-light"
+          className="btn btn-light applicant-detail-back"
           href={`/nha-tuyen-dung/tin-tuyen-dung/${jobId}/ung-vien`}
         >
-          ← Danh sách ứng viên
+          <DetailIcon name="arrowLeft" />
+          Quay lại danh sách ứng viên
         </Link>
       }
     >
@@ -285,31 +363,36 @@ export default function ApplicantDetailPage() {
         <div className="applicant-layout">
           <article className="content-card cv-preview applicant-profile-card">
             <header className="cv-header applicant-detail-header">
-              {avatarUrl ? (
-                <img
-                  className="profile-avatar"
-                  src={avatarUrl}
-                  alt={`Ảnh đại diện của ${displayName}`}
-                />
-              ) : (
-                <div className="profile-avatar">
-                  {initials(displayName)}
-                </div>
-              )}
-              <div>
-                <h2>{displayName}</h2>
-                <p>
-                  {item.emailSnapshot || profile.taiKhoan.email}
-                  {' · '}
-                  {item.soDienThoaiSnapshot ||
-                    profile.taiKhoan.soDienThoai ||
-                    'Chưa có số điện thoại'}
-                </p>
-                <div className="applicant-header-meta">
-                  <span className={`job-applicant-status ${currentStatus.tone}`}>
-                    {currentStatus.label}
-                  </span>
-                  <span>Nộp hồ sơ {formatDateTime(item.ngayNop)}</span>
+              <div className="applicant-identity">
+                {avatarUrl ? (
+                  <img
+                    className="profile-avatar"
+                    src={avatarUrl}
+                    alt={`Ảnh đại diện của ${displayName}`}
+                  />
+                ) : (
+                  <div className="profile-avatar">{initials(displayName)}</div>
+                )}
+                <div className="applicant-identity-main">
+                  <h2>{displayName}</h2>
+                  <div className="applicant-contact-list">
+                    <span title={email}>
+                      <DetailIcon name="mail" />
+                      <span>{email}</span>
+                    </span>
+                    <span title={phone}>
+                      <DetailIcon name="phone" />
+                      <span>{phone}</span>
+                    </span>
+                  </div>
+                  <div className="applicant-header-meta">
+                    <span
+                      className={`job-applicant-status ${currentStatus.tone}`}
+                    >
+                      {currentStatus.label}
+                    </span>
+                    <span>Nộp hồ sơ lúc {formatDateTime(item.ngayNop)}</span>
+                  </div>
                 </div>
               </div>
               {hasCv && (
@@ -317,17 +400,23 @@ export default function ApplicantDetailPage() {
                   <button
                     className="btn btn-primary applicant-cv-button"
                     disabled={Boolean(cvBusy)}
-                    onClick={viewCv}
+                    onClick={() => {
+                      void viewCv();
+                    }}
                     type="button"
                   >
+                    <DetailIcon name="eye" />
                     {cvBusy === 'view' ? 'Đang mở...' : 'Xem CV'}
                   </button>
                   <button
                     className="btn btn-light applicant-cv-button"
                     disabled={Boolean(cvBusy)}
-                    onClick={downloadCv}
+                    onClick={() => {
+                      void downloadCv();
+                    }}
                     type="button"
                   >
+                    <DetailIcon name="download" />
                     {cvBusy === 'download' ? 'Đang tải...' : 'Tải CV'}
                   </button>
                 </div>
@@ -336,24 +425,50 @@ export default function ApplicantDetailPage() {
 
             <ProfileSection title="CV ứng tuyển">
               {hasCv ? (
-                <dl className="applicant-info-grid">
-                  <Info label="Tên CV" value={item.tenFileCvUngTuyen} />
-                  <Info
-                    label="Dung lượng"
-                    value={formatFileSize(item.kichThuocCvUngTuyen)}
-                  />
-                  <Info
-                    label="Ngày nộp CV"
-                    value={formatDateTime(item.ngayNopCv)}
-                  />
-                </dl>
+                <div className="applicant-file-row">
+                  <span className="applicant-file-icon">
+                    <DetailIcon name="fileText" />
+                  </span>
+                  <div>
+                    <strong title={item.tenFileCvUngTuyen ?? undefined}>
+                      {item.tenFileCvUngTuyen || 'CV ứng tuyển'}
+                    </strong>
+                    <span>
+                      {formatFileSize(item.kichThuocCvUngTuyen)}
+                      {' · '}
+                      Nộp lúc {formatDateTime(item.ngayNopCv)}
+                    </span>
+                  </div>
+                </div>
               ) : (
                 <EmptyText text="Ứng viên chưa đính kèm CV." />
               )}
             </ProfileSection>
 
+            <ProfileSection title="Thông tin ứng tuyển">
+              <dl className="applicant-info-grid applicant-application-grid">
+                {submittedJobTitle && (
+                  <Info label="Vị trí ứng tuyển" value={submittedJobTitle} />
+                )}
+                <Info label="Mã tin tuyển dụng" value={jobCode} />
+                <Info
+                  label="Ngày ứng tuyển"
+                  value={formatDateTime(item.ngayNop)}
+                />
+                {submittedJobLocation && (
+                  <Info
+                    label="Địa điểm làm việc"
+                    value={submittedJobLocation}
+                  />
+                )}
+              </dl>
+            </ProfileSection>
+
             <ProfileSection title="Giới thiệu bản thân">
-              <p>{profile.gioiThieuBanThan || 'Ứng viên chưa cập nhật phần giới thiệu.'}</p>
+              <p>
+                {profile.gioiThieuBanThan ||
+                  'Ứng viên chưa cập nhật phần giới thiệu.'}
+              </p>
             </ProfileSection>
 
             <ProfileSection title="Thông tin cá nhân">
@@ -459,30 +574,26 @@ export default function ApplicantDetailPage() {
             </ProfileSection>
 
             <ProfileSection title="Thư giới thiệu">
-              <p>{item.thuGioiThieu || 'Ứng viên không gửi kèm thư giới thiệu.'}</p>
+              <p>
+                {item.thuGioiThieu || 'Ứng viên không gửi kèm thư giới thiệu.'}
+              </p>
             </ProfileSection>
 
             <ProfileSection title="Lịch sử xử lý hồ sơ">
-              {item.lichSuTrangThaiUngTuyens.length ? (
+              {visibleStatusHistory.length ? (
                 <ol className="applicant-status-history">
-                  {[...item.lichSuTrangThaiUngTuyens]
-                    .sort(
-                      (a, b) =>
-                        new Date(b.ngayThayDoi).getTime() -
-                        new Date(a.ngayThayDoi).getTime(),
-                    )
-                    .map((history) => (
-                      <li key={history.id}>
-                        <div>
-                          <strong>
-                            {statusMeta[history.trangThaiSau]?.label ??
-                              history.trangThaiSau}
-                          </strong>
-                          <time>{formatDateTime(history.ngayThayDoi)}</time>
-                        </div>
-                        {history.ghiChu && <p>{history.ghiChu}</p>}
-                      </li>
-                    ))}
+                  {visibleStatusHistory.map((history) => (
+                    <li key={history.id}>
+                      <div>
+                        <strong>
+                          {statusMeta[history.trangThaiSau]?.label ??
+                            history.trangThaiSau}
+                        </strong>
+                        <time>{formatDateTime(history.ngayThayDoi)}</time>
+                      </div>
+                      {history.ghiChu && <p>{history.ghiChu}</p>}
+                    </li>
+                  ))}
                 </ol>
               ) : (
                 <EmptyText text="Chưa có lịch sử xử lý hồ sơ." />
@@ -492,10 +603,12 @@ export default function ApplicantDetailPage() {
 
           <aside className="content-card decision-panel applicant-decision-panel">
             <h3>Xử lý hồ sơ</h3>
-            <p>
-              Trạng thái hiện tại:{' '}
-              <strong>{currentStatus.label}</strong>
-            </p>
+            <div className="applicant-current-status">
+              <span>Trạng thái hồ sơ</span>
+              <strong className={`job-applicant-status ${currentStatus.tone}`}>
+                {currentStatus.label}
+              </strong>
+            </div>
             {message && <div className="form-message success">{message}</div>}
             {error && <div className="form-message error">{error}</div>}
 
@@ -503,8 +616,11 @@ export default function ApplicantDetailPage() {
               <button
                 className="decision interview"
                 disabled={updating !== null}
-                onClick={() => updateStatus('MOI_PHONG_VAN')}
+                onClick={() => {
+                  void updateStatus('MOI_PHONG_VAN');
+                }}
               >
+                <DetailIcon name="calendar" />
                 {updating === 'MOI_PHONG_VAN'
                   ? 'Đang cập nhật...'
                   : 'Mời phỏng vấn'}
@@ -514,8 +630,11 @@ export default function ApplicantDetailPage() {
               <button
                 className="decision interview"
                 disabled={updating !== null}
-                onClick={() => updateStatus('DA_PHONG_VAN')}
+                onClick={() => {
+                  void updateStatus('DA_PHONG_VAN');
+                }}
               >
+                <DetailIcon name="checkCircle" />
                 {updating === 'DA_PHONG_VAN'
                   ? 'Đang cập nhật...'
                   : 'Xác nhận đã phỏng vấn'}
@@ -525,8 +644,11 @@ export default function ApplicantDetailPage() {
               <button
                 className="decision approve"
                 disabled={updating !== null}
-                onClick={() => updateStatus('TRUNG_TUYEN')}
+                onClick={() => {
+                  void updateStatus('TRUNG_TUYEN');
+                }}
               >
+                <DetailIcon name="checkCircle" />
                 {updating === 'TRUNG_TUYEN'
                   ? 'Đang cập nhật...'
                   : 'Xác nhận trúng tuyển'}
@@ -535,25 +657,42 @@ export default function ApplicantDetailPage() {
 
             {allowedTransitions.includes('KHONG_PHU_HOP') && (
               <>
-                <label className="form-group">
-                  <span>
-                    Ghi chú / lý do từ chối
-                    <small> Bắt buộc khi từ chối</small>
-                  </span>
+                <label
+                  className="form-group applicant-note-field"
+                  htmlFor="reject-note"
+                >
+                  <span>Ghi chú xử lý</span>
+                  <small>Bắt buộc nhập khi từ chối hồ sơ.</small>
                   <textarea
+                    aria-describedby={
+                      rejectError ? 'reject-note-error' : undefined
+                    }
+                    aria-invalid={Boolean(rejectError)}
+                    id="reject-note"
+                    ref={rejectTextareaRef}
                     value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder="Nhập nhận xét dành cho ứng viên..."
+                    onChange={(event) => handleNoteChange(event.target.value)}
+                    placeholder="Nhập ghi chú hoặc lý do từ chối ứng viên..."
                     rows={4}
                   />
+                  {rejectError && (
+                    <span
+                      className="applicant-note-error"
+                      id="reject-note-error"
+                    >
+                      {rejectError}
+                    </span>
+                  )}
                 </label>
                 <button
                   className="decision reject"
                   disabled={updating !== null}
-                  onClick={() => updateStatus('KHONG_PHU_HOP')}
+                  onClick={requestReject}
+                  ref={rejectButtonRef}
                 >
+                  <DetailIcon name="xCircle" />
                   {updating === 'KHONG_PHU_HOP'
-                    ? 'Đang cập nhật...'
+                    ? 'Đang xử lý...'
                     : 'Từ chối hồ sơ'}
                 </button>
               </>
@@ -571,12 +710,22 @@ export default function ApplicantDetailPage() {
                 <p>{item.lyDoTuChoi}</p>
               </div>
             )}
-            <small>
-              Cập nhật lần cuối {formatDateTime(item.ngayCapNhatTrangThai)}
+            <small className="applicant-updated-time">
+              Cập nhật lần cuối: {formatDateTime(item.ngayCapNhatTrangThai)}
             </small>
           </aside>
         </div>
       </section>
+      {rejectDialogOpen && (
+        <RejectConfirmDialog
+          isSaving={updating === 'KHONG_PHU_HOP'}
+          note={note}
+          onCancel={closeRejectDialog}
+          onConfirm={() => {
+            void confirmReject();
+          }}
+        />
+      )}
     </SiteShell>
   );
 }
@@ -596,13 +745,7 @@ function ProfileSection({
   );
 }
 
-function Info({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null;
-}) {
+function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
       <dt>{label}</dt>
@@ -615,6 +758,78 @@ function EmptyText({ text }: { text: string }) {
   return <p className="applicant-empty-text">{text}</p>;
 }
 
+function RejectConfirmDialog({
+  isSaving,
+  note,
+  onCancel,
+  onConfirm,
+}: {
+  isSaving: boolean;
+  note: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    cancelButtonRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="job-applicant-dialog-backdrop applicant-reject-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSaving) onCancel();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-labelledby="applicant-reject-dialog-title"
+        aria-modal="true"
+        className="job-applicant-dialog applicant-reject-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Đóng hộp thoại xác nhận"
+          className="job-applicant-dialog-close"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          <DetailIcon name="xCircle" />
+        </button>
+        <h2 id="applicant-reject-dialog-title">Xác nhận từ chối hồ sơ</h2>
+        <p>
+          Ứng viên sẽ nhận được thông báo về kết quả xử lý hồ sơ. Vui lòng kiểm
+          tra lại lý do trước khi xác nhận.
+        </p>
+        <div className="applicant-reject-preview">
+          <span>Lý do từ chối</span>
+          <p>{note}</p>
+        </div>
+        <div>
+          <button
+            disabled={isSaving}
+            onClick={onCancel}
+            ref={cancelButtonRef}
+            type="button"
+          >
+            Hủy
+          </button>
+          <button
+            className="danger"
+            disabled={isSaving}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isSaving ? 'Đang xử lý...' : 'Xác nhận từ chối'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function documentUrl(value?: string | null) {
   if (!value) return null;
   if (/^(https?:|data:|blob:)/i.test(value)) return value;
@@ -622,16 +837,31 @@ function documentUrl(value?: string | null) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return 'Chưa cập nhật';
-  return new Intl.DateTimeFormat('vi-VN').format(new Date(value));
+  const date = parseDate(value);
+  if (!date) return 'Chưa cập nhật';
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return '—';
-  return new Intl.DateTimeFormat('vi-VN', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  const date = parseDate(value);
+  if (!date) return 'Chưa cập nhật';
+  const parts = new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+    minute: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('hour')}:${part('minute')}, ${part('day')}/${part(
+    'month',
+  )}/${part('year')}`;
 }
 
 function formatFileSize(size?: number | null) {
@@ -652,11 +882,63 @@ function downloadBlob(blob: Blob, fileName: string) {
 }
 
 function formatMonth(value?: string | null) {
-  if (!value) return '—';
+  const date = parseDate(value);
+  if (!date) return 'Chưa cập nhật';
   return new Intl.DateTimeFormat('vi-VN', {
     month: '2-digit',
     year: 'numeric',
-  }).format(new Date(value));
+  }).format(date);
+}
+
+function parseDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function getVisibleStatusHistory(histories: ApplicationStatusHistory[]) {
+  return [...histories]
+    .sort(
+      (a, b) =>
+        getDateTimeValue(b.ngayThayDoi) - getDateTimeValue(a.ngayThayDoi),
+    )
+    .filter((history, index, sortedHistories) => {
+      const previous = sortedHistories[index - 1];
+      return !previous || !isDuplicateStatusHistory(previous, history);
+    });
+}
+
+function isDuplicateStatusHistory(
+  previous: ApplicationStatusHistory,
+  current: ApplicationStatusHistory,
+) {
+  return (
+    previous.trangThaiSau === current.trangThaiSau &&
+    previous.trangThaiTruoc === current.trangThaiTruoc &&
+    normalizeHistoryNote(previous.ghiChu) ===
+      normalizeHistoryNote(current.ghiChu) &&
+    getDateMinuteBucket(previous.ngayThayDoi) ===
+      getDateMinuteBucket(current.ngayThayDoi)
+  );
+}
+
+function normalizeHistoryNote(value?: string | null) {
+  return value?.trim() ?? '';
+}
+
+function getDateTimeValue(value?: string | null) {
+  return parseDate(value)?.getTime() ?? 0;
+}
+
+function getDateMinuteBucket(value?: string | null) {
+  const time = getDateTimeValue(value);
+  return time ? Math.floor(time / 60000) : 0;
+}
+
+function formatJobCode(value?: number | string | null) {
+  if (value === null || value === undefined || value === '')
+    return 'Chưa cập nhật';
+  return `#${value}`;
 }
 
 function genderLabel(value?: string | null) {
@@ -665,7 +947,7 @@ function genderLabel(value?: string | null) {
     NU: 'Nữ',
     KHAC: 'Khác',
   };
-  return value ? labels[value] ?? value : 'Chưa cập nhật';
+  return value ? (labels[value] ?? value) : 'Chưa cập nhật';
 }
 
 function jobSeekingLabel(value?: string | null) {
@@ -674,7 +956,7 @@ function jobSeekingLabel(value?: string | null) {
     DANG_DI_LAM: 'Đang đi làm',
     KHONG_TIM_VIEC: 'Chưa có nhu cầu',
   };
-  return value ? labels[value] ?? value : 'Chưa cập nhật';
+  return value ? (labels[value] ?? value) : 'Chưa cập nhật';
 }
 
 function salaryRange(
@@ -696,4 +978,72 @@ function initials(name: string) {
     .slice(-2)
     .map((word) => word.charAt(0).toUpperCase())
     .join('');
+}
+
+type DetailIconName =
+  | 'arrowLeft'
+  | 'calendar'
+  | 'checkCircle'
+  | 'download'
+  | 'eye'
+  | 'fileText'
+  | 'mail'
+  | 'phone'
+  | 'xCircle';
+
+function DetailIcon({
+  name,
+  height = 16,
+  width = 16,
+  ...props
+}: { name: DetailIconName } & SVGProps<SVGSVGElement>) {
+  const paths: Record<DetailIconName, ReactNode> = {
+    arrowLeft: <path d="M19 12H5m6-7-7 7 7 7" />,
+    calendar: (
+      <path d="M7 3v4M17 3v4M4 9h16M5 5h14v15H5V5Zm4 8h2m3 0h2m-7 4h2" />
+    ),
+    checkCircle: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="m8 12 2.5 2.5L16 9" />
+      </>
+    ),
+    download: <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" />,
+    eye: (
+      <>
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
+    fileText: <path d="M6 3h8l4 4v14H6V3Zm8 0v5h5M9 13h6M9 17h6" />,
+    mail: <path d="M4 6h16v12H4V6Zm0 1 8 6 8-6" />,
+    phone: (
+      <path d="M6 4h4l2 5-3 2a11 11 0 0 0 4 4l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 4 6a2 2 0 0 1 2-2Z" />
+    ),
+    xCircle: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="m9 9 6 6m0-6-6 6" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      className="detail-icon"
+      fill="none"
+      focusable="false"
+      height={height}
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+      viewBox="0 0 24 24"
+      width={width}
+      {...props}
+    >
+      {paths[name]}
+    </svg>
+  );
 }

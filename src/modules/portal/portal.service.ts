@@ -653,24 +653,32 @@ export class PortalService {
     });
     if (!item) this.notFound('Không tìm thấy ứng viên.');
     if (item.trangThaiHienTai === TrangThaiUngTuyen.DA_NOP) {
-      await this.prisma.$transaction([
-        this.prisma.ungTuyen.update({
-          where: { id },
+      const viewedAt = new Date();
+      await this.prisma.$transaction(async (tx) => {
+        const result = await tx.ungTuyen.updateMany({
+          where: {
+            id,
+            tinTuyenDungId: jobId,
+            trangThaiHienTai: TrangThaiUngTuyen.DA_NOP,
+          },
           data: {
             trangThaiHienTai: TrangThaiUngTuyen.DA_XEM,
-            ngayCapNhatTrangThai: new Date(),
+            ngayCapNhatTrangThai: viewedAt,
           },
-        }),
-        this.prisma.lichSuTrangThaiUngTuyen.create({
+        });
+        if (!result.count) return;
+
+        await tx.lichSuTrangThaiUngTuyen.create({
           data: {
             ungTuyenId: id,
             nguoiThucHienId: accountId,
             trangThaiTruoc: TrangThaiUngTuyen.DA_NOP,
             trangThaiSau: TrangThaiUngTuyen.DA_XEM,
           },
-        }),
-      ]);
+        });
+      });
       item.trangThaiHienTai = TrangThaiUngTuyen.DA_XEM;
+      item.ngayCapNhatTrangThai = viewedAt;
     }
     return { success: true, data: this.mapApplication(item) };
   }

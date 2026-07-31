@@ -12,6 +12,161 @@
   --white: #fff;
 }
 
+.job-editor-section {
+  display: grid;
+  gap: 18px;
+}
+
+.job-editor-actionbar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
+.tag-editor,
+.money-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-editor input,
+.money-field input {
+  min-width: 0;
+  flex: 1;
+}
+
+.money-field small {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tag-list button,
+.tag-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.tag-list button span {
+  width: 16px;
+  height: 16px;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 0.8rem;
+}
+
+.field-error {
+  color: #b42318;
+  font-size: 0.86rem;
+}
+
+.completion-meter {
+  overflow: hidden;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.completion-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.readonly-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  color: var(--ink);
+}
+
+.preview-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.preview-dialog {
+  width: min(720px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+}
+
+.preview-close {
+  float: right;
+}
+
+.home-match-score {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 14px 0 8px;
+  color: var(--ink);
+}
+
+.home-match-score span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.home-match-reasons {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.profile-checkbox-field input {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 760px) {
+  .job-editor-actionbar {
+    position: static;
+    flex-direction: column;
+  }
+
+  .job-editor-actionbar .btn {
+    width: 100%;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

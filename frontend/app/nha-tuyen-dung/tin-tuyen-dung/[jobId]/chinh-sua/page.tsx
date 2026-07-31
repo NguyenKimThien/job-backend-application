@@ -44,6 +44,7 @@ export default function EditEmployerJobPage() {
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!job) return;
     const form = new FormData(event.currentTarget);
     setSaving(true);
     setMessage('');
@@ -54,6 +55,11 @@ export default function EditEmployerJobPage() {
           viTriTuyenDung: form.get('viTriTuyenDung'),
           nganhNgheId: Number(form.get('nganhNgheId')),
           hinhThucLamViec: form.get('hinhThucLamViec'),
+          phuongThucLamViec: job.workMode ?? 'TAI_VAN_PHONG',
+          tinhThanhPho: job.province ?? 'Hà Nội',
+          quanHuyen: job.district ?? null,
+          diaChiLamViecCuThe: form.get('diaDiemLamViec'),
+          chuyenMon: job.specialization ?? null,
           mucLuongTu: Number(form.get('mucLuongTu')) || null,
           mucLuongDen: Number(form.get('mucLuongDen')) || null,
           coTheThoaThuan: form.get('coTheThoaThuan') === 'on',

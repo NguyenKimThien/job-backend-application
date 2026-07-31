@@ -225,6 +225,7 @@ export type NganhNgheWhereInput = {
   ngayTao?: Prisma.DateTimeFilter<"NganhNghe"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"NganhNghe"> | Date | string
   tinTuyenDungs?: Prisma.TinTuyenDungListRelationFilter
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongListRelationFilter
 }
 
 export type NganhNgheOrderByWithRelationInput = {
@@ -235,6 +236,7 @@ export type NganhNgheOrderByWithRelationInput = {
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
   tinTuyenDungs?: Prisma.TinTuyenDungOrderByRelationAggregateInput
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongOrderByRelationAggregateInput
 }
 
 export type NganhNgheWhereUniqueInput = Prisma.AtLeast<{
@@ -248,6 +250,7 @@ export type NganhNgheWhereUniqueInput = Prisma.AtLeast<{
   ngayTao?: Prisma.DateTimeFilter<"NganhNghe"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"NganhNghe"> | Date | string
   tinTuyenDungs?: Prisma.TinTuyenDungListRelationFilter
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongListRelationFilter
 }, "id" | "tenNganhNghe">
 
 export type NganhNgheOrderByWithAggregationInput = {
@@ -283,6 +286,7 @@ export type NganhNgheCreateInput = {
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungs?: Prisma.TinTuyenDungCreateNestedManyWithoutNganhNgheInput
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongCreateNestedManyWithoutNganhNgheMongMuonInput
 }
 
 export type NganhNgheUncheckedCreateInput = {
@@ -293,6 +297,7 @@ export type NganhNgheUncheckedCreateInput = {
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungs?: Prisma.TinTuyenDungUncheckedCreateNestedManyWithoutNganhNgheInput
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongUncheckedCreateNestedManyWithoutNganhNgheMongMuonInput
 }
 
 export type NganhNgheUpdateInput = {
@@ -302,6 +307,7 @@ export type NganhNgheUpdateInput = {
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungs?: Prisma.TinTuyenDungUpdateManyWithoutNganhNgheNestedInput
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongUpdateManyWithoutNganhNgheMongMuonNestedInput
 }
 
 export type NganhNgheUncheckedUpdateInput = {
@@ -312,6 +318,7 @@ export type NganhNgheUncheckedUpdateInput = {
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungs?: Prisma.TinTuyenDungUncheckedUpdateManyWithoutNganhNgheNestedInput
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongUncheckedUpdateManyWithoutNganhNgheMongMuonNestedInput
 }
 
 export type NganhNgheCreateManyInput = {
@@ -338,6 +345,11 @@ export type NganhNgheUncheckedUpdateManyInput = {
   trangThaiHienThi?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type NganhNgheNullableScalarRelationFilter = {
+  is?: Prisma.NganhNgheWhereInput | null
+  isNot?: Prisma.NganhNgheWhereInput | null
 }
 
 export type NganhNgheCountOrderByAggregateInput = {
@@ -380,6 +392,22 @@ export type NganhNgheScalarRelationFilter = {
   isNot?: Prisma.NganhNgheWhereInput
 }
 
+export type NganhNgheCreateNestedOneWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  create?: Prisma.XOR<Prisma.NganhNgheCreateWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUncheckedCreateWithoutHoSoNguoiLaoDongMongMuonsInput>
+  connectOrCreate?: Prisma.NganhNgheCreateOrConnectWithoutHoSoNguoiLaoDongMongMuonsInput
+  connect?: Prisma.NganhNgheWhereUniqueInput
+}
+
+export type NganhNgheUpdateOneWithoutHoSoNguoiLaoDongMongMuonsNestedInput = {
+  create?: Prisma.XOR<Prisma.NganhNgheCreateWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUncheckedCreateWithoutHoSoNguoiLaoDongMongMuonsInput>
+  connectOrCreate?: Prisma.NganhNgheCreateOrConnectWithoutHoSoNguoiLaoDongMongMuonsInput
+  upsert?: Prisma.NganhNgheUpsertWithoutHoSoNguoiLaoDongMongMuonsInput
+  disconnect?: Prisma.NganhNgheWhereInput | boolean
+  delete?: Prisma.NganhNgheWhereInput | boolean
+  connect?: Prisma.NganhNgheWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.NganhNgheUpdateToOneWithWhereWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUpdateWithoutHoSoNguoiLaoDongMongMuonsInput>, Prisma.NganhNgheUncheckedUpdateWithoutHoSoNguoiLaoDongMongMuonsInput>
+}
+
 export type NganhNgheCreateNestedOneWithoutTinTuyenDungsInput = {
   create?: Prisma.XOR<Prisma.NganhNgheCreateWithoutTinTuyenDungsInput, Prisma.NganhNgheUncheckedCreateWithoutTinTuyenDungsInput>
   connectOrCreate?: Prisma.NganhNgheCreateOrConnectWithoutTinTuyenDungsInput
@@ -394,12 +422,67 @@ export type NganhNgheUpdateOneRequiredWithoutTinTuyenDungsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.NganhNgheUpdateToOneWithWhereWithoutTinTuyenDungsInput, Prisma.NganhNgheUpdateWithoutTinTuyenDungsInput>, Prisma.NganhNgheUncheckedUpdateWithoutTinTuyenDungsInput>
 }
 
+export type NganhNgheCreateWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  tenNganhNghe: string
+  moTa?: string | null
+  trangThaiHienThi?: boolean
+  ngayTao?: Date | string
+  ngayCapNhat?: Date | string
+  tinTuyenDungs?: Prisma.TinTuyenDungCreateNestedManyWithoutNganhNgheInput
+}
+
+export type NganhNgheUncheckedCreateWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  id?: number
+  tenNganhNghe: string
+  moTa?: string | null
+  trangThaiHienThi?: boolean
+  ngayTao?: Date | string
+  ngayCapNhat?: Date | string
+  tinTuyenDungs?: Prisma.TinTuyenDungUncheckedCreateNestedManyWithoutNganhNgheInput
+}
+
+export type NganhNgheCreateOrConnectWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  where: Prisma.NganhNgheWhereUniqueInput
+  create: Prisma.XOR<Prisma.NganhNgheCreateWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUncheckedCreateWithoutHoSoNguoiLaoDongMongMuonsInput>
+}
+
+export type NganhNgheUpsertWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  update: Prisma.XOR<Prisma.NganhNgheUpdateWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUncheckedUpdateWithoutHoSoNguoiLaoDongMongMuonsInput>
+  create: Prisma.XOR<Prisma.NganhNgheCreateWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUncheckedCreateWithoutHoSoNguoiLaoDongMongMuonsInput>
+  where?: Prisma.NganhNgheWhereInput
+}
+
+export type NganhNgheUpdateToOneWithWhereWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  where?: Prisma.NganhNgheWhereInput
+  data: Prisma.XOR<Prisma.NganhNgheUpdateWithoutHoSoNguoiLaoDongMongMuonsInput, Prisma.NganhNgheUncheckedUpdateWithoutHoSoNguoiLaoDongMongMuonsInput>
+}
+
+export type NganhNgheUpdateWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  tenNganhNghe?: Prisma.StringFieldUpdateOperationsInput | string
+  moTa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trangThaiHienThi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tinTuyenDungs?: Prisma.TinTuyenDungUpdateManyWithoutNganhNgheNestedInput
+}
+
+export type NganhNgheUncheckedUpdateWithoutHoSoNguoiLaoDongMongMuonsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  tenNganhNghe?: Prisma.StringFieldUpdateOperationsInput | string
+  moTa?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  trangThaiHienThi?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  tinTuyenDungs?: Prisma.TinTuyenDungUncheckedUpdateManyWithoutNganhNgheNestedInput
+}
+
 export type NganhNgheCreateWithoutTinTuyenDungsInput = {
   tenNganhNghe: string
   moTa?: string | null
   trangThaiHienThi?: boolean
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongCreateNestedManyWithoutNganhNgheMongMuonInput
 }
 
 export type NganhNgheUncheckedCreateWithoutTinTuyenDungsInput = {
@@ -409,6 +492,7 @@ export type NganhNgheUncheckedCreateWithoutTinTuyenDungsInput = {
   trangThaiHienThi?: boolean
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongUncheckedCreateNestedManyWithoutNganhNgheMongMuonInput
 }
 
 export type NganhNgheCreateOrConnectWithoutTinTuyenDungsInput = {
@@ -433,6 +517,7 @@ export type NganhNgheUpdateWithoutTinTuyenDungsInput = {
   trangThaiHienThi?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongUpdateManyWithoutNganhNgheMongMuonNestedInput
 }
 
 export type NganhNgheUncheckedUpdateWithoutTinTuyenDungsInput = {
@@ -442,6 +527,7 @@ export type NganhNgheUncheckedUpdateWithoutTinTuyenDungsInput = {
   trangThaiHienThi?: Prisma.BoolFieldUpdateOperationsInput | boolean
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  hoSoNguoiLaoDongMongMuons?: Prisma.HoSoNguoiLaoDongUncheckedUpdateManyWithoutNganhNgheMongMuonNestedInput
 }
 
 
@@ -451,10 +537,12 @@ export type NganhNgheUncheckedUpdateWithoutTinTuyenDungsInput = {
 
 export type NganhNgheCountOutputType = {
   tinTuyenDungs: number
+  hoSoNguoiLaoDongMongMuons: number
 }
 
 export type NganhNgheCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tinTuyenDungs?: boolean | NganhNgheCountOutputTypeCountTinTuyenDungsArgs
+  hoSoNguoiLaoDongMongMuons?: boolean | NganhNgheCountOutputTypeCountHoSoNguoiLaoDongMongMuonsArgs
 }
 
 /**
@@ -474,6 +562,13 @@ export type NganhNgheCountOutputTypeCountTinTuyenDungsArgs<ExtArgs extends runti
   where?: Prisma.TinTuyenDungWhereInput
 }
 
+/**
+ * NganhNgheCountOutputType without action
+ */
+export type NganhNgheCountOutputTypeCountHoSoNguoiLaoDongMongMuonsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.HoSoNguoiLaoDongWhereInput
+}
+
 
 export type NganhNgheSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -483,6 +578,7 @@ export type NganhNgheSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   ngayTao?: boolean
   ngayCapNhat?: boolean
   tinTuyenDungs?: boolean | Prisma.NganhNghe$tinTuyenDungsArgs<ExtArgs>
+  hoSoNguoiLaoDongMongMuons?: boolean | Prisma.NganhNghe$hoSoNguoiLaoDongMongMuonsArgs<ExtArgs>
   _count?: boolean | Prisma.NganhNgheCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["nganhNghe"]>
 
@@ -516,6 +612,7 @@ export type NganhNgheSelectScalar = {
 export type NganhNgheOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "tenNganhNghe" | "moTa" | "trangThaiHienThi" | "ngayTao" | "ngayCapNhat", ExtArgs["result"]["nganhNghe"]>
 export type NganhNgheInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   tinTuyenDungs?: boolean | Prisma.NganhNghe$tinTuyenDungsArgs<ExtArgs>
+  hoSoNguoiLaoDongMongMuons?: boolean | Prisma.NganhNghe$hoSoNguoiLaoDongMongMuonsArgs<ExtArgs>
   _count?: boolean | Prisma.NganhNgheCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type NganhNgheIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -525,6 +622,7 @@ export type $NganhNghePayload<ExtArgs extends runtime.Types.Extensions.InternalA
   name: "NganhNghe"
   objects: {
     tinTuyenDungs: Prisma.$TinTuyenDungPayload<ExtArgs>[]
+    hoSoNguoiLaoDongMongMuons: Prisma.$HoSoNguoiLaoDongPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -928,6 +1026,7 @@ readonly fields: NganhNgheFieldRefs;
 export interface Prisma__NganhNgheClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   tinTuyenDungs<T extends Prisma.NganhNghe$tinTuyenDungsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NganhNghe$tinTuyenDungsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TinTuyenDungPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  hoSoNguoiLaoDongMongMuons<T extends Prisma.NganhNghe$hoSoNguoiLaoDongMongMuonsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.NganhNghe$hoSoNguoiLaoDongMongMuonsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HoSoNguoiLaoDongPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1377,6 +1476,30 @@ export type NganhNghe$tinTuyenDungsArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.TinTuyenDungScalarFieldEnum | Prisma.TinTuyenDungScalarFieldEnum[]
+}
+
+/**
+ * NganhNghe.hoSoNguoiLaoDongMongMuons
+ */
+export type NganhNghe$hoSoNguoiLaoDongMongMuonsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the HoSoNguoiLaoDong
+   */
+  select?: Prisma.HoSoNguoiLaoDongSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the HoSoNguoiLaoDong
+   */
+  omit?: Prisma.HoSoNguoiLaoDongOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.HoSoNguoiLaoDongInclude<ExtArgs> | null
+  where?: Prisma.HoSoNguoiLaoDongWhereInput
+  orderBy?: Prisma.HoSoNguoiLaoDongOrderByWithRelationInput | Prisma.HoSoNguoiLaoDongOrderByWithRelationInput[]
+  cursor?: Prisma.HoSoNguoiLaoDongWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.HoSoNguoiLaoDongScalarFieldEnum | Prisma.HoSoNguoiLaoDongScalarFieldEnum[]
 }
 
 /**

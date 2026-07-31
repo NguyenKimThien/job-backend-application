@@ -11,13 +11,15 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import {
-  HinhThucPhongVan,
   HinhThucLamViec,
+  HinhThucPhongVan,
   LoaiDoiTuongKiemDuyet,
   LoaiThongBao,
   MucDichMaXacThuc,
+  PhuongThucLamViec,
   Prisma,
   TrangThaiHienThiTin,
+  TrangThaiTaiKhoan,
   TrangThaiKiemDuyet,
   TrangThaiUngTuyen,
   VaiTroTaiKhoan,
@@ -89,34 +91,48 @@ export class PortalService {
   }
 
   async jobs(query: Record<string, string | undefined>) {
-    const where: Prisma.TinTuyenDungWhereInput = {
-      trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
-      trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
-      thoiHanNhanHoSo: { gte: new Date() },
-    };
+    const where: Prisma.TinTuyenDungWhereInput = this.activeJobWhere();
+    const andFilters: Prisma.TinTuyenDungWhereInput[] = [];
     if (query.category) {
       where.nganhNghe = {
         tenNganhNghe: { equals: query.category, mode: 'insensitive' },
       };
     }
     if (query.keyword) {
-      where.OR = [
-        { viTriTuyenDung: { contains: query.keyword, mode: 'insensitive' } },
-        {
-          nhaTuyenDung: {
-            tenDonVi: { contains: query.keyword, mode: 'insensitive' },
+      andFilters.push({
+        OR: [
+          { viTriTuyenDung: { contains: query.keyword, mode: 'insensitive' } },
+          { chuyenMon: { contains: query.keyword, mode: 'insensitive' } },
+          {
+            nhaTuyenDung: {
+              tenDonVi: { contains: query.keyword, mode: 'insensitive' },
+            },
           },
-        },
-      ];
+        ],
+      });
     }
     if (query.location) {
-      where.diaDiemLamViec = { contains: query.location, mode: 'insensitive' };
+      andFilters.push({
+        OR: [
+          { tinhThanhPho: { contains: query.location, mode: 'insensitive' } },
+          { quanHuyen: { contains: query.location, mode: 'insensitive' } },
+          { diaDiemLamViec: { contains: query.location, mode: 'insensitive' } },
+        ],
+      });
     }
     if (
       query.type &&
       Object.values(HinhThucLamViec).includes(query.type as HinhThucLamViec)
     ) {
       where.hinhThucLamViec = query.type as HinhThucLamViec;
+    }
+    if (
+      query.workMode &&
+      Object.values(PhuongThucLamViec).includes(
+        query.workMode as PhuongThucLamViec,
+      )
+    ) {
+      where.phuongThucLamViec = query.workMode as PhuongThucLamViec;
     }
     const salaryMin = this.numberOrNull(query.salaryMin);
     const salaryMax = this.numberOrNull(query.salaryMax);
@@ -137,7 +153,8 @@ export class PortalService {
         ],
       });
     }
-    if (extraFilters.length) where.AND = extraFilters;
+    andFilters.push(...extraFilters);
+    if (andFilters.length) where.AND = andFilters;
     const items = await this.prisma.tinTuyenDung.findMany({
       where,
       include: this.jobInclude(),
@@ -146,12 +163,108 @@ export class PortalService {
     return { success: true, data: items.map((item) => this.mapJob(item)) };
   }
 
+  async recommendedJobs(
+    accountId: number,
+    query: Record<string, string | undefined>,
+  ) {
+    const profile = await this.prisma.hoSoNguoiLaoDong.findUnique({
+      where: { taiKhoanId: accountId },
+      include: {
+        hoSoKyNangs: { include: { kyNang: true } },
+        nganhNgheMongMuon: true,
+      },
+    });
+    if (!profile) this.notFound('Chua co ho so nguoi lao dong.');
+
+    const hasPreferences = Boolean(
+      profile.nganhNgheMongMuonId ||
+        profile.viTriMongMuon ||
+        profile.tinhThanhPhoMongMuon ||
+        profile.mucLuongMongMuonTu ||
+        profile.mucLuongMongMuonDen ||
+        profile.hoSoKyNangs.length,
+    );
+    if (!hasPreferences) {
+      return {
+        success: true,
+        data: {
+          needsPreferences: true,
+          page: 1,
+          pageSize: 0,
+          total: 0,
+          items: [],
+          message:
+            'Vui long bo sung nhu cau tim viec de nhan de xuat phu hop.',
+        },
+      };
+    }
+
+    const page = Math.max(1, Number(query.page || 1));
+    const pageSize = Math.min(20, Math.max(1, Number(query.pageSize || 8)));
+    const candidateWhere: Prisma.TinTuyenDungWhereInput = {
+      ...this.activeJobWhere(),
+      OR: [
+        profile.nganhNgheMongMuonId
+          ? { nganhNgheId: profile.nganhNgheMongMuonId }
+          : undefined,
+        profile.tinhThanhPhoMongMuon
+          ? {
+              tinhThanhPho: {
+                equals: profile.tinhThanhPhoMongMuon,
+                mode: 'insensitive',
+              },
+            }
+          : undefined,
+        profile.viTriMongMuon
+          ? {
+              viTriTuyenDung: {
+                contains: profile.viTriMongMuon,
+                mode: 'insensitive',
+              },
+            }
+          : undefined,
+        profile.chapNhanLamTuXa
+          ? { phuongThucLamViec: PhuongThucLamViec.TU_XA }
+          : undefined,
+      ].filter(Boolean) as Prisma.TinTuyenDungWhereInput[],
+    };
+    if (!candidateWhere.OR?.length) delete candidateWhere.OR;
+
+    const candidates = await this.prisma.tinTuyenDung.findMany({
+      where: candidateWhere,
+      include: this.jobInclude(),
+      orderBy: [{ ngayDang: 'desc' }, { id: 'desc' }],
+      take: 200,
+    });
+
+    const scored = candidates
+      .map((job) => this.scoreRecommendedJob(profile, job))
+      .filter((item) => item.diemPhuHop >= 40)
+      .sort(
+        (a, b) =>
+          b.diemPhuHop - a.diemPhuHop ||
+          new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime() ||
+          b.id - a.id,
+      );
+    const start = (page - 1) * pageSize;
+
+    return {
+      success: true,
+      data: {
+        needsPreferences: false,
+        page,
+        pageSize,
+        total: scored.length,
+        items: scored.slice(start, start + pageSize),
+      },
+    };
+  }
+
   async jobDetail(id: number) {
     const item = await this.prisma.tinTuyenDung.findFirst({
       where: {
+        ...this.activeJobWhere(),
         id,
-        trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
-        trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
       },
       include: this.jobInclude(),
     });
@@ -165,10 +278,7 @@ export class PortalService {
       include: {
         linhVuc: true,
         tinTuyenDungs: {
-          where: {
-            trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
-            trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
-          },
+          where: this.activeJobWhere(),
           include: this.jobInclude(),
         },
       },
@@ -188,6 +298,7 @@ export class PortalService {
       where: { taiKhoanId: accountId },
       include: {
         taiKhoan: { select: { email: true, soDienThoai: true } },
+        nganhNgheMongMuon: true,
         hocVans: true,
         kinhNghiemLamViecs: true,
         hoSoKyNangs: { include: { kyNang: true } },
@@ -216,6 +327,21 @@ export class PortalService {
           mucLuongMongMuonTu: this.decimal(body.mucLuongMongMuonTu),
           mucLuongMongMuonDen: this.decimal(body.mucLuongMongMuonDen),
           diaDiemMongMuon: body.diaDiemMongMuon || null,
+          nganhNgheMongMuonId: body.nganhNgheMongMuonId
+            ? Number(body.nganhNgheMongMuonId)
+            : null,
+          viTriMongMuon: this.trimOrNull(body.viTriMongMuon),
+          tinhThanhPhoMongMuon: this.trimOrNull(body.tinhThanhPhoMongMuon),
+          quanHuyenMongMuon: this.trimOrNull(body.quanHuyenMongMuon),
+          chapNhanLamTuXa: Boolean(body.chapNhanLamTuXa),
+          hinhThucLamViecMongMuon: this.enumOrNull(
+            body.hinhThucLamViecMongMuon,
+            HinhThucLamViec,
+          ),
+          phuongThucLamViecMongMuon: this.enumOrNull(
+            body.phuongThucLamViecMongMuon,
+            PhuongThucLamViec,
+          ),
         },
       });
       if (Array.isArray(body.kinhNghiemLamViecs)) {
@@ -261,10 +387,10 @@ export class PortalService {
         await tx.hoSoKyNang.deleteMany({
           where: { hoSoNguoiLaoDongId: profile.id },
         });
-        for (const skillName of body.skills) {
+        for (const skillName of this.normalizeSkillNames(body.skills)) {
           const skill = await tx.kyNang.upsert({
-            where: { tenKyNang: String(skillName).trim() },
-            create: { tenKyNang: String(skillName).trim() },
+            where: { tenKyNang: skillName },
+            create: { tenKyNang: skillName },
             update: {},
           });
           await tx.hoSoKyNang.create({
@@ -582,25 +708,35 @@ export class PortalService {
     if (!employer) this.notFound('Không tìm thấy hồ sơ nhà tuyển dụng.');
     if (
       employer.trangThaiDuyet !== TrangThaiKiemDuyet.DA_DUYET ||
-      employer.taiKhoan.trangThaiTaiKhoan !== 'HOAT_DONG'
+      employer.taiKhoan.trangThaiTaiKhoan !== TrangThaiTaiKhoan.HOAT_DONG ||
+      !employer.taiKhoan.emailXacThucLuc
     ) {
       throw new ApiError(HttpStatus.FORBIDDEN, {
         code: 'EMPLOYER_NOT_APPROVED',
         message: 'Hồ sơ nhà tuyển dụng phải được duyệt trước khi đăng tin.',
       });
     }
-    this.validateJobBody(body);
+    const isDraft = this.isDraftAction(body);
+    this.validateJobBody(body, !isDraft);
+    const fallbackCategoryId = await this.fallbackCategoryId();
     const job = await this.prisma.$transaction(async (tx) => {
       const created = await tx.tinTuyenDung.create({
-        data: this.jobWriteData(employer.id, body),
+        data: this.jobWriteData(
+          employer.id,
+          body,
+          isDraft,
+          fallbackCategoryId,
+        ),
       });
       await this.replaceJobSkills(tx, created.id, body.skills);
-      await this.notifyAdmins(
+      if (!isDraft) {
+        await this.notifyAdmins(
         tx,
         'Tin tuyển dụng mới chờ duyệt',
         `${employer.tenDonVi} vừa gửi tin “${created.viTriTuyenDung}”.`,
         `/quan-tri/kiem-duyet-tin/${created.id}`,
       );
+      }
       return created;
     });
     return {
@@ -621,7 +757,14 @@ export class PortalService {
     });
     if (!current)
       this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
-    if (current.trangThaiKiemDuyet !== TrangThaiKiemDuyet.TU_CHOI) {
+    if (
+      !(
+        [TrangThaiKiemDuyet.BAN_NHAP, TrangThaiKiemDuyet.TU_CHOI] as
+          TrangThaiKiemDuyet[]
+      ).includes(
+        current.trangThaiKiemDuyet,
+      )
+    ) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_EDITABLE',
         message: 'Chỉ tin tuyển dụng bị từ chối mới được phép chỉnh sửa.',
@@ -633,23 +776,34 @@ export class PortalService {
         message: 'Tin tuyển dụng đã vượt quá 3 lần chỉnh sửa.',
       });
     }
-    this.validateJobBody(body);
+    const isDraft = this.isDraftAction(body);
+    this.validateJobBody(body, !isDraft);
     const updated = await this.prisma.$transaction(async (tx) => {
       const item = await tx.tinTuyenDung.update({
         where: { id: jobId },
         data: {
-          ...this.jobWriteData(current.nhaTuyenDungId, body),
-          soLanChinhSua: { increment: 1 },
+          ...this.jobWriteData(
+            current.nhaTuyenDungId,
+            body,
+            isDraft,
+            current.nganhNgheId,
+          ),
+          ...(current.trangThaiKiemDuyet === TrangThaiKiemDuyet.TU_CHOI &&
+          !isDraft
+            ? { soLanChinhSua: { increment: 1 } }
+            : {}),
           lyDoTuChoi: null,
         },
       });
       await this.replaceJobSkills(tx, jobId, body.skills);
-      await this.notifyAdmins(
+      if (!isDraft) {
+        await this.notifyAdmins(
         tx,
         'Tin tuyển dụng đã được gửi lại',
         `${current.nhaTuyenDung.tenDonVi} đã chỉnh sửa và gửi lại tin “${item.viTriTuyenDung}”.`,
         `/quan-tri/kiem-duyet-tin/${jobId}`,
-      );
+        );
+      }
       return item;
     });
     return {
@@ -805,6 +959,10 @@ export class PortalService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      if (status === TrangThaiUngTuyen.TRUNG_TUYEN) {
+        await this.assertApprovedApplicationLimit(tx, jobId, id);
+      }
+
       const result = await tx.ungTuyen.update({
         where: { id },
         data: {
@@ -1515,6 +1673,18 @@ export class PortalService {
     } as const;
   }
 
+  private activeJobWhere(): Prisma.TinTuyenDungWhereInput {
+    return {
+      trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
+      trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
+      thoiHanNhanHoSo: { gte: new Date() },
+      nhaTuyenDung: {
+        trangThaiDuyet: TrangThaiKiemDuyet.DA_DUYET,
+        taiKhoan: { trangThaiTaiKhoan: TrangThaiTaiKhoan.HOAT_DONG },
+      },
+    };
+  }
+
   private mapJob(item: any) {
     return {
       id: item.id,
@@ -1523,6 +1693,9 @@ export class PortalService {
       company: item.nhaTuyenDung.tenDonVi,
       companyLogo: item.nhaTuyenDung.logoUrl,
       location: item.diaDiemLamViec,
+      province: item.tinhThanhPho,
+      district: item.quanHuyen,
+      specificAddress: item.diaChiLamViecCuThe,
       category: item.nganhNghe.tenNganhNghe,
       categoryId: item.nganhNgheId,
       salaryFrom: item.mucLuongTu,
@@ -1532,6 +1705,8 @@ export class PortalService {
       requiredEducation: item.trinhDoYeuCau,
       quantity: item.soLuongTuyen,
       type: item.hinhThucLamViec,
+      workMode: item.phuongThucLamViec,
+      specialization: item.chuyenMon,
       description: item.moTaCongViec,
       requirements: item.yeuCauUngVien,
       benefits: item.quyenLoi,
@@ -1546,6 +1721,127 @@ export class PortalService {
       ),
       employer: item.nhaTuyenDung,
     };
+  }
+
+  private scoreRecommendedJob(profile: any, job: any) {
+    let score = 0;
+    const reasons: string[] = [];
+
+    if (profile.nganhNgheMongMuonId === job.nganhNgheId) {
+      score += 25;
+      reasons.push('Phu hop nganh nghe ban quan tam.');
+    }
+
+    const desiredPosition = this.normalizeText(profile.viTriMongMuon);
+    const jobPosition = this.normalizeText(
+      [job.viTriTuyenDung, job.chuyenMon].filter(Boolean).join(' '),
+    );
+    if (desiredPosition && jobPosition) {
+      if (
+        desiredPosition === jobPosition ||
+        desiredPosition.includes(jobPosition) ||
+        jobPosition.includes(desiredPosition)
+      ) {
+        score += 25;
+        reasons.push('Gan voi vi tri cong viec mong muon.');
+      } else {
+        const desiredTokens = new Set(desiredPosition.split(' '));
+        const jobTokens = new Set(jobPosition.split(' '));
+        const matched = [...desiredTokens].filter((token) =>
+          jobTokens.has(token),
+        ).length;
+        const ratio = desiredTokens.size ? matched / desiredTokens.size : 0;
+        const positionScore = Math.round(ratio * 25);
+        if (positionScore > 0) {
+          score += positionScore;
+          reasons.push('Co tu khoa vi tri cong viec tuong dong.');
+        }
+      }
+    }
+
+    const workerSkills = new Set(
+      (profile.hoSoKyNangs ?? []).map((item: any) =>
+        this.normalizeText(item.kyNang?.tenKyNang),
+      ),
+    );
+    const requiredSkills = (job.tinTuyenDungKyNangs ?? [])
+      .map((item: any) => this.normalizeText(item.kyNang?.tenKyNang))
+      .filter(Boolean);
+    if (requiredSkills.length) {
+      const matchedSkills = requiredSkills.filter((skill: string) =>
+        workerSkills.has(skill),
+      ).length;
+      if (matchedSkills > 0) {
+        score += Math.round((matchedSkills / requiredSkills.length) * 20);
+        reasons.push(`Co ${matchedSkills} ky nang phu hop.`);
+      }
+    }
+
+    if (
+      job.phuongThucLamViec === PhuongThucLamViec.TU_XA &&
+      profile.chapNhanLamTuXa
+    ) {
+      score += 15;
+      reasons.push('Phu hop voi nhu cau lam viec tu xa.');
+    } else {
+      if (
+        profile.tinhThanhPhoMongMuon &&
+        this.normalizeText(profile.tinhThanhPhoMongMuon) ===
+          this.normalizeText(job.tinhThanhPho)
+      ) {
+        score += 10;
+        reasons.push('Dung tinh/thanh pho mong muon.');
+      }
+      if (
+        profile.quanHuyenMongMuon &&
+        this.normalizeText(profile.quanHuyenMongMuon) ===
+          this.normalizeText(job.quanHuyen)
+      ) {
+        score += 5;
+        reasons.push('Dung quan/huyen mong muon.');
+      }
+    }
+
+    score += this.salaryMatchScore(profile, job, reasons);
+
+    if (
+      (profile.hinhThucLamViecMongMuon &&
+        profile.hinhThucLamViecMongMuon === job.hinhThucLamViec) ||
+      (profile.phuongThucLamViecMongMuon &&
+        profile.phuongThucLamViecMongMuon === job.phuongThucLamViec)
+    ) {
+      score += 5;
+      reasons.push('Phu hop hinh thuc hoac phuong thuc lam viec.');
+    }
+
+    return {
+      ...this.mapJob(job),
+      diemPhuHop: Math.min(100, score),
+      lyDoPhuHop: reasons.slice(0, 4),
+    };
+  }
+
+  private salaryMatchScore(profile: any, job: any, reasons: string[]) {
+    if (job.coTheThoaThuan) {
+      reasons.push('Muc luong co the thoa thuan.');
+      return 5;
+    }
+    const desiredFrom = Number(profile.mucLuongMongMuonTu ?? 0);
+    const desiredTo = Number(profile.mucLuongMongMuonDen ?? desiredFrom);
+    const jobFrom = Number(job.mucLuongTu ?? 0);
+    const jobTo = Number(job.mucLuongDen ?? jobFrom);
+    if (!desiredFrom && !desiredTo) return 0;
+    if (jobTo >= (desiredTo || desiredFrom)) {
+      reasons.push('Muc luong dap ung mong muon.');
+      return 10;
+    }
+    const overlapFrom = Math.max(jobFrom, desiredFrom);
+    const overlapTo = Math.min(jobTo, desiredTo || desiredFrom);
+    if (overlapTo >= overlapFrom) {
+      reasons.push('Khoang luong co giao voi mong muon.');
+      return 7;
+    }
+    return 0;
   }
 
   private decimal(value: unknown) {
@@ -1568,14 +1864,115 @@ export class PortalService {
     return range;
   }
 
-  private validateJobBody(body: Record<string, any>) {
+  private trimOrNull(value: unknown) {
+    const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+    return text || null;
+  }
+
+  private cleanText(value: unknown) {
+    const text = String(value ?? '')
+      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+      .replace(/<iframe[\s\S]*?>[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<[^>]+>/g, '')
+      .trim();
+    return text || null;
+  }
+
+  private enumOrNull<T extends Record<string, string>>(value: unknown, source: T) {
+    return Object.values(source).includes(value as T[keyof T])
+      ? (value as T[keyof T])
+      : null;
+  }
+
+  private isDraftAction(body: Record<string, any>) {
+    return ['draft', 'save-draft', 'BAN_NHAP'].includes(
+      String(body.action ?? body.saveMode ?? '').trim(),
+    );
+  }
+
+  private async fallbackCategoryId() {
+    const category = await this.prisma.nganhNghe.findFirst({
+      where: { trangThaiHienThi: true },
+      orderBy: { id: 'asc' },
+      select: { id: true },
+    });
+    if (!category) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'CATEGORY_REQUIRED',
+        message: 'Can co it nhat mot nganh nghe truoc khi luu tin.',
+      });
+    }
+    return category.id;
+  }
+
+  private normalizeSkillNames(skills: unknown) {
+    if (!Array.isArray(skills)) return [];
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const raw of skills) {
+      const name = String(raw ?? '').trim().replace(/\s+/g, ' ');
+      const key = this.normalizeText(name);
+      if (!name || name.length < 2 || name.length > 50 || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      result.push(name);
+      if (result.length >= 15) break;
+    }
+    return result;
+  }
+
+  private normalizeSkillValues(skills: unknown) {
+    if (!Array.isArray(skills)) return [];
+    const seen = new Set<string>();
+    const result: Array<string | { name?: string; required?: boolean }> = [];
+    for (const raw of skills) {
+      const value = raw as string | { name?: string; required?: boolean };
+      const name = String(
+        typeof value === 'string' ? value : (value.name ?? ''),
+      )
+        .trim()
+        .replace(/\s+/g, ' ');
+      const key = this.normalizeText(name);
+      if (!name || name.length < 2 || name.length > 50 || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      result.push(typeof value === 'string' ? name : { ...value, name });
+      if (result.length >= 15) break;
+    }
+    return result;
+  }
+
+  private normalizeText(value: unknown) {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private validateJobBody(body: Record<string, any>, requireComplete = true) {
+    if (!requireComplete) {
+      const quantity = Number(body.soLuongTuyen || 1);
+      if (!Number.isFinite(quantity) || quantity < 1) {
+        throw new ApiError(HttpStatus.BAD_REQUEST, {
+          code: 'INVALID_QUANTITY',
+          message: 'So luong tuyen phai lon hon 0.',
+        });
+      }
+      return;
+    }
+
     const required = [
       'nganhNgheId',
       'viTriTuyenDung',
       'moTaCongViec',
       'yeuCauUngVien',
-      'diaDiemLamViec',
       'hinhThucLamViec',
+      'phuongThucLamViec',
       'thoiHanNhanHoSo',
     ];
     if (required.some((key) => !body[key])) {
@@ -1588,6 +1985,25 @@ export class PortalService {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_WORK_TYPE',
         message: 'Hình thức làm việc không hợp lệ.',
+      });
+    }
+    if (
+      !Object.values(PhuongThucLamViec).includes(body.phuongThucLamViec)
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_WORK_MODE',
+        message: 'Phuong thuc lam viec khong hop le.',
+      });
+    }
+    if (
+      [PhuongThucLamViec.TAI_VAN_PHONG, PhuongThucLamViec.KET_HOP].includes(
+        body.phuongThucLamViec,
+      ) &&
+      (!body.tinhThanhPho || !body.diaChiLamViecCuThe)
+    ) {
+      throw new ApiError(HttpStatus.BAD_REQUEST, {
+        code: 'INVALID_LOCATION',
+        message: 'Vui long nhap dia chi lam viec cu the.',
       });
     }
     if (
@@ -1620,7 +2036,10 @@ export class PortalService {
       });
     }
     const minimumExperience = this.numberOrNull(body.soNamKinhNghiemToiThieu);
-    if (minimumExperience !== null && minimumExperience < 0) {
+    if (
+      minimumExperience !== null &&
+      (minimumExperience < 0 || !Number.isInteger(minimumExperience))
+    ) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_EXPERIENCE',
         message: 'Số năm kinh nghiệm tối thiểu không được nhỏ hơn 0.',
@@ -1628,26 +2047,59 @@ export class PortalService {
     }
   }
 
-  private jobWriteData(employerId: number, body: Record<string, any>) {
+  private jobWriteData(
+    employerId: number,
+    body: Record<string, any>,
+    isDraft = false,
+    fallbackCategoryId?: number | null,
+  ) {
+    const workMode =
+      this.enumOrNull(body.phuongThucLamViec, PhuongThucLamViec) ??
+      PhuongThucLamViec.TAI_VAN_PHONG;
+    const locationParts = [
+      this.trimOrNull(body.diaChiLamViecCuThe),
+      this.trimOrNull(body.quanHuyen),
+      this.trimOrNull(body.tinhThanhPho),
+    ].filter(Boolean);
+    const fallbackDeadline = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     return {
       nhaTuyenDungId: employerId,
-      nganhNgheId: Number(body.nganhNgheId),
-      viTriTuyenDung: String(body.viTriTuyenDung).trim(),
-      moTaCongViec: body.moTaCongViec,
-      yeuCauUngVien: body.yeuCauUngVien,
-      quyenLoi: body.quyenLoi || null,
+      nganhNgheId: Number(body.nganhNgheId || fallbackCategoryId),
+      viTriTuyenDung:
+        this.trimOrNull(body.viTriTuyenDung) ?? 'Ban nhap tin tuyen dung',
+      moTaCongViec:
+        this.cleanText(body.moTaCongViec) ??
+        (isDraft ? 'Dang cap nhat' : ''),
+      yeuCauUngVien:
+        this.cleanText(body.yeuCauUngVien) ??
+        (isDraft ? 'Dang cap nhat' : ''),
+      quyenLoi: this.cleanText(body.quyenLoi),
       mucLuongTu: body.coTheThoaThuan ? null : this.decimal(body.mucLuongTu),
       mucLuongDen: body.coTheThoaThuan ? null : this.decimal(body.mucLuongDen),
       coTheThoaThuan: Boolean(body.coTheThoaThuan),
-      diaDiemLamViec: body.diaDiemLamViec,
-      hinhThucLamViec: body.hinhThucLamViec as HinhThucLamViec,
+      diaDiemLamViec:
+        locationParts.join(', ') ||
+        this.trimOrNull(body.diaDiemLamViec) ||
+        (workMode === PhuongThucLamViec.TU_XA ? 'Tu xa' : 'Dang cap nhat'),
+      tinhThanhPho: this.trimOrNull(body.tinhThanhPho),
+      quanHuyen: this.trimOrNull(body.quanHuyen),
+      diaChiLamViecCuThe: this.trimOrNull(body.diaChiLamViecCuThe),
+      hinhThucLamViec:
+        this.enumOrNull(body.hinhThucLamViec, HinhThucLamViec) ??
+        HinhThucLamViec.TOAN_THOI_GIAN,
+      phuongThucLamViec: workMode,
+      chuyenMon: this.trimOrNull(body.chuyenMon),
       soLuongTuyen: Number(body.soLuongTuyen || 1),
       soNamKinhNghiemToiThieu: this.decimal(body.soNamKinhNghiemToiThieu),
-      trinhDoYeuCau: body.trinhDoYeuCau || null,
-      thoiHanNhanHoSo: new Date(body.thoiHanNhanHoSo),
-      trangThaiKiemDuyet: TrangThaiKiemDuyet.CHO_DUYET,
+      trinhDoYeuCau: this.trimOrNull(body.trinhDoYeuCau),
+      thoiHanNhanHoSo: body.thoiHanNhanHoSo
+        ? new Date(body.thoiHanNhanHoSo)
+        : fallbackDeadline,
+      trangThaiKiemDuyet: isDraft
+        ? TrangThaiKiemDuyet.BAN_NHAP
+        : TrangThaiKiemDuyet.CHO_DUYET,
       trangThaiHienThi: TrangThaiHienThiTin.CHUA_DANG,
-      ngayGuiDuyet: new Date(),
+      ngayGuiDuyet: isDraft ? null : new Date(),
       ngayDuyet: null,
       ngayDang: null,
     };
@@ -1662,7 +2114,7 @@ export class PortalService {
     await tx.tinTuyenDungKyNang.deleteMany({
       where: { tinTuyenDungId: jobId },
     });
-    for (const raw of skills) {
+    for (const raw of this.normalizeSkillValues(skills)) {
       const value = raw as string | { name?: string; required?: boolean };
       const name = String(
         typeof value === 'string' ? value : (value.name ?? ''),
@@ -1720,6 +2172,37 @@ export class PortalService {
       where: { id: jobId, nhaTuyenDung: { taiKhoanId: accountId } },
     });
     if (!job) this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
+  }
+
+  private async assertApprovedApplicationLimit(
+    tx: Prisma.TransactionClient,
+    jobId: number,
+    applicationId: number,
+  ) {
+    const jobs = await tx.$queryRaw<Array<{ so_luong_tuyen: number }>>`
+      SELECT "so_luong_tuyen"
+      FROM "tin_tuyen_dung"
+      WHERE "id" = ${jobId}
+      FOR UPDATE
+    `;
+    const limit = jobs[0]?.so_luong_tuyen;
+    if (!limit) this.notFound('Khong tim thay tin tuyen dung.');
+
+    const approvedCount = await tx.ungTuyen.count({
+      where: {
+        tinTuyenDungId: jobId,
+        trangThaiHienTai: TrangThaiUngTuyen.TRUNG_TUYEN,
+        id: { not: applicationId },
+      },
+    });
+
+    if (approvedCount >= limit) {
+      throw new ApiError(HttpStatus.CONFLICT, {
+        code: 'APPROVED_APPLICATION_LIMIT_REACHED',
+        message:
+          'So luong ho so duoc duyet da dat gioi han tuyen dung cua tin nay.',
+      });
+    }
   }
 
   private validateInterviewInvitation(dto: InviteCandidateInterviewDto) {

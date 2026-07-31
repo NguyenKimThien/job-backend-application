@@ -1848,6 +1848,13 @@ export const HoSoNguoiLaoDongScalarFieldEnum = {
   mucLuongMongMuonTu: 'mucLuongMongMuonTu',
   mucLuongMongMuonDen: 'mucLuongMongMuonDen',
   diaDiemMongMuon: 'diaDiemMongMuon',
+  nganhNgheMongMuonId: 'nganhNgheMongMuonId',
+  viTriMongMuon: 'viTriMongMuon',
+  tinhThanhPhoMongMuon: 'tinhThanhPhoMongMuon',
+  quanHuyenMongMuon: 'quanHuyenMongMuon',
+  chapNhanLamTuXa: 'chapNhanLamTuXa',
+  hinhThucLamViecMongMuon: 'hinhThucLamViecMongMuon',
+  phuongThucLamViecMongMuon: 'phuongThucLamViecMongMuon',
   tepCvUrl: 'tepCvUrl',
   tenFileCv: 'tenFileCv',
   duongDanCv: 'duongDanCv',
@@ -1971,7 +1978,12 @@ export const TinTuyenDungScalarFieldEnum = {
   mucLuongDen: 'mucLuongDen',
   coTheThoaThuan: 'coTheThoaThuan',
   diaDiemLamViec: 'diaDiemLamViec',
+  tinhThanhPho: 'tinhThanhPho',
+  quanHuyen: 'quanHuyen',
+  diaChiLamViecCuThe: 'diaChiLamViecCuThe',
   hinhThucLamViec: 'hinhThucLamViec',
+  phuongThucLamViec: 'phuongThucLamViec',
+  chuyenMon: 'chuyenMon',
   soLuongTuyen: 'soLuongTuyen',
   soNamKinhNghiemToiThieu: 'soNamKinhNghiemToiThieu',
   trinhDoYeuCau: 'trinhDoYeuCau',
@@ -2245,6 +2257,34 @@ export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMo
 
 
 /**
+ * Reference to a field of type 'HinhThucLamViec'
+ */
+export type EnumHinhThucLamViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HinhThucLamViec'>
+    
+
+
+/**
+ * Reference to a field of type 'HinhThucLamViec[]'
+ */
+export type ListEnumHinhThucLamViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HinhThucLamViec[]'>
+    
+
+
+/**
+ * Reference to a field of type 'PhuongThucLamViec'
+ */
+export type EnumPhuongThucLamViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PhuongThucLamViec'>
+    
+
+
+/**
+ * Reference to a field of type 'PhuongThucLamViec[]'
+ */
+export type ListEnumPhuongThucLamViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'PhuongThucLamViec[]'>
+    
+
+
+/**
  * Reference to a field of type 'TrangThaiTimViec'
  */
 export type EnumTrangThaiTimViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TrangThaiTimViec'>
@@ -2283,20 +2323,6 @@ export type EnumTrangThaiKiemDuyetFieldRefInput<$PrismaModel> = FieldRefInputTyp
  * Reference to a field of type 'TrangThaiKiemDuyet[]'
  */
 export type ListEnumTrangThaiKiemDuyetFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TrangThaiKiemDuyet[]'>
-    
-
-
-/**
- * Reference to a field of type 'HinhThucLamViec'
- */
-export type EnumHinhThucLamViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HinhThucLamViec'>
-    
-
-
-/**
- * Reference to a field of type 'HinhThucLamViec[]'
- */
-export type ListEnumHinhThucLamViecFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'HinhThucLamViec[]'>
     
 
 

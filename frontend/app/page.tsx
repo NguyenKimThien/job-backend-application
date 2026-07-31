@@ -59,6 +59,15 @@ type Job = {
   verified: boolean;
   initials: string;
   tags: string[];
+  matchScore?: number;
+  matchReasons?: string[];
+};
+
+type RecommendedJobsResponse = {
+  needsPreferences: boolean;
+  message?: string;
+  items: ApiJob[];
+  total: number;
 };
 
 const defaultCategory = 'Tất cả ngành nghề';
@@ -92,6 +101,9 @@ export default function Home() {
   const [account, setAccount] = useState<Account | null>(null);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [jobsError, setJobsError] = useState('');
+  const [recommendedJobs, setRecommendedJobs] = useState<Job[]>([]);
+  const [recommendedMessage, setRecommendedMessage] = useState('');
+  const [recommendedLoading, setRecommendedLoading] = useState(false);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
@@ -153,6 +165,24 @@ export default function Home() {
     portalFetch<ApiJob[]>('/worker/saved-jobs')
       .then((items) => setSaved(items.map((job) => job.id)))
       .catch(() => undefined);
+
+    setRecommendedLoading(true);
+    portalFetch<RecommendedJobsResponse>('/jobs/recommended?pageSize=6')
+      .then((data) => {
+        setRecommendedJobs(
+          data.items.map((job) => ({
+            ...mapJob(job),
+            matchScore: job.diemPhuHop,
+            matchReasons: job.lyDoPhuHop ?? [],
+          })),
+        );
+        setRecommendedMessage(data.needsPreferences ? data.message ?? '' : '');
+      })
+      .catch(() => {
+        setRecommendedJobs([]);
+        setRecommendedMessage('Chưa thể tải việc làm phù hợp với bạn.');
+      })
+      .finally(() => setRecommendedLoading(false));
   }, [account]);
 
   const featuredJobs = useMemo(() => jobs.slice(0, 6), [jobs]);
@@ -328,6 +358,103 @@ export default function Home() {
               </div>
             )}
             {latestUpdate && <small>Cập nhật gần nhất: {latestUpdate}</small>}
+          </div>
+        </section>
+      )}
+
+      {account?.vaiTro === 'NGUOI_LAO_DONG' && (
+        <section className="home-section home-jobs-section">
+          <div className="home-container">
+            <div className="home-section-heading">
+              <div>
+                <p className="home-kicker">Đề xuất theo hồ sơ</p>
+                <h2>Việc làm phù hợp với bạn</h2>
+                <p>
+                  Kết quả được chấm điểm theo ngành nghề, vị trí, kỹ năng, địa
+                  điểm, mức lương và hình thức làm việc.
+                </p>
+              </div>
+              <Link className="home-section-link" href="/ho-so">
+                Cập nhật nhu cầu tìm việc
+                <Icon name="arrowRight" />
+              </Link>
+            </div>
+
+            {recommendedLoading && (
+              <div className="home-job-grid">
+                {Array.from({ length: 3 }, (_, index) => (
+                  <div
+                    className="home-job-skeleton"
+                    key={`recommended-skeleton-${index}`}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!recommendedLoading && recommendedMessage && (
+              <div className="home-empty">
+                <h3>Chưa có đề xuất phù hợp</h3>
+                <p>{recommendedMessage}</p>
+                <Link className="home-primary-link" href="/ho-so">
+                  Cập nhật nhu cầu tìm việc
+                </Link>
+              </div>
+            )}
+
+            {!recommendedLoading &&
+              !recommendedMessage &&
+              recommendedJobs.length > 0 && (
+                <div className="home-job-grid">
+                  {recommendedJobs.map((job) => (
+                    <article
+                      className="home-job-card"
+                      key={`recommended-${job.id}`}
+                    >
+                      <div className="home-job-top">
+                        <CompanyLogo job={job} />
+                        <div className="home-job-title">
+                          <h3>
+                            <Link href={`/viec-lam/${job.id}`}>{job.title}</Link>
+                          </h3>
+                          <p>{job.company}</p>
+                        </div>
+                      </div>
+                      <div className="home-match-score">
+                        <strong>Phù hợp {job.matchScore ?? 0}%</strong>
+                        <span>
+                          {(job.matchScore ?? 0) >= 80
+                            ? 'Rất phù hợp'
+                            : (job.matchScore ?? 0) >= 60
+                              ? 'Phù hợp'
+                              : 'Có thể phù hợp'}
+                        </span>
+                      </div>
+                      <div className="home-job-meta">
+                        <span>
+                          <Icon name="wallet" />
+                          {job.salary}
+                        </span>
+                        <span>
+                          <Icon name="mapPin" />
+                          {job.location}
+                        </span>
+                      </div>
+                      <ul className="home-match-reasons">
+                        {(job.matchReasons ?? []).slice(0, 3).map((reason) => (
+                          <li key={reason}>{reason}</li>
+                        ))}
+                      </ul>
+                      <div className="home-job-bottom">
+                        <small>Hạn nộp {job.deadlineLabel}</small>
+                        <Link href={`/viec-lam/${job.id}`}>
+                          Xem chi tiết
+                          <Icon name="arrowRight" />
+                        </Link>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
           </div>
         </section>
       )}

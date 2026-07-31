@@ -51,6 +51,8 @@ type ApiSkill = {
   } | null;
 };
 
+type CategoryOption = { id: number; name: string };
+
 type ApiWorkerProfile = {
   id: number;
   hoTen?: string | null;
@@ -62,6 +64,14 @@ type ApiWorkerProfile = {
   mucLuongMongMuonTu?: string | number | null;
   mucLuongMongMuonDen?: string | number | null;
   diaDiemMongMuon?: string | null;
+  nganhNgheMongMuonId?: number | string | null;
+  viTriMongMuon?: string | null;
+  tinhThanhPhoMongMuon?: string | null;
+  quanHuyenMongMuon?: string | null;
+  chapNhanLamTuXa?: boolean | null;
+  hinhThucLamViecMongMuon?: string | null;
+  phuongThucLamViecMongMuon?: string | null;
+  nganhNgheMongMuon?: { tenNganhNghe?: string | null } | null;
   tepCvUrl?: string | null;
   tenFileCv?: string | null;
   loaiFileCv?: string | null;
@@ -116,6 +126,13 @@ type ProfileForm = {
   gioiThieuBanThan: string;
   mucLuongMongMuon: string;
   diaDiemMongMuon: string;
+  nganhNgheMongMuonId: string;
+  viTriMongMuon: string;
+  tinhThanhPhoMongMuon: string;
+  quanHuyenMongMuon: string;
+  chapNhanLamTuXa: boolean;
+  hinhThucLamViecMongMuon: string;
+  phuongThucLamViecMongMuon: string;
   tepCvUrl: string;
   tenFileCv: string;
   loaiFileCv: string;
@@ -185,6 +202,13 @@ const emptyProfile: ProfileForm = {
   gioiThieuBanThan: '',
   mucLuongMongMuon: '',
   diaDiemMongMuon: '',
+  nganhNgheMongMuonId: '',
+  viTriMongMuon: '',
+  tinhThanhPhoMongMuon: 'Hà Nội',
+  quanHuyenMongMuon: '',
+  chapNhanLamTuXa: false,
+  hinhThucLamViecMongMuon: '',
+  phuongThucLamViecMongMuon: '',
   tepCvUrl: '',
   tenFileCv: '',
   loaiFileCv: '',
@@ -206,6 +230,7 @@ export default function ProfilePage() {
   const [message, setMessage] = useState('');
   const [loadError, setLoadError] = useState('');
   const [skillInput, setSkillInput] = useState('');
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [editingSection, setEditingSection] = useState<SectionId | null>(null);
   const [activeSection, setActiveSection] = useState<SectionId>('personal');
   const [expandedEducation, setExpandedEducation] = useState<string | null>(
@@ -223,6 +248,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     void loadProfile();
+  }, []);
+
+  useEffect(() => {
+    portalFetch<CategoryOption[]>('/categories')
+      .then(setCategories)
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -774,12 +805,13 @@ export default function ProfilePage() {
           >
             {editingSection === 'preferences' ? (
               <PreferenceEditor
+                categories={categories}
                 errors={errors}
                 form={form}
                 onUpdate={updateField}
               />
             ) : (
-              <PreferencePreview form={form} />
+              <PreferencePreview categories={categories} form={form} />
             )}
           </ProfileSection>
 
@@ -1498,7 +1530,44 @@ function SkillSection({
   );
 }
 
-function PreferencePreview({ form }: { form: ProfileForm }) {
+function PreferencePreview({
+  categories,
+  form,
+}: {
+  categories: CategoryOption[];
+  form: ProfileForm;
+}) {
+  const category = categories.find(
+    (item) => String(item.id) === form.nganhNgheMongMuonId,
+  );
+  const preferenceExtra = (
+    <>
+      <InfoItem
+        label="Ngành nghề mong muốn"
+        value={category?.name || form.nganhNgheMongMuonId}
+      />
+      <InfoItem label="Vị trí mong muốn" value={form.viTriMongMuon} />
+      <InfoItem
+        label="Phương thức làm việc"
+        value={workModeLabel(form.phuongThucLamViecMongMuon)}
+      />
+    </>
+  );
+  return (
+    <dl className="profile-info-grid">
+      {preferenceExtra}
+      <InfoItem
+        label="Mức lương mong muốn"
+        value={formatCurrency(form.mucLuongMongMuon)}
+      />
+      <InfoItem label="Địa điểm mong muốn" value={form.diaDiemMongMuon} />
+      <InfoItem
+        label="Tỉnh/Thành phố mong muốn"
+        value={form.tinhThanhPhoMongMuon}
+      />
+      <InfoItem label="Quận/Huyện mong muốn" value={form.quanHuyenMongMuon} />
+    </dl>
+  );
   return (
     <dl className="profile-info-grid">
       <InfoItem
@@ -1511,10 +1580,12 @@ function PreferencePreview({ form }: { form: ProfileForm }) {
 }
 
 function PreferenceEditor({
+  categories,
   errors,
   form,
   onUpdate,
 }: {
+  categories: CategoryOption[];
   errors: ValidationErrors;
   form: ProfileForm;
   onUpdate: <K extends keyof ProfileForm>(
@@ -1524,6 +1595,29 @@ function PreferenceEditor({
 }) {
   return (
     <div className="profile-form-grid">
+      <label className="profile-field" htmlFor="profile-preferred-category">
+        <span>Ngành nghề mong muốn</span>
+        <select
+          id="profile-preferred-category"
+          value={form.nganhNgheMongMuonId}
+          onChange={(event) =>
+            onUpdate('nganhNgheMongMuonId', event.target.value)
+          }
+        >
+          <option value="">Chọn ngành nghề</option>
+          {categories.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <TextField
+        id="profile-preferred-position"
+        label="Vị trí mong muốn"
+        value={form.viTriMongMuon}
+        onChange={(value) => onUpdate('viTriMongMuon', value)}
+      />
       <TextField
         error={errors.mucLuongMongMuon}
         helper="Mức lương mong muốn theo tháng."
@@ -1542,6 +1636,66 @@ function PreferenceEditor({
         value={form.diaDiemMongMuon}
         onChange={(value) => onUpdate('diaDiemMongMuon', value)}
       />
+      <label className="profile-field" htmlFor="profile-preferred-province">
+        <span>Tỉnh/Thành phố mong muốn</span>
+        <select
+          id="profile-preferred-province"
+          value={form.tinhThanhPhoMongMuon}
+          onChange={(event) =>
+            onUpdate('tinhThanhPhoMongMuon', event.target.value)
+          }
+        >
+          <option value="">Chọn tỉnh/thành phố</option>
+          <option value="Hà Nội">Hà Nội</option>
+        </select>
+      </label>
+      <TextField
+        id="profile-preferred-district"
+        label="Quận/Huyện mong muốn"
+        value={form.quanHuyenMongMuon}
+        onChange={(value) => onUpdate('quanHuyenMongMuon', value)}
+      />
+      <label className="profile-field" htmlFor="profile-preferred-work-type">
+        <span>Loại hình công việc mong muốn</span>
+        <select
+          id="profile-preferred-work-type"
+          value={form.hinhThucLamViecMongMuon}
+          onChange={(event) =>
+            onUpdate('hinhThucLamViecMongMuon', event.target.value)
+          }
+        >
+          <option value="">Không yêu cầu</option>
+          <option value="TOAN_THOI_GIAN">Toàn thời gian</option>
+          <option value="BAN_THOI_GIAN">Bán thời gian</option>
+          <option value="THUC_TAP">Thực tập</option>
+          <option value="THOI_VU">Thời vụ</option>
+        </select>
+      </label>
+      <label className="profile-field" htmlFor="profile-preferred-work-mode">
+        <span>Phương thức làm việc mong muốn</span>
+        <select
+          id="profile-preferred-work-mode"
+          value={form.phuongThucLamViecMongMuon}
+          onChange={(event) =>
+            onUpdate('phuongThucLamViecMongMuon', event.target.value)
+          }
+        >
+          <option value="">Không yêu cầu</option>
+          <option value="TAI_VAN_PHONG">Làm việc tại văn phòng</option>
+          <option value="TU_XA">Làm việc từ xa</option>
+          <option value="KET_HOP">Làm việc kết hợp</option>
+        </select>
+      </label>
+      <label className="profile-field profile-checkbox-field">
+        <span>Chấp nhận làm việc từ xa</span>
+        <input
+          checked={form.chapNhanLamTuXa}
+          type="checkbox"
+          onChange={(event) =>
+            onUpdate('chapNhanLamTuXa', event.target.checked)
+          }
+        />
+      </label>
     </div>
   );
 }
@@ -1800,6 +1954,15 @@ function mapProfile(profile: ApiWorkerProfile): ProfileForm {
     gioiThieuBanThan: profile.gioiThieuBanThan ?? '',
     mucLuongMongMuon: salary ? String(Number(salary)) : '',
     diaDiemMongMuon: profile.diaDiemMongMuon ?? '',
+    nganhNgheMongMuonId: profile.nganhNgheMongMuonId
+      ? String(profile.nganhNgheMongMuonId)
+      : '',
+    viTriMongMuon: profile.viTriMongMuon ?? '',
+    tinhThanhPhoMongMuon: profile.tinhThanhPhoMongMuon ?? '',
+    quanHuyenMongMuon: profile.quanHuyenMongMuon ?? '',
+    chapNhanLamTuXa: Boolean(profile.chapNhanLamTuXa),
+    hinhThucLamViecMongMuon: profile.hinhThucLamViecMongMuon ?? '',
+    phuongThucLamViecMongMuon: profile.phuongThucLamViecMongMuon ?? '',
     tepCvUrl: profile.cv?.tenFileCv ?? profile.tenFileCv ?? profile.tepCvUrl ?? '',
     tenFileCv: profile.cv?.tenFileCv ?? profile.tenFileCv ?? '',
     loaiFileCv: profile.cv?.loaiFileCv ?? profile.loaiFileCv ?? '',
@@ -1852,6 +2015,15 @@ function buildPayload(form: ProfileForm) {
       ? Number(form.mucLuongMongMuon)
       : null,
     diaDiemMongMuon: form.diaDiemMongMuon.trim() || null,
+    nganhNgheMongMuonId: form.nganhNgheMongMuonId
+      ? Number(form.nganhNgheMongMuonId)
+      : null,
+    viTriMongMuon: form.viTriMongMuon.trim() || null,
+    tinhThanhPhoMongMuon: form.tinhThanhPhoMongMuon || null,
+    quanHuyenMongMuon: form.quanHuyenMongMuon.trim() || null,
+    chapNhanLamTuXa: form.chapNhanLamTuXa,
+    hinhThucLamViecMongMuon: form.hinhThucLamViecMongMuon || null,
+    phuongThucLamViecMongMuon: form.phuongThucLamViecMongMuon || null,
     kinhNghiemLamViecs: form.experiences.map((item) => ({
       tenDonVi: item.tenDonVi.trim(),
       viTriCongViec: item.viTriCongViec.trim(),
@@ -2000,7 +2172,11 @@ function buildCompletion(form: ProfileForm): CompletionItem[] {
     {
       id: 'preferences',
       label: 'nguyện vọng việc làm',
-      complete: Boolean(form.mucLuongMongMuon && form.diaDiemMongMuon),
+      complete: Boolean(
+        form.mucLuongMongMuon &&
+          (form.diaDiemMongMuon || form.tinhThanhPhoMongMuon) &&
+          (form.nganhNgheMongMuonId || form.viTriMongMuon),
+      ),
     },
     {
       id: 'cv',
@@ -2097,6 +2273,16 @@ function genderLabel(value: Gender) {
     default:
       return '';
   }
+}
+
+function workModeLabel(value: string) {
+  return (
+    {
+      TAI_VAN_PHONG: 'Làm việc tại văn phòng',
+      TU_XA: 'Làm việc từ xa',
+      KET_HOP: 'Làm việc kết hợp',
+    }[value] ?? ''
+  );
 }
 
 function educationTitle(item: Education) {

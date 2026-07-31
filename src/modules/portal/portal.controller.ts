@@ -189,6 +189,15 @@ export class ProtectedPortalController {
     return this.portal.workerApplications(request.user.sub);
   }
 
+  @Get('jobs/recommended')
+  @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  recommendedJobs(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.portal.recommendedJobs(request.user.sub, query);
+  }
+
   @Get('worker/saved-jobs')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
   savedJobs(@Req() request: AuthenticatedRequest) {

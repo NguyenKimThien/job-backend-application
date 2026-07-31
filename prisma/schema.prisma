@@ -62,6 +62,12 @@ enum HinhThucLamViec {
   TU_XA
 }
 
+enum PhuongThucLamViec {
+  TAI_VAN_PHONG
+  TU_XA
+  KET_HOP
+}
+
 enum HinhThucPhongVan {
   TRUC_TIEP
   TRUC_TUYEN
@@ -141,34 +147,43 @@ model MaXacThuc {
 }
 
 model HoSoNguoiLaoDong {
-  id                  Int                 @id @default(autoincrement()) @map("id")
-  taiKhoanId          Int                 @unique @map("tai_khoan_id")
-  hoTen               String              @map("ho_ten") @db.VarChar(255)
-  ngaySinh            DateTime?           @map("ngay_sinh") @db.Date
-  gioiTinh            GioiTinh?           @map("gioi_tinh")
-  diaChi              String?             @map("dia_chi") @db.Text
-  anhDaiDienUrl       String?             @map("anh_dai_dien_url") @db.Text
-  gioiThieuBanThan    String?             @map("gioi_thieu_ban_than") @db.Text
-  mucLuongMongMuonTu  Decimal?            @map("muc_luong_mong_muon_tu") @db.Decimal(15, 2)
-  mucLuongMongMuonDen Decimal?            @map("muc_luong_mong_muon_den") @db.Decimal(15, 2)
-  diaDiemMongMuon     String?             @map("dia_diem_mong_muon") @db.Text
-  tepCvUrl            String?             @map("tep_cv_url") @db.Text
-  tenFileCv           String?             @map("ten_file_cv") @db.VarChar(255)
-  duongDanCv          String?             @map("duong_dan_cv") @db.VarChar(500)
-  loaiFileCv          String?             @map("loai_file_cv") @db.VarChar(100)
-  kichThuocCv         Int?                @map("kich_thuoc_cv")
-  ngayTaiCv           DateTime?           @map("ngay_tai_cv") @db.Timestamptz(6)
-  trangThaiTimViec    TrangThaiTimViec    @default(DANG_TIM_VIEC) @map("trang_thai_tim_viec")
-  ngayTao             DateTime            @default(now()) @map("ngay_tao") @db.Timestamptz(6)
-  ngayCapNhat         DateTime            @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
-  taiKhoan            TaiKhoan            @relation(fields: [taiKhoanId], references: [id], onDelete: Restrict)
-  hocVans             HocVan[]
-  kinhNghiemLamViecs  KinhNghiemLamViec[]
-  hoSoKyNangs         HoSoKyNang[]
-  ungTuyens           UngTuyen[]
-  tinTuyenDungDaLuu   TinTuyenDungDaLuu[]
+  id                        Int                 @id @default(autoincrement()) @map("id")
+  taiKhoanId                Int                 @unique @map("tai_khoan_id")
+  hoTen                     String              @map("ho_ten") @db.VarChar(255)
+  ngaySinh                  DateTime?           @map("ngay_sinh") @db.Date
+  gioiTinh                  GioiTinh?           @map("gioi_tinh")
+  diaChi                    String?             @map("dia_chi") @db.Text
+  anhDaiDienUrl             String?             @map("anh_dai_dien_url") @db.Text
+  gioiThieuBanThan          String?             @map("gioi_thieu_ban_than") @db.Text
+  mucLuongMongMuonTu        Decimal?            @map("muc_luong_mong_muon_tu") @db.Decimal(15, 2)
+  mucLuongMongMuonDen       Decimal?            @map("muc_luong_mong_muon_den") @db.Decimal(15, 2)
+  diaDiemMongMuon           String?             @map("dia_diem_mong_muon") @db.Text
+  nganhNgheMongMuonId       Int?                @map("nganh_nghe_mong_muon_id")
+  viTriMongMuon             String?             @map("vi_tri_mong_muon") @db.VarChar(255)
+  tinhThanhPhoMongMuon      String?             @map("tinh_thanh_pho_mong_muon") @db.VarChar(120)
+  quanHuyenMongMuon         String?             @map("quan_huyen_mong_muon") @db.VarChar(120)
+  chapNhanLamTuXa           Boolean             @default(false) @map("chap_nhan_lam_tu_xa")
+  hinhThucLamViecMongMuon   HinhThucLamViec?    @map("hinh_thuc_lam_viec_mong_muon")
+  phuongThucLamViecMongMuon PhuongThucLamViec?  @map("phuong_thuc_lam_viec_mong_muon")
+  tepCvUrl                  String?             @map("tep_cv_url") @db.Text
+  tenFileCv                 String?             @map("ten_file_cv") @db.VarChar(255)
+  duongDanCv                String?             @map("duong_dan_cv") @db.VarChar(500)
+  loaiFileCv                String?             @map("loai_file_cv") @db.VarChar(100)
+  kichThuocCv               Int?                @map("kich_thuoc_cv")
+  ngayTaiCv                 DateTime?           @map("ngay_tai_cv") @db.Timestamptz(6)
+  trangThaiTimViec          TrangThaiTimViec    @default(DANG_TIM_VIEC) @map("trang_thai_tim_viec")
+  ngayTao                   DateTime            @default(now()) @map("ngay_tao") @db.Timestamptz(6)
+  ngayCapNhat               DateTime            @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
+  taiKhoan                  TaiKhoan            @relation(fields: [taiKhoanId], references: [id], onDelete: Restrict)
+  nganhNgheMongMuon         NganhNghe?          @relation("NganhNgheMongMuon", fields: [nganhNgheMongMuonId], references: [id], onDelete: SetNull)
+  hocVans                   HocVan[]
+  kinhNghiemLamViecs        KinhNghiemLamViec[]
+  hoSoKyNangs               HoSoKyNang[]
+  ungTuyens                 UngTuyen[]
+  tinTuyenDungDaLuu         TinTuyenDungDaLuu[]
 
   @@index([trangThaiTimViec], map: "idx_ho_so_nguoi_lao_dong_trang_thai")
+  @@index([nganhNgheMongMuonId], map: "idx_ho_so_nguoi_lao_dong_nganh_mong_muon")
   @@map("ho_so_nguoi_lao_dong")
 }
 
@@ -269,13 +284,14 @@ model HoSoNhaTuyenDung {
 }
 
 model NganhNghe {
-  id               Int            @id @default(autoincrement()) @map("id")
-  tenNganhNghe     String         @unique @map("ten_nganh_nghe") @db.VarChar(255)
-  moTa             String?        @map("mo_ta") @db.Text
-  trangThaiHienThi Boolean        @default(true) @map("trang_thai_hien_thi")
-  ngayTao          DateTime       @default(now()) @map("ngay_tao") @db.Timestamptz(6)
-  ngayCapNhat      DateTime       @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
-  tinTuyenDungs    TinTuyenDung[]
+  id                        Int                @id @default(autoincrement()) @map("id")
+  tenNganhNghe              String             @unique @map("ten_nganh_nghe") @db.VarChar(255)
+  moTa                      String?            @map("mo_ta") @db.Text
+  trangThaiHienThi          Boolean            @default(true) @map("trang_thai_hien_thi")
+  ngayTao                   DateTime           @default(now()) @map("ngay_tao") @db.Timestamptz(6)
+  ngayCapNhat               DateTime           @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
+  tinTuyenDungs             TinTuyenDung[]
+  hoSoNguoiLaoDongMongMuons HoSoNguoiLaoDong[] @relation("NganhNgheMongMuon")
 
   @@map("nganh_nghe")
 }
@@ -292,7 +308,12 @@ model TinTuyenDung {
   mucLuongDen             Decimal?             @map("muc_luong_den") @db.Decimal(15, 2)
   coTheThoaThuan          Boolean              @default(false) @map("co_the_thoa_thuan")
   diaDiemLamViec          String               @map("dia_diem_lam_viec") @db.Text
+  tinhThanhPho            String?              @map("tinh_thanh_pho") @db.VarChar(120)
+  quanHuyen               String?              @map("quan_huyen") @db.VarChar(120)
+  diaChiLamViecCuThe      String?              @map("dia_chi_lam_viec_cu_the") @db.Text
   hinhThucLamViec         HinhThucLamViec      @map("hinh_thuc_lam_viec")
+  phuongThucLamViec       PhuongThucLamViec    @default(TAI_VAN_PHONG) @map("phuong_thuc_lam_viec")
+  chuyenMon               String?              @map("chuyen_mon") @db.VarChar(255)
   soLuongTuyen            Int                  @default(1) @map("so_luong_tuyen")
   soNamKinhNghiemToiThieu Decimal?             @map("so_nam_kinh_nghiem_toi_thieu") @db.Decimal(4, 1)
   trinhDoYeuCau           String?              @map("trinh_do_yeu_cau") @db.VarChar(150)

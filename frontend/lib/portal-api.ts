@@ -117,6 +117,9 @@ export type ApiJob = {
   company: string;
   companyLogo?: string | null;
   location: string;
+  province?: string | null;
+  district?: string | null;
+  specificAddress?: string | null;
   category: string;
   categoryId: number;
   salaryFrom?: string | number | null;
@@ -126,6 +129,8 @@ export type ApiJob = {
   requiredEducation?: string | null;
   quantity?: number;
   type: string;
+  workMode?: string | null;
+  specialization?: string | null;
   description: string;
   requirements: string;
   benefits?: string | null;
@@ -137,6 +142,8 @@ export type ApiJob = {
   skills: string[];
   applicantCount?: number;
   editCount?: number;
+  diemPhuHop?: number;
+  lyDoPhuHop?: string[];
   employer?: ApiEmployerSummary;
 };
 
@@ -160,6 +167,15 @@ export function salaryLabel(job: ApiJob) {
 
 export function jobTypeLabel(type: string) {
   return workTypeLabels[type] ?? type;
+}
+
+export function workModeLabel(value?: string | null) {
+  const labels: Record<string, string> = {
+    TAI_VAN_PHONG: 'Lam viec tai van phong',
+    TU_XA: 'Lam viec tu xa',
+    KET_HOP: 'Lam viec ket hop',
+  };
+  return value ? (labels[value] ?? value) : '';
 }
 
 function formatMillion(value: number) {

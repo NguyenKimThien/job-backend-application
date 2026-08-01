@@ -51,6 +51,15 @@ type Detail = {
     trangThaiDuyet: string;
     linhVuc: { tenLinhVuc: string } | null;
   } | null;
+  permissionGroups: Array<{
+    resource: string;
+    permissions: Array<{
+      code: string;
+      action: string;
+      allowed: boolean;
+      inherited: boolean;
+    }>;
+  }>;
 };
 
 const accountStatusLabels: Record<string, { label: string; tone: BadgeTone }> =
@@ -82,13 +91,9 @@ export default function AccountDetailPage() {
   const [account, setAccount] = useState<Detail | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [role, setRole] = useState('');
-  const [savingRole, setSavingRole] = useState(false);
-  const [roleMessage, setRoleMessage] = useState('');
-  const [workerName, setWorkerName] = useState('');
-  const [companyName, setCompanyName] = useState('');
-  const [taxCode, setTaxCode] = useState('');
-  const [headOfficeAddress, setHeadOfficeAddress] = useState('');
+  const [savingPermissions, setSavingPermissions] = useState(false);
+  const [permissionMessage, setPermissionMessage] = useState('');
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     void loadAccount();
@@ -100,11 +105,16 @@ export default function AccountDetailPage() {
     try {
       const data = await portalFetch<Detail>(`/admin/users/${params.id}`);
       setAccount(data);
-      setRole(data.vaiTro);
-      setWorkerName(data.hoSoNguoiLaoDong?.hoTen ?? '');
-      setCompanyName(data.hoSoNhaTuyenDung?.tenDonVi ?? '');
-      setTaxCode(data.hoSoNhaTuyenDung?.maSoThue ?? '');
-      setHeadOfficeAddress(data.hoSoNhaTuyenDung?.diaChiTruSo ?? '');
+      setPermissions(
+        Object.fromEntries(
+          data.permissionGroups.flatMap((group) =>
+            group.permissions.map((permission) => [
+              permission.code,
+              permission.allowed,
+            ]),
+          ),
+        ),
+      );
     } catch (error) {
       setAccount(null);
       setMessage(
@@ -121,44 +131,30 @@ export default function AccountDetailPage() {
     account?.tenDangNhap ??
     '';
 
-  async function updateRole() {
-    if (!account || !role || role === account.vaiTro) return;
-    const targetLabel = roleLabels[role] ?? role;
-    if (
-      !window.confirm(
-        `Bạn chắc chắn muốn chuyển tài khoản sang ${targetLabel}? Hồ sơ hiện tại và toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn.`,
-      )
-    ) {
-      return;
-    }
-    setSavingRole(true);
-    setRoleMessage('');
+  async function updatePermissions() {
+    if (!account) return;
+    setSavingPermissions(true);
+    setPermissionMessage('');
     try {
-      await portalFetch(`/admin/users/${account.id}/role`, {
+      await portalFetch(`/admin/users/${account.id}/permissions`, {
         method: 'PATCH',
         body: JSON.stringify({
-          role,
-          ...(role === 'NGUOI_LAO_DONG'
-            ? { hoTen: workerName.trim() }
-            : {
-                tenDonVi: companyName.trim(),
-                maSoThue: taxCode.trim(),
-                diaChiTruSo: headOfficeAddress.trim(),
-              }),
+          permissions: Object.entries(permissions).map(([code, allowed]) => ({
+            code,
+            allowed,
+          })),
         }),
       });
       await loadAccount();
-      setRoleMessage(
-        'Đã đổi vai trò, xóa hồ sơ cũ và tạo hồ sơ mới thành công.',
-      );
+      setPermissionMessage('Phân quyền người dùng thành công.');
     } catch (error) {
-      setRoleMessage(
+      setPermissionMessage(
         error instanceof Error
           ? error.message
           : 'Không thể cập nhật quyền tài khoản.',
       );
     } finally {
-      setSavingRole(false);
+      setSavingPermissions(false);
     }
   }
 
@@ -242,96 +238,52 @@ export default function AccountDetailPage() {
             <article className="content-card account-detail-card">
               <h3>Phân quyền tài khoản</h3>
               <p>
-                Khi đổi vai trò, hệ thống sẽ xóa hồ sơ hiện tại cùng toàn bộ dữ
-                liệu liên quan và tạo một hồ sơ mới theo vai trò được chọn.
-                Thao tác này không thể hoàn tác.
+                Nhóm quyền hiện tại:{' '}
+                <strong>{roleLabels[account.vaiTro] ?? account.vaiTro}</strong>.
+                Việc cấp hoặc giới hạn quyền không làm thay đổi vai trò, hồ sơ
+                hay dữ liệu hiện có của người dùng.
               </p>
-              {roleMessage && (
+              {permissionMessage && (
                 <div
                   className={`admin-inline-message ${
-                    roleMessage.startsWith('Đã') ? 'success' : 'error'
+                    permissionMessage.includes('thành công')
+                      ? 'success'
+                      : 'error'
                   }`}
                 >
-                  {roleMessage}
+                  {permissionMessage}
                 </div>
               )}
-              <div className="admin-role-editor">
-                <label className="form-group">
-                  <span>Vai trò sử dụng hệ thống</span>
-                  <select
-                    onChange={(event) => setRole(event.target.value)}
-                    value={role}
-                  >
-                    <option value="NGUOI_LAO_DONG">
-                      Người lao động
-                    </option>
-                    <option value="NHA_TUYEN_DUNG">
-                      Nhà tuyển dụng
-                    </option>
-                  </select>
-                </label>
-                {role === 'NGUOI_LAO_DONG' &&
-                  role !== account.vaiTro && (
-                    <label className="form-group">
-                      <span>Họ và tên hồ sơ mới *</span>
-                      <input
-                        onChange={(event) => setWorkerName(event.target.value)}
-                        required
-                        value={workerName}
-                      />
-                    </label>
-                  )}
-                {role === 'NHA_TUYEN_DUNG' &&
-                  role !== account.vaiTro && (
-                    <>
-                      <label className="form-group">
-                        <span>Tên đơn vị mới *</span>
-                        <input
-                          onChange={(event) =>
-                            setCompanyName(event.target.value)
-                          }
-                          required
-                          value={companyName}
-                        />
-                      </label>
-                      <label className="form-group">
-                        <span>Mã số thuế mới *</span>
-                        <input
-                          inputMode="numeric"
-                          onChange={(event) => setTaxCode(event.target.value)}
-                          pattern="(?:[0-9]{10}|[0-9]{13})"
-                          required
-                          value={taxCode}
-                        />
-                      </label>
-                      <label className="form-group role-address-field">
-                        <span>Địa chỉ trụ sở mới *</span>
-                        <input
-                          onChange={(event) =>
-                            setHeadOfficeAddress(event.target.value)
-                          }
-                          required
-                          value={headOfficeAddress}
-                        />
-                      </label>
-                    </>
-                  )}
+              <div className="permission-matrix">
+                {account.permissionGroups.map((group) => (
+                  <fieldset className="permission-group" key={group.resource}>
+                    <legend>{group.resource}</legend>
+                    <div className="permission-options">
+                      {group.permissions.map((permission) => (
+                        <label key={permission.code}>
+                          <input
+                            checked={permissions[permission.code] ?? false}
+                            onChange={(event) =>
+                              setPermissions((current) => ({
+                                ...current,
+                                [permission.code]: event.target.checked,
+                              }))
+                            }
+                            type="checkbox"
+                          />
+                          <span>{permission.action}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
                 <button
                   className="btn btn-primary"
-                  disabled={
-                    savingRole ||
-                    !role ||
-                    role === account.vaiTro ||
-                    (role === 'NGUOI_LAO_DONG' && !workerName.trim()) ||
-                    (role === 'NHA_TUYEN_DUNG' &&
-                      (!companyName.trim() ||
-                        !taxCode.trim() ||
-                        !headOfficeAddress.trim()))
-                  }
-                  onClick={() => void updateRole()}
+                  disabled={savingPermissions}
+                  onClick={() => void updatePermissions()}
                   type="button"
                 >
-                  {savingRole ? 'Đang lưu...' : 'Cập nhật quyền'}
+                  {savingPermissions ? 'Đang lưu...' : 'Lưu phân quyền'}
                 </button>
               </div>
             </article>

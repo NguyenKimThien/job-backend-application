@@ -1189,11 +1189,44 @@ export class PortalService {
     };
   }
 
-  async adminEmployers() {
+  async adminEmployers(query: Record<string, string | undefined> = {}) {
+    const where: Prisma.HoSoNhaTuyenDungWhereInput = {};
+    const search = query.search?.trim();
+    const fieldId = this.positiveInteger(query.fieldId);
+    const createdAt = this.dateFilter(query.from, query.to);
+    const status = this.enumOrNull(query.status, TrangThaiKiemDuyet);
+    const accountStatus = this.enumOrNull(
+      query.accountStatus,
+      TrangThaiTaiKhoan,
+    );
+
+    if (search) {
+      where.OR = [
+        { tenDonVi: { contains: search, mode: 'insensitive' } },
+        { maSoThue: { contains: search } },
+        { nguoiDaiDien: { contains: search, mode: 'insensitive' } },
+        { taiKhoan: { email: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+    if (fieldId) where.linhVucId = fieldId;
+    if (status) where.trangThaiDuyet = status;
+    if (accountStatus) {
+      where.taiKhoan = { trangThaiTaiKhoan: accountStatus };
+    }
+    if (createdAt) where.ngayTao = createdAt;
+
     const items = await this.prisma.hoSoNhaTuyenDung.findMany({
+      where,
       include: {
-        taiKhoan: { select: { email: true, soDienThoai: true } },
+        taiKhoan: {
+          select: {
+            email: true,
+            soDienThoai: true,
+            trangThaiTaiKhoan: true,
+          },
+        },
         linhVuc: true,
+        _count: { select: { tinTuyenDungs: true } },
       },
       orderBy: { ngayTao: 'desc' },
     });
@@ -1254,15 +1287,58 @@ export class PortalService {
     return { success: true, data: item };
   }
 
-  async adminJobs() {
+  async adminJobs(query: Record<string, string | undefined> = {}) {
+    const where: Prisma.TinTuyenDungWhereInput = {
+      trangThaiKiemDuyet: { not: TrangThaiKiemDuyet.BAN_NHAP },
+    };
+    const search = query.search?.trim();
+    const categoryId = this.positiveInteger(query.categoryId);
+    const status = this.enumOrNull(query.status, TrangThaiKiemDuyet);
+    const displayStatus = this.enumOrNull(
+      query.displayStatus,
+      TrangThaiHienThiTin,
+    );
+    const workType = this.enumOrNull(query.workType, HinhThucLamViec);
+    const salaryMin = this.numberOrNull(query.salaryMin);
+    const salaryMax = this.numberOrNull(query.salaryMax);
+    const createdAt = this.dateFilter(query.from, query.to);
+
+    if (search) {
+      where.OR = [
+        { viTriTuyenDung: { contains: search, mode: 'insensitive' } },
+        { diaDiemLamViec: { contains: search, mode: 'insensitive' } },
+        {
+          nhaTuyenDung: {
+            tenDonVi: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
+    }
+    if (categoryId) where.nganhNgheId = categoryId;
+    if (status) where.trangThaiKiemDuyet = status;
+    if (displayStatus) where.trangThaiHienThi = displayStatus;
+    if (workType) where.hinhThucLamViec = workType;
+    if (query.negotiable === 'true') where.coTheThoaThuan = true;
+    if (query.negotiable === 'false') where.coTheThoaThuan = false;
+    if (salaryMin !== null) where.mucLuongDen = { gte: salaryMin };
+    if (salaryMax !== null) where.mucLuongTu = { lte: salaryMax };
+    if (createdAt) where.ngayTao = createdAt;
+
     const items = await this.prisma.tinTuyenDung.findMany({
-      where: {
-        trangThaiKiemDuyet: { not: TrangThaiKiemDuyet.BAN_NHAP },
+      where,
+      include: {
+        ...this.jobInclude(),
+        _count: { select: { ungTuyens: true } },
       },
-      include: this.jobInclude(),
       orderBy: { ngayTao: 'desc' },
     });
-    return { success: true, data: items.map((item) => this.mapJob(item)) };
+    return {
+      success: true,
+      data: items.map((item) => ({
+        ...this.mapJob(item),
+        applicantCount: item._count.ungTuyens,
+      })),
+    };
   }
 
   async adminJob(id: number) {
@@ -1357,7 +1433,17 @@ export class PortalService {
 
   async statistics(query: Record<string, string | undefined> = {}) {
     const createdAt = this.dateFilter(query.from, query.to);
-    const [workers, employers, jobs, applications, approvedJobs] =
+    const now = new Date();
+    const [
+      workers,
+      employers,
+      jobs,
+      applications,
+      approvedJobs,
+      activeJobs,
+      hiredApplications,
+      vacancyAggregate,
+    ] =
       await this.prisma.$transaction([
         this.prisma.taiKhoan.count({
           where: {
@@ -1383,8 +1469,35 @@ export class PortalService {
             ...(createdAt ? { ngayTao: createdAt } : {}),
           },
         }),
+        this.prisma.tinTuyenDung.count({
+          where: {
+            trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
+            trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
+            thoiHanNhanHoSo: { gte: now },
+            ...(createdAt ? { ngayTao: createdAt } : {}),
+          },
+        }),
+        this.prisma.ungTuyen.count({
+          where: {
+            trangThaiHienTai: TrangThaiUngTuyen.TRUNG_TUYEN,
+            ...(createdAt ? { ngayNop: createdAt } : {}),
+          },
+        }),
+        this.prisma.tinTuyenDung.aggregate({
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _sum: { soLuongTuyen: true },
+        }),
       ]);
-    const [userByStatus, jobByStatus, applicationByStatus] =
+    const [
+      userByStatus,
+      employerByStatus,
+      jobByStatus,
+      jobByDisplayStatus,
+      jobByWorkType,
+      jobByCategory,
+      applicationByStatus,
+      applicationsWithJob,
+    ] =
       await this.prisma.$transaction([
         this.prisma.taiKhoan.groupBy({
           by: ['trangThaiTaiKhoan'],
@@ -1392,11 +1505,35 @@ export class PortalService {
           _count: true,
           orderBy: { trangThaiTaiKhoan: 'asc' },
         }),
+        this.prisma.hoSoNhaTuyenDung.groupBy({
+          by: ['trangThaiDuyet'],
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _count: true,
+          orderBy: { trangThaiDuyet: 'asc' },
+        }),
         this.prisma.tinTuyenDung.groupBy({
           by: ['trangThaiKiemDuyet'],
           where: createdAt ? { ngayTao: createdAt } : {},
           _count: true,
           orderBy: { trangThaiKiemDuyet: 'asc' },
+        }),
+        this.prisma.tinTuyenDung.groupBy({
+          by: ['trangThaiHienThi'],
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _count: true,
+          orderBy: { trangThaiHienThi: 'asc' },
+        }),
+        this.prisma.tinTuyenDung.groupBy({
+          by: ['hinhThucLamViec'],
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _count: true,
+          orderBy: { hinhThucLamViec: 'asc' },
+        }),
+        this.prisma.tinTuyenDung.groupBy({
+          by: ['nganhNgheId'],
+          where: createdAt ? { ngayTao: createdAt } : {},
+          _count: true,
+          orderBy: { nganhNgheId: 'asc' },
         }),
         this.prisma.ungTuyen.groupBy({
           by: ['trangThaiHienTai'],
@@ -1404,7 +1541,49 @@ export class PortalService {
           _count: true,
           orderBy: { trangThaiHienTai: 'asc' },
         }),
+        this.prisma.ungTuyen.findMany({
+          where: createdAt ? { ngayNop: createdAt } : {},
+          select: {
+            tinTuyenDung: {
+              select: {
+                id: true,
+                viTriTuyenDung: true,
+                nhaTuyenDung: { select: { tenDonVi: true } },
+              },
+            },
+          },
+        }),
       ]);
+
+    const categoryIds = jobByCategory.map((item) => item.nganhNgheId);
+    const categories = categoryIds.length
+      ? await this.prisma.nganhNghe.findMany({
+          where: { id: { in: categoryIds } },
+          select: { id: true, tenNganhNghe: true },
+        })
+      : [];
+    const categoryNames = new Map(
+      categories.map((item) => [item.id, item.tenNganhNghe]),
+    );
+    const applicationsByJob = new Map<
+      number,
+      { label: string; value: number }
+    >();
+    for (const item of applicationsWithJob) {
+      const job = item.tinTuyenDung;
+      const current = applicationsByJob.get(job.id);
+      applicationsByJob.set(job.id, {
+        label: `${job.viTriTuyenDung} - ${job.nhaTuyenDung.tenDonVi}`,
+        value: (current?.value ?? 0) + 1,
+      });
+    }
+    const topJobs = [...applicationsByJob.values()]
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10);
+    const totalVacancies = vacancyAggregate._sum.soLuongTuyen ?? 0;
+    const recruitmentRate = applications
+      ? Number(((hiredApplications / applications) * 100).toFixed(2))
+      : 0;
     return {
       success: true,
       data: {
@@ -1413,6 +1592,10 @@ export class PortalService {
         jobs,
         applications,
         approvedJobs,
+        activeJobs,
+        hiredApplications,
+        totalVacancies,
+        recruitmentRate,
         period: { from: query.from ?? null, to: query.to ?? null },
         users: {
           total: workers + employers,
@@ -1421,10 +1604,28 @@ export class PortalService {
             userByStatus.map((x) => [x.trangThaiTaiKhoan, x._count]),
           ),
         },
+        employerStatistics: {
+          total: employers,
+          byStatus: Object.fromEntries(
+            employerByStatus.map((x) => [x.trangThaiDuyet, x._count]),
+          ),
+        },
         jobStatistics: {
           total: jobs,
           byStatus: Object.fromEntries(
             jobByStatus.map((x) => [x.trangThaiKiemDuyet, x._count]),
+          ),
+          byDisplayStatus: Object.fromEntries(
+            jobByDisplayStatus.map((x) => [x.trangThaiHienThi, x._count]),
+          ),
+          byWorkType: Object.fromEntries(
+            jobByWorkType.map((x) => [x.hinhThucLamViec, x._count]),
+          ),
+          byCategory: Object.fromEntries(
+            jobByCategory.map((x) => [
+              categoryNames.get(x.nganhNgheId) ?? `Ngành #${x.nganhNgheId}`,
+              x._count,
+            ]),
           ),
         },
         applicationStatistics: {
@@ -1432,6 +1633,7 @@ export class PortalService {
           byStatus: Object.fromEntries(
             applicationByStatus.map((x) => [x.trangThaiHienTai, x._count]),
           ),
+          topJobs,
         },
       },
     };
@@ -1442,7 +1644,7 @@ export class PortalService {
     const type = this.reportType(query.type);
     const format = query.format === 'json' ? 'json' : 'csv';
     const rowsByType: Record<
-      'summary' | 'users' | 'jobs' | 'applications',
+      'summary' | 'users' | 'employers' | 'jobs' | 'applications',
       Array<[string, string, number]>
     > = {
       summary: [
@@ -1450,10 +1652,18 @@ export class PortalService {
         ['Tài khoản', 'Nhà tuyển dụng', data.employers],
         ['Tin tuyển dụng', 'Tổng số', data.jobs],
         ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
+        ['Tin tuyển dụng', 'Đang hiển thị và còn hạn', data.activeJobs],
+        ['Tin tuyển dụng', 'Tổng nhu cầu tuyển', data.totalVacancies],
         ['Ứng tuyển', 'Tổng số', data.applications],
+        ['Ứng tuyển', 'Trúng tuyển', data.hiredApplications],
+        ['Ứng tuyển', 'Tỷ lệ trúng tuyển (%)', data.recruitmentRate],
         ...this.rowsFromStatisticsRecord(
           'Trạng thái tài khoản',
           data.users.byStatus,
+        ),
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái nhà tuyển dụng',
+          data.employerStatistics.byStatus,
         ),
         ...this.rowsFromStatisticsRecord(
           'Trạng thái tin',
@@ -1472,19 +1682,50 @@ export class PortalService {
           data.users.byStatus,
         ),
       ],
+      employers: [
+        ['Nhà tuyển dụng', 'Tổng số', data.employers],
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái kiểm duyệt',
+          data.employerStatistics.byStatus,
+        ),
+      ],
       jobs: [
         ['Tin tuyển dụng', 'Tổng số', data.jobs],
         ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
+        ['Tin tuyển dụng', 'Đang hiển thị và còn hạn', data.activeJobs],
+        ['Tin tuyển dụng', 'Tổng nhu cầu tuyển', data.totalVacancies],
         ...this.rowsFromStatisticsRecord(
           'Trạng thái tin',
           data.jobStatistics.byStatus,
         ),
+        ...this.rowsFromStatisticsRecord(
+          'Trạng thái hiển thị',
+          data.jobStatistics.byDisplayStatus,
+        ),
+        ...this.rowsFromStatisticsRecord(
+          'Hình thức làm việc',
+          data.jobStatistics.byWorkType,
+        ),
+        ...this.rowsFromStatisticsRecord(
+          'Ngành nghề',
+          data.jobStatistics.byCategory,
+        ),
       ],
       applications: [
         ['Ứng tuyển', 'Tổng số', data.applications],
+        ['Ứng tuyển', 'Trúng tuyển', data.hiredApplications],
+        ['Ứng tuyển', 'Tỷ lệ trúng tuyển (%)', data.recruitmentRate],
         ...this.rowsFromStatisticsRecord(
           'Trạng thái ứng tuyển',
           data.applicationStatistics.byStatus,
+        ),
+        ...data.applicationStatistics.topJobs.map(
+          (item) =>
+            ['Tin có nhiều ứng viên', item.label, item.value] as [
+              string,
+              string,
+              number,
+            ],
         ),
       ],
     };
@@ -1512,9 +1753,10 @@ export class PortalService {
 
   private reportType(
     value?: string,
-  ): 'summary' | 'users' | 'jobs' | 'applications' {
+  ): 'summary' | 'users' | 'employers' | 'jobs' | 'applications' {
     if (
       value === 'users' ||
+      value === 'employers' ||
       value === 'jobs' ||
       value === 'applications' ||
       value === 'summary'
@@ -1854,6 +2096,13 @@ export class PortalService {
     if (value === '' || value === null || value === undefined) return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
+  }
+
+  private positiveInteger(value: unknown) {
+    const number = this.numberOrNull(value);
+    return number !== null && Number.isInteger(number) && number > 0
+      ? number
+      : null;
   }
 
   private dateFilter(from?: string, to?: string) {

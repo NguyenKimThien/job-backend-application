@@ -32,6 +32,9 @@ import type { AuthenticatedRequest } from '../../common/auth/jwt-auth.guard.js';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
 import { Roles } from '../../common/auth/roles.decorator.js';
 import { RolesGuard } from '../../common/auth/roles.guard.js';
+import { PermissionsGuard } from '../../common/auth/permissions.guard.js';
+import { Permissions } from '../../common/auth/permissions.decorator.js';
+import { PERMISSIONS } from '../../common/auth/permissions.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { InviteCandidateInterviewDto } from './dto/invite-candidate-interview.dto.js';
 import { PortalService } from './portal.service.js';
@@ -108,18 +111,20 @@ export class PublicPortalController {
 }
 
 @Controller()
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
 export class ProtectedPortalController {
   constructor(private readonly portal: PortalService) {}
 
   @Get('worker/profile')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_CA_NHAN)
   workerProfile(@Req() request: AuthenticatedRequest) {
     return this.portal.workerProfile(request.user.sub);
   }
 
   @Patch('worker/profile')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.SUA_HO_SO_CA_NHAN)
   updateWorkerProfile(
     @Req() request: AuthenticatedRequest,
     @Body() body: Record<string, any>,
@@ -129,12 +134,14 @@ export class ProtectedPortalController {
 
   @Get('worker/profile/cv')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_CA_NHAN)
   workerCv(@Req() request: AuthenticatedRequest) {
     return this.portal.workerCv(request.user.sub);
   }
 
   @Post('worker/profile/cv')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.SUA_HO_SO_CA_NHAN)
   @UseFilters(CvUploadExceptionFilter)
   @UseInterceptors(cvUploadInterceptor)
   uploadWorkerCv(
@@ -146,6 +153,7 @@ export class ProtectedPortalController {
 
   @Get('worker/profile/cv/view')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_CA_NHAN)
   async viewWorkerCv(
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,
@@ -156,6 +164,7 @@ export class ProtectedPortalController {
 
   @Get('worker/profile/cv/download')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_CA_NHAN)
   async downloadWorkerCv(
     @Req() request: AuthenticatedRequest,
     @Res({ passthrough: true }) response: Response,
@@ -166,12 +175,14 @@ export class ProtectedPortalController {
 
   @Delete('worker/profile/cv')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.SUA_HO_SO_CA_NHAN)
   deleteWorkerCv(@Req() request: AuthenticatedRequest) {
     return this.portal.deleteWorkerCv(request.user.sub);
   }
 
   @Post('worker/applications/:jobId')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.THEM_UNG_TUYEN)
   @UseFilters(CvUploadExceptionFilter)
   @UseInterceptors(cvUploadInterceptor)
   apply(
@@ -185,6 +196,7 @@ export class ProtectedPortalController {
 
   @Get('worker/applications')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.XEM_UNG_TUYEN)
   applications(@Req() request: AuthenticatedRequest) {
     return this.portal.workerApplications(request.user.sub);
   }
@@ -200,12 +212,14 @@ export class ProtectedPortalController {
 
   @Get('worker/saved-jobs')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.XEM_VIEC_LAM_DA_LUU)
   savedJobs(@Req() request: AuthenticatedRequest) {
     return this.portal.savedJobs(request.user.sub);
   }
 
   @Post('worker/saved-jobs/:jobId')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.SUA_VIEC_LAM_DA_LUU)
   saveJob(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -215,6 +229,7 @@ export class ProtectedPortalController {
 
   @Delete('worker/saved-jobs/:jobId')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  @Permissions(PERMISSIONS.SUA_VIEC_LAM_DA_LUU)
   unsaveJob(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -224,12 +239,14 @@ export class ProtectedPortalController {
 
   @Get('employer/profile')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_DOANH_NGHIEP)
   employerProfile(@Req() request: AuthenticatedRequest) {
     return this.portal.employerProfile(request.user.sub);
   }
 
   @Patch('employer/profile')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.SUA_HO_SO_DOANH_NGHIEP)
   updateEmployerProfile(
     @Req() request: AuthenticatedRequest,
     @Body() body: Record<string, any>,
@@ -239,12 +256,14 @@ export class ProtectedPortalController {
 
   @Get('employer/jobs')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_TIN_TUYEN_DUNG)
   employerJobs(@Req() request: AuthenticatedRequest) {
     return this.portal.employerJobs(request.user.sub);
   }
 
   @Post('employer/jobs')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.THEM_TIN_TUYEN_DUNG)
   createEmployerJob(
     @Req() request: AuthenticatedRequest,
     @Body() body: Record<string, any>,
@@ -254,6 +273,7 @@ export class ProtectedPortalController {
 
   @Get('employer/jobs/:jobId')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_TIN_TUYEN_DUNG)
   employerJob(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -263,6 +283,7 @@ export class ProtectedPortalController {
 
   @Patch('employer/jobs/:jobId')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.SUA_TIN_TUYEN_DUNG)
   updateEmployerJob(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -273,6 +294,7 @@ export class ProtectedPortalController {
 
   @Get('employer/jobs/:jobId/applicants')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_UNG_VIEN)
   employerApplicants(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -282,6 +304,7 @@ export class ProtectedPortalController {
 
   @Get('employer/jobs/:jobId/applicants/:id')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_UNG_VIEN)
   employerApplicant(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -292,6 +315,7 @@ export class ProtectedPortalController {
 
   @Get('employer/jobs/:jobId/applicants/:id/cv/view')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_UNG_VIEN)
   async viewEmployerApplicantCv(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -308,6 +332,7 @@ export class ProtectedPortalController {
 
   @Get('employer/jobs/:jobId/applicants/:id/cv/download')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_HO_SO_UNG_VIEN)
   async downloadEmployerApplicantCv(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -324,6 +349,7 @@ export class ProtectedPortalController {
 
   @Patch('employer/jobs/:jobId/applicants/:id/status')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.SUA_HO_SO_UNG_VIEN)
   updateApplicationStatus(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -340,6 +366,7 @@ export class ProtectedPortalController {
 
   @Post('employer/jobs/:jobId/applicants/:id/interview')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.SUA_HO_SO_UNG_VIEN)
   inviteCandidateInterview(
     @Req() request: AuthenticatedRequest,
     @Param('jobId', ParseIntPipe) jobId: number,
@@ -355,16 +382,19 @@ export class ProtectedPortalController {
   }
 
   @Get('notifications')
+  @Permissions(PERMISSIONS.XEM_THONG_BAO)
   notifications(@Req() request: AuthenticatedRequest) {
     return this.portal.notifications(request.user.sub);
   }
 
   @Patch('notifications/read-all')
+  @Permissions(PERMISSIONS.SUA_THONG_BAO)
   readAllNotifications(@Req() request: AuthenticatedRequest) {
     return this.portal.readAllNotifications(request.user.sub);
   }
 
   @Patch('notifications/:id/read')
+  @Permissions(PERMISSIONS.SUA_THONG_BAO)
   readNotification(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
@@ -390,18 +420,21 @@ export class ProtectedPortalController {
 
   @Get('admin/categories')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.XEM_DANH_MUC_NGHE)
   adminCategories() {
     return this.portal.adminCategories();
   }
 
   @Post('admin/categories')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.THEM_DANH_MUC_NGHE)
   createCategory(@Body() body: Record<string, any>) {
     return this.portal.saveCategory(body);
   }
 
   @Patch('admin/categories/:id')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.SUA_DANH_MUC_NGHE)
   updateCategory(
     @Param('id', ParseIntPipe) id: number,
     @Body() body: Record<string, any>,
@@ -411,24 +444,28 @@ export class ProtectedPortalController {
 
   @Delete('admin/categories/:id')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.XOA_DANH_MUC_NGHE)
   deleteCategory(@Param('id', ParseIntPipe) id: number) {
     return this.portal.deleteCategory(id);
   }
 
   @Get('admin/employers')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
-  adminEmployers() {
-    return this.portal.adminEmployers();
+  @Permissions(PERMISSIONS.XEM_KIEM_DUYET_NTD)
+  adminEmployers(@Query() query: Record<string, string | undefined>) {
+    return this.portal.adminEmployers(query);
   }
 
   @Get('admin/employers/:id')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.XEM_KIEM_DUYET_NTD)
   adminEmployer(@Param('id', ParseIntPipe) id: number) {
     return this.portal.adminEmployer(id);
   }
 
   @Patch('admin/employers/:id/review')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.SUA_KIEM_DUYET_NTD)
   reviewEmployer(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
@@ -439,18 +476,21 @@ export class ProtectedPortalController {
 
   @Get('admin/jobs')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
-  adminJobs() {
-    return this.portal.adminJobs();
+  @Permissions(PERMISSIONS.XEM_KIEM_DUYET_TIN)
+  adminJobs(@Query() query: Record<string, string | undefined>) {
+    return this.portal.adminJobs(query);
   }
 
   @Get('admin/jobs/:id')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.XEM_KIEM_DUYET_TIN)
   adminJob(@Param('id', ParseIntPipe) id: number) {
     return this.portal.adminJob(id);
   }
 
   @Patch('admin/jobs/:id/review')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.SUA_KIEM_DUYET_TIN)
   reviewJob(
     @Req() request: AuthenticatedRequest,
     @Param('id', ParseIntPipe) id: number,
@@ -461,12 +501,14 @@ export class ProtectedPortalController {
 
   @Get('admin/statistics')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.XEM_BAO_CAO)
   statistics(@Query() query: Record<string, string | undefined>) {
     return this.portal.statistics(query);
   }
 
   @Get('admin/reports/export')
   @Roles(VaiTroTaiKhoan.QUAN_TRI_VIEN)
+  @Permissions(PERMISSIONS.XUAT_BAO_CAO)
   async exportReport(
     @Query() query: Record<string, string | undefined>,
     @Res({ passthrough: true }) response: Response,

@@ -273,6 +273,7 @@ function SavedJobCard({
   const hiddenSkillCount = Math.max(job.skills.length - skills.length, 0);
   const savedAt = job.savedAt ?? job.ngayLuu;
   const canApply = canApplyToJob(job);
+  const fullQuota = Boolean(job.daDatChiTieu ?? job.daDuChiTieu);
 
   return (
     <article className="saved-job-card">
@@ -371,6 +372,11 @@ function SavedJobCard({
           {!canApply && (
             <span className="saved-job-note">
               Tin này hiện không còn nhận hồ sơ ứng tuyển.
+            </span>
+          )}
+          {canApply && fullQuota && (
+            <span className="saved-job-note">
+              Tin vẫn tiếp nhận hồ sơ dự phòng.
             </span>
           )}
           <div className="saved-job-actions">
@@ -552,6 +558,14 @@ function getJobStatus(job: SavedJob): StatusBadge | null {
     return { label: 'Đã đóng', tone: 'neutral' };
   }
 
+  if (job.ngungNhanHoSo || job.conNhanHoSo === false) {
+    return { label: 'Ngừng nhận hồ sơ', tone: 'warning' };
+  }
+
+  if (Boolean(job.daDatChiTieu ?? job.daDuChiTieu)) {
+    return { label: 'Đã đủ chỉ tiêu', tone: 'warning' };
+  }
+
   const deadlineDays = daysUntil(job.deadline);
   if (deadlineDays !== null && deadlineDays >= 0 && deadlineDays <= 3) {
     return { label: 'Sắp hết hạn', tone: 'warning' };
@@ -567,7 +581,8 @@ function getJobStatus(job: SavedJob): StatusBadge | null {
 function canApplyToJob(job: SavedJob) {
   const approved = !job.status || job.status === approvedStatus;
   const visible = !job.displayStatus || job.displayStatus === visibleStatus;
-  return approved && visible && !isExpired(job.deadline);
+  const accepting = job.conNhanHoSo !== false && !job.ngungNhanHoSo;
+  return approved && visible && accepting && !isExpired(job.deadline);
 }
 
 function isExpired(value: string) {

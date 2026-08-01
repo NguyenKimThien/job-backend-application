@@ -245,6 +245,7 @@ export default function JobDetailPage() {
   const employerVerified = isEmployerVerified(job.employer);
   const jobReviewed = job.status === approvedStatus;
   const closedNotice = jobClosedNotice(job);
+  const quotaNotice = jobQuotaNotice(job);
 
   return (
     <SiteShell pageClassName="job-detail-page" role={shellRole}>
@@ -276,6 +277,7 @@ export default function JobDetailPage() {
           </div>
         )}
 
+        {quotaNotice && <JobStatusNotice notice={quotaNotice} />}
         {closedNotice && <JobStatusNotice notice={closedNotice} />}
 
         <div className="job-detail-layout">
@@ -853,7 +855,9 @@ function applicationCta(
 
   return {
     href: `/nop-ho-so/${job.id}`,
-    label: 'Ứng tuyển ngay',
+    label: Boolean(job.daDatChiTieu ?? job.daDuChiTieu)
+      ? 'Ứng tuyển hồ sơ dự phòng'
+      : 'Ứng tuyển ngay',
   };
 }
 
@@ -870,6 +874,15 @@ function jobClosedNotice(job: ApiJob) {
     return {
       title: 'Không còn nhận hồ sơ',
       description: 'Nhà tuyển dụng đã ngừng nhận hồ sơ cho vị trí này.',
+      tone: 'warning' as const,
+    };
+  }
+
+  if (job.ngungNhanHoSo || job.conNhanHoSo === false) {
+    return {
+      title: 'Tin đã ngừng nhận hồ sơ',
+      description:
+        'Nhà tuyển dụng đã ngừng nhận thêm hồ sơ mới cho vị trí này.',
       tone: 'warning' as const,
     };
   }
@@ -891,6 +904,23 @@ function jobClosedNotice(job: ApiJob) {
   }
 
   return null;
+}
+
+function jobQuotaNotice(job: ApiJob) {
+  if (
+    !Boolean(job.daDatChiTieu ?? job.daDuChiTieu) ||
+    job.conNhanHoSo === false ||
+    job.ngungNhanHoSo
+  ) {
+    return null;
+  }
+
+  return {
+    title: 'Tin tuyển dụng đã đủ chỉ tiêu',
+    description:
+      'Nhà tuyển dụng vẫn tiếp nhận thêm hồ sơ dự phòng cho vị trí này.',
+    tone: 'info' as const,
+  };
 }
 
 function isEmployerVerified(employer?: ApiEmployerSummary) {

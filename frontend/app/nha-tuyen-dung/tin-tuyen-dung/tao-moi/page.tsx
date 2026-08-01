@@ -2,7 +2,7 @@
 
 import SiteShell from '@/components/SiteShell';
 import { ACCOUNT_KEY } from '@/lib/backend-api';
-import { portalFetch } from '@/lib/portal-api';
+import { ApiJob, portalFetch } from '@/lib/portal-api';
 import { useRouter } from 'next/navigation';
 import {
   FormEvent,
@@ -15,6 +15,11 @@ import {
 import type { ReactNode, RefObject } from 'react';
 
 type Category = { id: number; name: string };
+type JobEditorMode = 'create' | 'edit';
+type JobEditorProps = {
+  jobId?: string;
+  mode?: JobEditorMode;
+};
 type StoredAccount = {
   email?: string;
   hoTen?: string;
@@ -300,12 +305,20 @@ const validationRequirements: ValidationRequirement[] = [
   },
 ];
 
-export default function JobEditorPage() {
+export default function CreateJobEditorPage() {
+  return <JobEditorPage mode="create" />;
+}
+
+export function JobEditorPage({ jobId, mode = 'create' }: JobEditorProps) {
   const router = useRouter();
+  const isEditMode = mode === 'edit';
   const [form, setForm] = useState<JobForm>(initialForm);
   const [message, setMessage] = useState('');
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [editJob, setEditJob] = useState<ApiJob | null>(null);
+  const [jobLoading, setJobLoading] = useState(isEditMode);
+  const [jobLoadMessage, setJobLoadMessage] = useState('');
   const [employerName, setEmployerName] = useState('');
   const [skillInput, setSkillInput] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -313,10 +326,18 @@ export default function JobEditorPage() {
   const [previewing, setPreviewing] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<SectionKey>('job');
   const fieldRefs = useRef<Partial<Record<FormField, FieldElement | null>>>({});
   const previewButtonRef = useRef<HTMLButtonElement | null>(null);
   const previewDialogRef = useRef<HTMLElement | null>(null);
+  const remainingEdits = Math.max(0, 3 - (editJob?.editCount ?? 0));
+  const pageTitle = isEditMode
+    ? 'Chỉnh sửa tin tuyển dụng'
+    : 'Tạo tin tuyển dụng';
+  const pageSubtitle = isEditMode
+    ? 'Cập nhật thông tin theo yêu cầu kiểm duyệt và gửi lại cho quản trị viên.'
+    : 'Chuẩn hóa thông tin để hệ thống có thể gợi ý việc làm phù hợp cho người lao động.';
 
   useEffect(() => {
     portalFetch<Category[]>('/categories')
@@ -324,6 +345,44 @@ export default function JobEditorPage() {
       .catch((error) => setMessage(error.message))
       .finally(() => setCategoriesLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!isEditMode) {
+      setJobLoading(false);
+      return;
+    }
+    if (!jobId) {
+      setJobLoadMessage('Không tìm thấy tin tuyển dụng cần chỉnh sửa.');
+      setJobLoading(false);
+      return;
+    }
+
+    let active = true;
+    setJobLoading(true);
+    setJobLoadMessage('');
+    portalFetch<ApiJob>(`/employer/jobs/${jobId}`)
+      .then((jobData) => {
+        if (!active) return;
+        setEditJob(jobData);
+        setForm(jobToForm(jobData));
+        setEmployerName((current) => current || jobData.company || '');
+      })
+      .catch((error) => {
+        if (!active) return;
+        setJobLoadMessage(
+          error instanceof Error
+            ? error.message
+            : 'Không thể tải tin tuyển dụng.',
+        );
+      })
+      .finally(() => {
+        if (active) setJobLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isEditMode, jobId]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(ACCOUNT_KEY);
@@ -503,19 +562,25 @@ export default function JobEditorPage() {
       action === 'draft' ? 'Đang lưu bản nháp...' : 'Đang gửi kiểm duyệt...',
     );
     try {
-      await portalFetch('/employer/jobs', {
-        method: 'POST',
-        body: JSON.stringify(buildPayload(form, action)),
-      });
-      setMessage(
-        action === 'draft'
-          ? 'Tin tuyển dụng đã được lưu dưới dạng bản nháp.'
-          : 'Tin tuyển dụng đã được gửi kiểm duyệt.',
+      await portalFetch(
+        isEditMode && jobId ? `/employer/jobs/${jobId}` : '/employer/jobs',
+        {
+          method: isEditMode ? 'PATCH' : 'POST',
+          body: JSON.stringify(buildPayload(form, action)),
+        },
       );
-      window.setTimeout(
-        () => router.push('/nha-tuyen-dung/tin-tuyen-dung'),
-        700,
-      );
+      if (action === 'submit') {
+        setMessage('');
+        setPreviewOpen(false);
+        setConfirmOpen(false);
+        setSuccessOpen(true);
+      } else {
+        setMessage('Tin tuyển dụng đã được lưu dưới dạng bản nháp.');
+        window.setTimeout(
+          () => router.push('/nha-tuyen-dung/tin-tuyen-dung'),
+          700,
+        );
+      }
     } catch (error) {
       setMessage(
         error instanceof Error
@@ -546,12 +611,88 @@ export default function JobEditorPage() {
     if (validateSubmit()) setConfirmOpen(true);
   }
 
+  if (jobLoading) {
+    return (
+      <SiteShell
+        pageClassName="job-create-page"
+        role="employer"
+        title={pageTitle}
+        subtitle={pageSubtitle}
+      >
+        <section className="container portal-content editor-layout">
+          <div className="content-card detail-loading">Đang tải dữ liệu...</div>
+        </section>
+      </SiteShell>
+    );
+  }
+
+  if (isEditMode && (jobLoadMessage || !editJob)) {
+    return (
+      <SiteShell
+        pageClassName="job-create-page"
+        role="employer"
+        title={pageTitle}
+        subtitle={pageSubtitle}
+      >
+        <section className="container portal-content editor-layout">
+          <div className="content-card employer-edit-limit-message">
+            <strong>Không thể tải tin tuyển dụng</strong>
+            <p>{jobLoadMessage || 'Không tìm thấy tin tuyển dụng cần chỉnh sửa.'}</p>
+          </div>
+        </section>
+      </SiteShell>
+    );
+  }
+
+  if (isEditMode && editJob?.status !== 'TU_CHOI') {
+    return (
+      <SiteShell
+        pageClassName="job-create-page"
+        role="employer"
+        title={pageTitle}
+        subtitle={pageSubtitle}
+      >
+        <section className="container portal-content editor-layout">
+          <div className="content-card employer-edit-limit-message">
+            <strong>Tin tuyển dụng không được phép chỉnh sửa</strong>
+            <p>
+              Chỉ tin tuyển dụng ở trạng thái Từ chối mới được chỉnh sửa và gửi
+              lại để kiểm duyệt.
+            </p>
+          </div>
+        </section>
+      </SiteShell>
+    );
+  }
+
+  if (isEditMode && remainingEdits === 0) {
+    return (
+      <SiteShell
+        pageClassName="job-create-page"
+        role="employer"
+        title={pageTitle}
+        subtitle={pageSubtitle}
+      >
+        <section className="container portal-content editor-layout">
+          <div className="content-card employer-edit-limit-message">
+            <strong>Đã hết lượt chỉnh sửa tin tuyển dụng</strong>
+            <p>
+              Tin này đã được chỉnh sửa đủ 3 lần nên không thể tiếp tục thay
+              đổi. Bạn có thể quay lại danh sách tin tuyển dụng để theo dõi
+              trạng thái kiểm duyệt.
+            </p>
+          </div>
+        </section>
+      </SiteShell>
+    );
+  }
+
   return (
     <SiteShell
       pageClassName="job-create-page"
       role="employer"
-      title="Tạo tin tuyển dụng"
-      subtitle="Chuẩn hóa thông tin để hệ thống có thể gợi ý việc làm phù hợp cho người lao động."
+      title={pageTitle}
+      subtitle={pageSubtitle}
     >
       <section className="container portal-content editor-layout">
         <form
@@ -561,8 +702,14 @@ export default function JobEditorPage() {
         >
           <div className="job-editor-intro">
             <div>
-              <span className="job-editor-kicker">Tin mới</span>
-              <h2>Điền thông tin tuyển dụng</h2>
+              <span className="job-editor-kicker">
+                {isEditMode ? 'Gửi lại kiểm duyệt' : 'Tin mới'}
+              </span>
+              <h2>
+                {isEditMode
+                  ? 'Chỉnh sửa thông tin tuyển dụng'
+                  : 'Điền thông tin tuyển dụng'}
+              </h2>
             </div>
             <p>
               Các trường có dấu <span className="required-mark">*</span> là bắt
@@ -570,6 +717,17 @@ export default function JobEditorPage() {
             </p>
           </div>
 
+          {isEditMode && editJob && (
+            <div className="form-message info employer-edit-quota-message">
+              Bạn còn <strong>{remainingEdits}/3 lượt chỉnh sửa</strong> cho tin
+              tuyển dụng này. Sau khi gửi lại, số lượt còn lại sẽ giảm 1.
+            </div>
+          )}
+          {isEditMode && editJob?.rejectionReason && (
+            <div className="form-message error">
+              Yêu cầu từ quản trị viên: {editJob.rejectionReason}
+            </div>
+          )}
           {message && (
             <div
               className={`form-message ${message.includes('đã') ? 'success' : 'info'}`}
@@ -939,7 +1097,11 @@ export default function JobEditorPage() {
             >
               <Icon name="send" />
               <span>
-                {saving === 'submit' ? 'Đang gửi...' : 'Gửi kiểm duyệt'}
+                {saving === 'submit'
+                  ? 'Đang gửi...'
+                  : isEditMode
+                    ? 'Lưu và gửi kiểm duyệt'
+                    : 'Gửi kiểm duyệt'}
               </span>
             </button>
           </div>
@@ -1012,6 +1174,7 @@ export default function JobEditorPage() {
           form={form}
           progress={progress}
           saving={saving === 'submit'}
+          submitLabel={isEditMode ? 'Lưu và gửi kiểm duyệt' : 'Gửi kiểm duyệt'}
           onClose={closePreview}
           onEditField={(field) => {
             closePreview();
@@ -1023,10 +1186,15 @@ export default function JobEditorPage() {
       {confirmOpen && (
         <div className="preview-layer" role="dialog" aria-modal="true">
           <div className="content-card preview-dialog">
-            <h2>Gửi tin tuyển dụng để kiểm duyệt?</h2>
+            <h2>
+              {isEditMode
+                ? 'Gửi lại tin tuyển dụng để kiểm duyệt?'
+                : 'Gửi tin tuyển dụng để kiểm duyệt?'}
+            </h2>
             <p>
-              Sau khi gửi, tin sẽ chờ quản trị viên kiểm duyệt trước khi hiển
-              thị.
+              {isEditMode
+                ? 'Sau khi gửi lại, tin sẽ chờ quản trị viên kiểm duyệt và số lượt chỉnh sửa còn lại sẽ giảm 1.'
+                : 'Sau khi gửi, tin sẽ chờ quản trị viên kiểm duyệt trước khi hiển thị.'}
             </p>
             <div className="form-footer">
               <button
@@ -1049,7 +1217,48 @@ export default function JobEditorPage() {
           </div>
         </div>
       )}
+      {successOpen && (
+        <SubmitSuccessDialog
+          description={
+            isEditMode
+              ? 'Thông tin tuyển dụng đã được cập nhật và gửi lại kiểm duyệt. Tin sẽ hiển thị sau khi được quản trị viên phê duyệt.'
+              : 'Thông tin tuyển dụng đã được gửi kiểm duyệt. Tin sẽ hiển thị sau khi được quản trị viên phê duyệt.'
+          }
+          title={isEditMode ? 'Gửi lại tin thành công' : 'Đăng tin thành công'}
+          onBackToJobs={() => router.push('/nha-tuyen-dung/tin-tuyen-dung')}
+        />
+      )}
     </SiteShell>
+  );
+}
+
+function SubmitSuccessDialog({
+  description,
+  onBackToJobs,
+  title,
+}: {
+  description: string;
+  onBackToJobs: () => void;
+  title: string;
+}) {
+  return (
+    <div
+      aria-labelledby="job-submit-success-title"
+      aria-modal="true"
+      className="preview-layer job-submit-success-layer"
+      role="dialog"
+    >
+      <div className="content-card preview-dialog job-submit-success-dialog">
+        <div className="job-submit-success-icon">
+          <Icon name="check" />
+        </div>
+        <h2 id="job-submit-success-title">{title}</h2>
+        <p>{description}</p>
+        <button className="btn btn-primary" onClick={onBackToJobs} type="button">
+          Quay về trang tin tuyển dụng
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -1330,6 +1539,7 @@ function PreviewDialog({
   form,
   progress,
   saving,
+  submitLabel,
   onClose,
   onEditField,
   onSubmit,
@@ -1340,6 +1550,7 @@ function PreviewDialog({
   form: JobForm;
   progress: ReturnType<typeof getFormProgress>;
   saving: boolean;
+  submitLabel: string;
   onClose: () => void;
   onEditField: (field: FormField) => void;
   onSubmit: () => void;
@@ -1541,7 +1752,7 @@ function PreviewDialog({
               type="button"
             >
               <Icon name="send" />
-              <span>{saving ? 'Đang gửi...' : 'Gửi kiểm duyệt'}</span>
+              <span>{saving ? 'Đang gửi...' : submitLabel}</span>
             </button>
           </div>
         </footer>
@@ -1897,6 +2108,44 @@ function workModeLabel(value: string) {
       KET_HOP: 'Kết hợp',
     }[value] ?? value
   );
+}
+
+function jobToForm(job: ApiJob): JobForm {
+  return {
+    viTriTuyenDung: job.title ?? '',
+    nganhNgheId: job.categoryId ? String(job.categoryId) : '',
+    chuyenMon: job.specialization ?? '',
+    hinhThucLamViec: job.type || 'TOAN_THOI_GIAN',
+    phuongThucLamViec: job.workMode || 'TAI_VAN_PHONG',
+    soLuongTuyen: String(job.quantity ?? 1),
+    tinhThanhPho: job.province ?? 'Hà Nội',
+    quanHuyen: job.district ?? '',
+    diaChiLamViecCuThe: job.specificAddress ?? job.location ?? '',
+    mucLuongTu: numberToMoneyInput(job.salaryFrom),
+    mucLuongDen: numberToMoneyInput(job.salaryTo),
+    coTheThoaThuan: Boolean(job.negotiable),
+    soNamKinhNghiemToiThieu: String(job.experience ?? 0),
+    trinhDoYeuCau: job.requiredEducation ?? '',
+    moTaCongViec: job.description ?? '',
+    yeuCauUngVien: job.requirements ?? '',
+    quyenLoi: job.benefits ?? '',
+    thoiHanNhanHoSo: dateToInputValue(job.deadline),
+    skills: job.skills ?? [],
+  };
+}
+
+function numberToMoneyInput(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === '') return '';
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return '';
+  return String(Math.trunc(number));
+}
+
+function dateToInputValue(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
 }
 
 type IconName =

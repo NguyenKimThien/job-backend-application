@@ -128,6 +128,15 @@ export type ApiJob = {
   experience?: string | number | null;
   requiredEducation?: string | null;
   quantity?: number;
+  soLuongCanTuyen?: number;
+  soLuongTrungTuyen?: number;
+  soLuongDaTrungTuyen?: number;
+  conThieu?: number;
+  daDuChiTieu?: boolean;
+  daDatChiTieu?: boolean;
+  conNhanHoSo?: boolean;
+  ngungNhanHoSo?: boolean;
+  quotaReachedAt?: string | null;
   type: string;
   workMode?: string | null;
   specialization?: string | null;

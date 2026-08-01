@@ -105,10 +105,19 @@ export const HinhThucPhongVan = {
 export type HinhThucPhongVan = (typeof HinhThucPhongVan)[keyof typeof HinhThucPhongVan]
 
 
+export const TrangThaiPhongVan = {
+  DA_LEN_LICH: 'DA_LEN_LICH',
+  DA_HUY: 'DA_HUY'
+} as const
+
+export type TrangThaiPhongVan = (typeof TrangThaiPhongVan)[keyof typeof TrangThaiPhongVan]
+
+
 export const TrangThaiHienThiTin = {
   CHUA_DANG: 'CHUA_DANG',
   DANG_HIEN_THI: 'DANG_HIEN_THI',
   TAM_AN: 'TAM_AN',
+  DA_DU_CHI_TIEU: 'DA_DU_CHI_TIEU',
   DA_DONG: 'DA_DONG',
   HET_HAN: 'HET_HAN'
 } as const

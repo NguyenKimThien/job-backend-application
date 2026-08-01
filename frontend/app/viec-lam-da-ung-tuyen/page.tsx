@@ -29,6 +29,7 @@ type ApplicationStatus =
   | 'DA_RUT';
 
 type InterviewMode = 'TRUC_TIEP' | 'TRUC_TUYEN';
+type InterviewStatus = 'DA_LEN_LICH' | 'DA_HUY';
 
 type InterviewInfo = {
   id: number;
@@ -41,6 +42,9 @@ type InterviewInfo = {
   soDienThoaiLienHe: string;
   noiDungChuanBi?: string | null;
   ghiChuPhongVan?: string | null;
+  trangThaiPhongVan?: InterviewStatus | null;
+  lyDoHuy?: string | null;
+  thoiGianHuy?: string | null;
 };
 
 type AppliedJob = {
@@ -538,6 +542,9 @@ function AppliedJobRow({
           />
           <div>
             <Link href={`/viec-lam/${item.job.id}`}>{item.job.title}</Link>
+            {isFullQuotaJob(item.job) && (
+              <span className="applied-status warning">Đã đủ chỉ tiêu</span>
+            )}
             <small>
               {joinMeta([
                 item.job.location,
@@ -599,6 +606,8 @@ function WorkerApplicationDetail({
   const meta = applicationStatusMeta[item.trangThaiHienTai];
   const isInterview = item.trangThaiHienTai === 'MOI_PHONG_VAN';
   const isRejected = item.trangThaiHienTai === 'KHONG_PHU_HOP';
+  const isCancelledInterview =
+    item.thongTinPhongVan?.trangThaiPhongVan === 'DA_HUY';
 
   return (
     <section
@@ -656,6 +665,8 @@ function WorkerApplicationDetail({
 
       {isInterview ? (
         <WorkerInterviewCard info={item.thongTinPhongVan} item={item} />
+      ) : isCancelledInterview ? (
+        <WorkerCancelledInterviewCard item={item} />
       ) : isRejected ? (
         <WorkerRejectionCard item={item} />
       ) : (
@@ -781,6 +792,56 @@ function WorkerInterviewCard({
           label="Ghi chú từ Nhà tuyển dụng"
           value={info.ghiChuPhongVan}
         />
+      </div>
+    </section>
+  );
+}
+
+function WorkerCancelledInterviewCard({ item }: { item: AppliedJob }) {
+  const info = item.thongTinPhongVan;
+  const reason = info?.lyDoHuy?.trim() || item.lyDoTuChoi?.trim();
+
+  return (
+    <section className="worker-rejection-card worker-cancelled-interview-card">
+      <div className="worker-rejection-card-header">
+        <Icon name="alertCircle" />
+        <h4>{'L\u1eddi m\u1eddi ph\u1ecfng v\u1ea5n \u0111\u00e3 \u0111\u01b0\u1ee3c h\u1ee7y'}</h4>
+      </div>
+      <div className="worker-interview-grid">
+        <WorkerInterviewDetail
+          icon="briefcase"
+          label={'V\u1ecb tr\u00ed \u1ee9ng tuy\u1ec3n'}
+          value={item.job.title}
+        />
+        <WorkerInterviewDetail
+          icon="user"
+          label={'\u0110\u01a1n v\u1ecb tuy\u1ec3n d\u1ee5ng'}
+          value={item.job.company}
+        />
+        <WorkerInterviewDetail
+          icon="alertCircle"
+          label={'Tr\u1ea1ng th\u00e1i ph\u1ecfng v\u1ea5n'}
+          value={'\u0110\u00e3 h\u1ee7y'}
+        />
+        {info && (
+          <WorkerInterviewDetail
+            icon="calendar"
+            label={'L\u1ecbch ph\u1ecfng v\u1ea5n tr\u01b0\u1edbc \u0111\u00f3'}
+            value={formatInterviewTimeRange(info)}
+          />
+        )}
+        <WorkerInterviewDetail
+          icon="calendar"
+          label={'H\u1ee7y l\u00fac'}
+          value={formatDateTime(info?.thoiGianHuy)}
+        />
+      </div>
+      <div className="worker-rejection-reason">
+        <span>{'L\u00fd do h\u1ee7y'}</span>
+        <p>
+          {reason ||
+            'Nh\u00e0 tuy\u1ec3n d\u1ee5ng ch\u01b0a cung c\u1ea5p l\u00fd do h\u1ee7y l\u1eddi m\u1eddi.'}
+        </p>
       </div>
     </section>
   );
@@ -935,6 +996,10 @@ function getFilterCounts(items: AppliedJob[]) {
     },
     { all: 0, pending: 0, interview: 0, approved: 0, rejected: 0 },
   );
+}
+
+function isFullQuotaJob(job: ApiJob) {
+  return Boolean(job.daDatChiTieu ?? job.daDuChiTieu);
 }
 
 function compareApplications(a: AppliedJob, b: AppliedJob, sort: SortKey) {

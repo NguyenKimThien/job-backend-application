@@ -24,13 +24,23 @@ type ReviewStatus =
   'BAN_NHAP' | 'CHO_DUYET' | 'DA_DUYET' | 'TU_CHOI' | 'YEU_CAU_BO_SUNG';
 
 type DisplayStatus =
-  'CHUA_DANG' | 'DANG_HIEN_THI' | 'TAM_AN' | 'DA_DONG' | 'HET_HAN';
+  | 'CHUA_DANG'
+  | 'DANG_HIEN_THI'
+  | 'TAM_AN'
+  | 'DA_DONG'
+  | 'HET_HAN';
 
 type StatusTone = 'danger' | 'neutral' | 'success' | 'warning';
 
 type EmployerJob = ApiJob & {
   applicantCount?: number;
   editCount?: number;
+};
+
+type ApiEmployerProfile = {
+  lyDoTuChoi?: string | null;
+  tenDonVi?: string | null;
+  trangThaiDuyet?: string | null;
 };
 
 type StatusMeta = {
@@ -41,10 +51,18 @@ type StatusMeta = {
 };
 
 type FilterKey =
-  'all' | 'active' | 'pending' | 'draft' | 'needs-edit' | 'closed' | 'expired';
+  | 'all'
+  | 'active'
+  | 'full'
+  | 'pending'
+  | 'draft'
+  | 'needs-edit'
+  | 'closed'
+  | 'expired';
 type SortKey =
   'updated-desc' | 'posted-desc' | 'applicants-desc' | 'deadline-asc';
 type PageState = 'error' | 'loading' | 'ready';
+type JobActionKind = 'close-applications' | 'close-job';
 
 const pageSize = 8;
 
@@ -127,6 +145,11 @@ const filters: Array<{
       job.status === 'DA_DUYET' && job.displayStatus === 'DANG_HIEN_THI',
   },
   {
+    key: 'full',
+    label: 'Đã đủ chỉ tiêu',
+    match: (job) => Boolean(job.daDatChiTieu ?? job.daDuChiTieu),
+  },
+  {
     key: 'pending',
     label: 'Chờ duyệt',
     match: (job) => job.status === 'CHO_DUYET',
@@ -167,13 +190,14 @@ export default function EmployerJobsPage() {
       fallback={
         <SiteShell
           action={
-            <Link
+            <button
               className="employer-jobs-create"
-              href="/nha-tuyen-dung/tin-tuyen-dung/tao-moi"
+              disabled
+              type="button"
             >
               <Icon name="plus" />
               Đăng tin tuyển dụng
-            </Link>
+            </button>
           }
           breadcrumb="Trang chủ / Quản lý tin tuyển dụng"
           pageClassName="employer-jobs-page"
@@ -200,6 +224,17 @@ function EmployerJobsContent() {
   const [queryInput, setQueryInput] = useState(searchParams.get('q') ?? '');
   const [pageState, setPageState] = useState<PageState>('loading');
   const [message, setMessage] = useState('');
+  const [employerProfile, setEmployerProfile] =
+    useState<ApiEmployerProfile | null>(null);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
+  const [profileGateOpen, setProfileGateOpen] = useState(false);
+  const [jobAction, setJobAction] = useState<{
+    job: EmployerJob;
+    kind: 'close-applications' | 'close-job';
+  } | null>(null);
+  const [jobActionPendingId, setJobActionPendingId] = useState<number | null>(
+    null,
+  );
 
   const query = searchParams.get('q') ?? '';
   const filter = parseFilter(searchParams.get('status'));
@@ -248,8 +283,18 @@ function EmployerJobsContent() {
     setPageState('loading');
     setMessage('');
     try {
-      const data = await portalFetch<EmployerJob[]>('/employer/jobs');
+      const profileRequest = portalFetch<ApiEmployerProfile>(
+        '/employer/profile',
+      )
+        .then((profile) => ({ failed: false, profile }))
+        .catch(() => ({ failed: true, profile: null }));
+      const [data, profileResult] = await Promise.all([
+        portalFetch<EmployerJob[]>('/employer/jobs'),
+        profileRequest,
+      ]);
       setJobs(data);
+      setEmployerProfile(profileResult.profile);
+      setProfileLoadFailed(profileResult.failed);
       setPageState('ready');
     } catch {
       setPageState('error');
@@ -296,16 +341,59 @@ function EmployerJobsContent() {
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  function requestCreateJob() {
+    if (isEmployerProfileApproved(employerProfile)) {
+      router.push('/nha-tuyen-dung/tin-tuyen-dung/tao-moi');
+      return;
+    }
+    setProfileGateOpen(true);
+  }
+
+  async function confirmJobAction() {
+    if (!jobAction || jobActionPendingId !== null) return;
+    const { job, kind } = jobAction;
+    setJobActionPendingId(job.id);
+    setMessage('');
+    try {
+      const updated = await portalFetch<EmployerJob>(
+        `/employer/jobs/${job.id}/${
+          kind === 'close-applications' ? 'close-applications' : 'close'
+        }`,
+        { method: 'PATCH' },
+      );
+      setJobs((current) =>
+        current.map((job) => (job.id === updated.id ? updated : job)),
+      );
+      setJobAction(null);
+      setMessage(
+        kind === 'close-applications'
+          ? 'Đã đóng nhận hồ sơ cho tin tuyển dụng.'
+          : 'Đã đóng tin tuyển dụng.',
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'Không thể cập nhật tin tuyển dụng. Vui lòng thử lại.',
+      );
+    } finally {
+      setJobActionPendingId(null);
+    }
+  }
+
   return (
     <SiteShell
       action={
-        <Link
+        <button
+          aria-haspopup="dialog"
           className="employer-jobs-create"
-          href="/nha-tuyen-dung/tin-tuyen-dung/tao-moi"
+          disabled={pageState === 'loading'}
+          onClick={requestCreateJob}
+          type="button"
         >
           <Icon name="plus" />
           Đăng tin tuyển dụng
-        </Link>
+        </button>
       }
       breadcrumb="Trang chủ / Quản lý tin tuyển dụng"
       pageClassName="employer-jobs-page"
@@ -344,8 +432,15 @@ function EmployerJobsContent() {
                 filter={filter}
                 onChange={changeFilter}
               />
+              {message && (
+                <div className="job-applicants-alert" role="alert">
+                  {message}
+                </div>
+              )}
 
-              {!jobs.length && <EmployerJobsEmpty />}
+              {!jobs.length && (
+                <EmployerJobsEmpty onCreateJob={requestCreateJob} />
+              )}
               {Boolean(jobs.length) && !filteredJobs.length && (
                 <EmployerJobsNoResults
                   filterLabel={
@@ -364,7 +459,13 @@ function EmployerJobsContent() {
               )}
               {Boolean(pagedJobs.length) && (
                 <>
-                  <JobPostsTable jobs={pagedJobs} />
+                  <JobPostsTable
+                    jobs={pagedJobs}
+                    pendingActionId={jobActionPendingId}
+                    onRequestAction={(job, kind) =>
+                      setJobAction({ job, kind })
+                    }
+                  />
                   <JobPostsPagination
                     currentPage={currentPage}
                     pageCount={pageCount}
@@ -377,6 +478,26 @@ function EmployerJobsContent() {
           </>
         )}
       </section>
+      {profileGateOpen && (
+        <EmployerProfileGateDialog
+          profile={employerProfile}
+          profileLoadFailed={profileLoadFailed}
+          onClose={() => setProfileGateOpen(false)}
+        />
+      )}
+      {jobAction && (
+        <JobActionConfirmDialog
+          isSaving={jobActionPendingId === jobAction.job.id}
+          job={jobAction.job}
+          kind={jobAction.kind}
+          onCancel={() => {
+            if (jobActionPendingId === null) setJobAction(null);
+          }}
+          onConfirm={() => {
+            void confirmJobAction();
+          }}
+        />
+      )}
     </SiteShell>
   );
 }
@@ -518,7 +639,15 @@ function JobPostStatusTabs({
   );
 }
 
-function JobPostsTable({ jobs }: { jobs: EmployerJob[] }) {
+function JobPostsTable({
+  jobs,
+  onRequestAction,
+  pendingActionId,
+}: {
+  jobs: EmployerJob[];
+  onRequestAction: (job: EmployerJob, kind: JobActionKind) => void;
+  pendingActionId: number | null;
+}) {
   return (
     <div className="employer-jobs-table-wrap">
       <table className="employer-jobs-table">
@@ -533,7 +662,12 @@ function JobPostsTable({ jobs }: { jobs: EmployerJob[] }) {
         </thead>
         <tbody>
           {jobs.map((job) => (
-            <JobPostTableRow job={job} key={job.id} />
+            <JobPostTableRow
+              job={job}
+              key={job.id}
+              onRequestAction={onRequestAction}
+              pendingActionId={pendingActionId}
+            />
           ))}
         </tbody>
       </table>
@@ -541,10 +675,22 @@ function JobPostsTable({ jobs }: { jobs: EmployerJob[] }) {
   );
 }
 
-function JobPostTableRow({ job }: { job: EmployerJob }) {
+function JobPostTableRow({
+  job,
+  onRequestAction,
+  pendingActionId,
+}: {
+  job: EmployerJob;
+  onRequestAction: (job: EmployerJob, kind: JobActionKind) => void;
+  pendingActionId: number | null;
+}) {
   const meta = getJobStatusMeta(job);
   const applicantCount = job.applicantCount ?? 0;
   const showStatusDescription = shouldShowStatusDescription(job);
+  const isFullQuota = Boolean(job.daDatChiTieu ?? job.daDuChiTieu);
+  const quotaSupport = job.conNhanHoSo
+    ? 'Vẫn tiếp nhận hồ sơ dự phòng'
+    : 'Ngừng nhận hồ sơ';
 
   return (
     <tr>
@@ -556,6 +702,20 @@ function JobPostTableRow({ job }: { job: EmployerJob }) {
           </small>
           {job.rejectionReason && (
             <p className="employer-job-reason">Lý do: {job.rejectionReason}</p>
+          )}
+          <small className="employer-job-hired-count">
+            Đã tuyển: {(job.soLuongTrungTuyen ?? 0).toLocaleString('vi-VN')}/
+            {(job.soLuongCanTuyen ?? job.quantity ?? 0).toLocaleString('vi-VN')}{' '}
+            người
+          </small>
+          {isFullQuota && (
+            <>
+              <span className="employer-job-status warning employer-job-quota-status">
+                <Icon name="checkCircle" />
+                Đã đủ chỉ tiêu
+              </span>
+              <small className="employer-status-desc">{quotaSupport}</small>
+            </>
           )}
           <EditQuota job={job} />
         </div>
@@ -585,7 +745,12 @@ function JobPostTableRow({ job }: { job: EmployerJob }) {
         )}
       </td>
       <td>
-        <JobPostActions job={job} applicantCount={applicantCount} />
+        <JobPostActions
+          job={job}
+          applicantCount={applicantCount}
+          isPending={pendingActionId === job.id}
+          onRequestAction={onRequestAction}
+        />
       </td>
     </tr>
   );
@@ -593,10 +758,14 @@ function JobPostTableRow({ job }: { job: EmployerJob }) {
 
 function JobPostActions({
   applicantCount,
+  isPending,
   job,
+  onRequestAction,
 }: {
   applicantCount: number;
+  isPending: boolean;
   job: EmployerJob;
+  onRequestAction: (job: EmployerJob, kind: JobActionKind) => void;
 }) {
   const [open, setOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -605,6 +774,8 @@ function JobPostActions({
     ? `/nha-tuyen-dung/tin-tuyen-dung/${job.id}/ung-vien`
     : `/viec-lam/${job.id}`;
   const primaryLabel = hasApplicants ? 'Xem ứng viên' : 'Xem tin';
+  const canCloseApplications = canCloseJobApplications(job);
+  const canCloseJobPost = canCloseJob(job);
 
   function closeMenu() {
     setOpen(false);
@@ -641,6 +812,32 @@ function JobPostActions({
               >
                 Chỉnh sửa tin
               </Link>
+            )}
+            {canCloseApplications && (
+              <button
+                disabled={isPending}
+                onClick={() => {
+                  setOpen(false);
+                  onRequestAction(job, 'close-applications');
+                }}
+                role="menuitem"
+                type="button"
+              >
+                {isPending ? 'Đang cập nhật...' : 'Đóng nhận hồ sơ'}
+              </button>
+            )}
+            {canCloseJobPost && (
+              <button
+                disabled={isPending}
+                onClick={() => {
+                  setOpen(false);
+                  onRequestAction(job, 'close-job');
+                }}
+                role="menuitem"
+                type="button"
+              >
+                {isPending ? 'Đang cập nhật...' : 'Đóng tin tuyển dụng'}
+              </button>
             )}
             {hasApplicants ? (
               <Link href={`/viec-lam/${job.id}`} role="menuitem">
@@ -762,15 +959,71 @@ function EmployerJobsSkeleton() {
   );
 }
 
-function EmployerJobsEmpty() {
+function EmployerJobsEmpty({ onCreateJob }: { onCreateJob: () => void }) {
   return (
     <div className="employer-jobs-state">
       <Icon name="file" />
       <h3>Bạn chưa đăng tin tuyển dụng nào</h3>
       <p>Tạo tin tuyển dụng đầu tiên để tiếp cận ứng viên phù hợp.</p>
-      <Link href="/nha-tuyen-dung/tin-tuyen-dung/tao-moi">
+      <button
+        className="employer-jobs-state-primary"
+        onClick={onCreateJob}
+        type="button"
+      >
         Đăng tin tuyển dụng
-      </Link>
+      </button>
+    </div>
+  );
+}
+
+function EmployerProfileGateDialog({
+  onClose,
+  profile,
+  profileLoadFailed,
+}: {
+  onClose: () => void;
+  profile: ApiEmployerProfile | null;
+  profileLoadFailed: boolean;
+}) {
+  const status = parseEmployerProfileStatus(profile?.trangThaiDuyet);
+  const copy = getEmployerProfileGateCopy(status, profileLoadFailed);
+
+  return (
+    <div className="preview-layer employer-profile-gate-layer">
+      <div
+        aria-labelledby="employer-profile-gate-title"
+        aria-modal="true"
+        className="content-card preview-dialog employer-profile-gate-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Đóng thông báo"
+          className="preview-close employer-profile-gate-close"
+          onClick={onClose}
+          type="button"
+        >
+          <Icon name="x" />
+        </button>
+        <div className="employer-profile-gate-icon">
+          <Icon name="alertCircle" />
+        </div>
+        <div>
+          <p className="employer-profile-gate-eyebrow">Hồ sơ Nhà tuyển dụng</p>
+          <h2 id="employer-profile-gate-title">{copy.title}</h2>
+          <p>{copy.description}</p>
+        </div>
+        {profile?.lyDoTuChoi && (
+          <p className="employer-profile-gate-note">
+            Lý do cần bổ sung: {profile.lyDoTuChoi}
+          </p>
+        )}
+        <div className="employer-profile-gate-actions">
+          <button onClick={onClose} type="button">
+            Để sau
+          </button>
+          <Link href="/nha-tuyen-dung/ho-so">Hoàn thành hồ sơ</Link>
+        </div>
+      </div>
     </div>
   );
 }
@@ -841,11 +1094,82 @@ function buildStats(jobs: EmployerJob[]) {
       value: jobs.filter((job) => job.status === 'CHO_DUYET').length,
     },
     {
+      icon: 'checkCircle' as IconName,
+      label: 'Đủ chỉ tiêu',
+      target: 'full' as FilterKey,
+      value: jobs.filter((job) => Boolean(job.daDatChiTieu ?? job.daDuChiTieu))
+        .length,
+    },
+    {
       icon: 'users' as IconName,
       label: 'Tổng ứng viên',
       value: jobs.reduce((sum, job) => sum + (job.applicantCount ?? 0), 0),
     },
   ];
+}
+
+function JobActionConfirmDialog({
+  isSaving,
+  job,
+  kind,
+  onCancel,
+  onConfirm,
+}: {
+  isSaving: boolean;
+  job: EmployerJob;
+  kind: JobActionKind;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isCloseApplications = kind === 'close-applications';
+  const title = isCloseApplications
+    ? 'Đóng nhận hồ sơ?'
+    : 'Đóng tin tuyển dụng?';
+  const description = isCloseApplications
+    ? `Tin ${job.title} vẫn hiển thị để người lao động xem, nhưng sẽ không nhận thêm hồ sơ mới.`
+    : `Tin ${job.title} sẽ được đóng và không còn nhận hồ sơ mới.`;
+  const confirmLabel = isCloseApplications
+    ? 'Xác nhận đóng nhận hồ sơ'
+    : 'Xác nhận đóng tin';
+  const savingLabel = isCloseApplications
+    ? 'Đang đóng nhận hồ sơ...'
+    : 'Đang đóng tin...';
+
+  return (
+    <div className="job-applicant-dialog-backdrop" role="presentation">
+      <section
+        aria-labelledby="job-action-dialog-title"
+        aria-modal="true"
+        className="job-applicant-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Đóng hộp thoại"
+          className="job-applicant-dialog-close"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          <Icon name="x" />
+        </button>
+        <h2 id="job-action-dialog-title">{title}</h2>
+        <p>{description}</p>
+        <div>
+          <button disabled={isSaving} onClick={onCancel} type="button">
+            Hủy
+          </button>
+          <button
+            className="primary"
+            disabled={isSaving}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isSaving ? savingLabel : confirmLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function getFilterCounts(jobs: EmployerJob[]) {
@@ -860,6 +1184,7 @@ function getFilterCounts(jobs: EmployerJob[]) {
       closed: 0,
       draft: 0,
       expired: 0,
+      full: 0,
       'needs-edit': 0,
       pending: 0,
     },
@@ -871,6 +1196,18 @@ function getJobStatusMeta(job: EmployerJob) {
   const displayStatus = parseDisplayStatus(job.displayStatus);
   if (displayStatus === 'HET_HAN' || displayStatus === 'DA_DONG') {
     return displayStatusMeta[displayStatus];
+  }
+  if (
+    reviewStatus === 'DA_DUYET' &&
+    displayStatus === 'DANG_HIEN_THI' &&
+    job.ngungNhanHoSo
+  ) {
+    return {
+      label: 'Ngừng nhận hồ sơ',
+      tone: 'warning',
+      icon: 'archive',
+      description: 'Tin vẫn hiển thị nhưng đã ngừng nhận hồ sơ mới.',
+    } satisfies StatusMeta;
   }
   if (reviewStatus === 'DA_DUYET' && displayStatus) {
     return displayStatusMeta[displayStatus];
@@ -885,8 +1222,27 @@ function shouldShowStatusDescription(job: EmployerJob) {
     reviewStatus === 'CHO_DUYET' ||
     reviewStatus === 'TU_CHOI' ||
     reviewStatus === 'YEU_CAU_BO_SUNG' ||
-    displayStatus === 'CHUA_DANG'
+    displayStatus === 'CHUA_DANG' ||
+    Boolean(job.ngungNhanHoSo)
   );
+}
+
+function canCloseJobApplications(job: EmployerJob) {
+  return (
+    job.status === 'DA_DUYET' &&
+    job.displayStatus === 'DANG_HIEN_THI' &&
+    !job.ngungNhanHoSo &&
+    !isDeadlinePast(job.deadline)
+  );
+}
+
+function canCloseJob(job: EmployerJob) {
+  return job.displayStatus !== 'DA_DONG';
+}
+
+function isDeadlinePast(value?: string | null) {
+  const days = daysUntil(value);
+  return days !== null && days < 0;
 }
 
 function compareJobs(a: EmployerJob, b: EmployerJob, sort: SortKey) {
@@ -932,6 +1288,55 @@ function parseReviewStatus(value: string): ReviewStatus {
     return value;
   }
   return 'CHO_DUYET';
+}
+
+function parseEmployerProfileStatus(value?: string | null): ReviewStatus {
+  if (
+    value === 'BAN_NHAP' ||
+    value === 'CHO_DUYET' ||
+    value === 'DA_DUYET' ||
+    value === 'TU_CHOI' ||
+    value === 'YEU_CAU_BO_SUNG'
+  ) {
+    return value;
+  }
+  return 'BAN_NHAP';
+}
+
+function isEmployerProfileApproved(profile: ApiEmployerProfile | null) {
+  return parseEmployerProfileStatus(profile?.trangThaiDuyet) === 'DA_DUYET';
+}
+
+function getEmployerProfileGateCopy(
+  status: ReviewStatus,
+  profileLoadFailed: boolean,
+) {
+  if (profileLoadFailed) {
+    return {
+      title: 'Chưa kiểm tra được hồ sơ Nhà tuyển dụng',
+      description:
+        'Hệ thống chưa xác minh được trạng thái hồ sơ. Vui lòng vào trang hồ sơ để hoàn thiện hoặc kiểm tra lại thông tin trước khi đăng tin tuyển dụng.',
+    };
+  }
+  if (status === 'CHO_DUYET') {
+    return {
+      title: 'Hồ sơ Nhà tuyển dụng đang chờ duyệt',
+      description:
+        'Bạn chỉ có thể đăng tin tuyển dụng sau khi hồ sơ Nhà tuyển dụng được quản trị viên phê duyệt.',
+    };
+  }
+  if (status === 'TU_CHOI' || status === 'YEU_CAU_BO_SUNG') {
+    return {
+      title: 'Cần hoàn thiện hồ sơ Nhà tuyển dụng',
+      description:
+        'Hồ sơ Nhà tuyển dụng cần được bổ sung và duyệt lại trước khi bạn có thể đăng tin tuyển dụng.',
+    };
+  }
+  return {
+    title: 'Cần hoàn thành hồ sơ Nhà tuyển dụng',
+    description:
+      'Vui lòng hoàn thành hồ sơ Nhà tuyển dụng và gửi kiểm duyệt. Khi hồ sơ được duyệt, bạn mới có thể đăng tin tuyển dụng.',
+  };
 }
 
 function parseDisplayStatus(value?: string | null): DisplayStatus | null {

@@ -428,6 +428,7 @@ export default function EmployerApplicantsPage() {
                 applications={pageItems}
                 filter={filter}
                 hasQuery={Boolean(query)}
+                isFullQuota={Boolean(job?.daDatChiTieu ?? job?.daDuChiTieu)}
                 jobId={jobId}
                 pendingId={pendingId}
                 total={applications.length}
@@ -473,6 +474,9 @@ function JobContextSummary({
   applicantCount: number;
   job: ApiJob;
 }) {
+  const hired = job.soLuongTrungTuyen ?? 0;
+  const quota = job.soLuongCanTuyen ?? job.quantity ?? 0;
+  const isFullQuota = Boolean(job.daDatChiTieu ?? job.daDuChiTieu);
   return (
     <article className="content-card job-applicants-summary">
       <div>
@@ -481,8 +485,16 @@ function JobContextSummary({
         <p>
           {displayStatusLabel(job.displayStatus)} · Hạn nộp{' '}
           {formatDate(job.deadline)} · {applicantCount.toLocaleString('vi-VN')}{' '}
-          ứng viên
+          ứng viên · Đã tuyển: {hired.toLocaleString('vi-VN')}/
+          {quota.toLocaleString('vi-VN')} người
         </p>
+        {isFullQuota && (
+          <p className="job-applicants-quota-alert">
+            {job.conNhanHoSo
+              ? `Tin tuyển dụng đã đạt đủ ${hired}/${quota} chỉ tiêu. Bạn vẫn có thể xem hồ sơ, nhưng không thể tiếp tục xử lý ứng viên cho đến khi tăng chỉ tiêu tuyển. Tin vẫn tiếp nhận hồ sơ dự phòng.`
+              : `Tin tuyển dụng đã đạt đủ ${hired}/${quota} chỉ tiêu. Bạn vẫn có thể xem hồ sơ, nhưng không thể tiếp tục xử lý ứng viên cho đến khi tăng chỉ tiêu tuyển.`}
+          </p>
+        )}
         <small>
           {job.company} · {job.location} · {jobTypeLabel(job.type)} ·{' '}
           {salaryLabel(job)}
@@ -605,6 +617,7 @@ function ApplicantsTable({
   applications,
   filter,
   hasQuery,
+  isFullQuota,
   jobId,
   onClearQuery,
   onOpenDialog,
@@ -615,6 +628,7 @@ function ApplicantsTable({
   applications: ApplicantApplication[];
   filter: FilterKey;
   hasQuery: boolean;
+  isFullQuota: boolean;
   jobId: string;
   onClearQuery: () => void;
   onOpenDialog: (dialog: DialogState) => void;
@@ -646,6 +660,7 @@ function ApplicantsTable({
           {applications.map((application) => (
             <ApplicantTableRow
               application={application}
+              isFullQuota={isFullQuota}
               isPending={pendingId === application.id}
               jobId={jobId}
               key={application.id}
@@ -660,11 +675,13 @@ function ApplicantsTable({
 
 function ApplicantTableRow({
   application,
+  isFullQuota,
   isPending,
   jobId,
   onOpenDialog,
 }: {
   application: ApplicantApplication;
+  isFullQuota: boolean;
   isPending: boolean;
   jobId: string;
   onOpenDialog: (dialog: DialogState) => void;
@@ -672,8 +689,10 @@ function ApplicantTableRow({
   const name = getApplicantName(application);
   const hasCv = Boolean(application.hasCv || application.tenFileCvUngTuyen);
   const profileHref = `/nha-tuyen-dung/tin-tuyen-dung/${jobId}/ung-vien/${application.id}`;
-  const canInvite = canMoveTo(application.trangThaiHienTai, 'MOI_PHONG_VAN');
-  const canReject = canMoveTo(application.trangThaiHienTai, 'KHONG_PHU_HOP');
+  const canInvite =
+    !isFullQuota && canMoveTo(application.trangThaiHienTai, 'MOI_PHONG_VAN');
+  const canReject =
+    !isFullQuota && canMoveTo(application.trangThaiHienTai, 'KHONG_PHU_HOP');
   const [menuOpen, setMenuOpen] = useState(false);
   const [cvBusy, setCvBusy] = useState(false);
   const [cvError, setCvError] = useState('');
@@ -737,13 +756,12 @@ function ApplicantTableRow({
             Xem hồ sơ
           </Link>
           {canInvite && (
-            <button
-              disabled={isPending}
-              onClick={() => onOpenDialog({ application, kind: 'interview' })}
-              type="button"
+            <Link
+              className="table-link"
+              href={`${profileHref}?action=interview`}
             >
               Mời phỏng vấn
-            </button>
+            </Link>
           )}
           <div
             className="job-applicant-menu"

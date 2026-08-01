@@ -33,6 +33,7 @@ import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
 import { Roles } from '../../common/auth/roles.decorator.js';
 import { RolesGuard } from '../../common/auth/roles.guard.js';
 import { ChangePasswordDto } from './dto/change-password.dto.js';
+import { CancelInterviewInvitationDto } from './dto/cancel-interview-invitation.dto.js';
 import { InviteCandidateInterviewDto } from './dto/invite-candidate-interview.dto.js';
 import { PortalService } from './portal.service.js';
 
@@ -271,6 +272,24 @@ export class ProtectedPortalController {
     return this.portal.updateEmployerJob(request.user.sub, jobId, body);
   }
 
+  @Patch('employer/jobs/:jobId/close-applications')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  closeEmployerJobApplications(
+    @Req() request: AuthenticatedRequest,
+    @Param('jobId', ParseIntPipe) jobId: number,
+  ) {
+    return this.portal.closeEmployerJobApplications(request.user.sub, jobId);
+  }
+
+  @Patch('employer/jobs/:jobId/close')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  closeEmployerJob(
+    @Req() request: AuthenticatedRequest,
+    @Param('jobId', ParseIntPipe) jobId: number,
+  ) {
+    return this.portal.closeEmployerJob(request.user.sub, jobId);
+  }
+
   @Get('employer/jobs/:jobId/applicants')
   @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
   employerApplicants(
@@ -347,6 +366,22 @@ export class ProtectedPortalController {
     @Body() body: InviteCandidateInterviewDto,
   ) {
     return this.portal.inviteCandidateInterview(
+      request.user.sub,
+      jobId,
+      id,
+      body,
+    );
+  }
+
+  @Patch('employer/jobs/:jobId/applicants/:id/interview/cancel')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  cancelInterviewInvitation(
+    @Req() request: AuthenticatedRequest,
+    @Param('jobId', ParseIntPipe) jobId: number,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: CancelInterviewInvitationDto,
+  ) {
+    return this.portal.cancelInterviewInvitation(
       request.user.sub,
       jobId,
       id,

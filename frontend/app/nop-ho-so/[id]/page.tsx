@@ -954,6 +954,12 @@ function ApplicationResultState({
           ? 'Nhà tuyển dụng sẽ nhận được hồ sơ và thông tin liên hệ của bạn.'
           : 'Hệ thống ghi nhận hồ sơ ứng tuyển trước đó, vì vậy bạn không cần gửi lại.'}
       </p>
+      {isSubmitted && Boolean(job.daDatChiTieu ?? job.daDuChiTieu) && (
+        <p>
+          Tin tuyển dụng đã đủ chỉ tiêu, hồ sơ của bạn đã được ghi nhận làm hồ
+          sơ dự phòng.
+        </p>
+      )}
 
       <dl className="application-result-list">
         {submitted?.id && (
@@ -1226,6 +1232,8 @@ function isJobOpen(job: ApiJob) {
   return (
     job.status === approvedStatus &&
     job.displayStatus === visibleStatus &&
+    job.conNhanHoSo !== false &&
+    !job.ngungNhanHoSo &&
     !isExpired(job.deadline)
   );
 }
@@ -1234,6 +1242,12 @@ function getJobStatus(job: ApiJob): JobStatus | null {
   if (isExpired(job.deadline)) return { label: 'Đã hết hạn', tone: 'danger' };
   if (job.displayStatus !== visibleStatus) {
     return { label: 'Đã đóng', tone: 'neutral' };
+  }
+  if (job.ngungNhanHoSo || job.conNhanHoSo === false) {
+    return { label: 'Ngừng nhận hồ sơ', tone: 'warning' };
+  }
+  if (Boolean(job.daDatChiTieu ?? job.daDuChiTieu)) {
+    return { label: 'Đã đủ chỉ tiêu', tone: 'warning' };
   }
   if (job.status === approvedStatus) {
     return { label: 'Tin đã kiểm duyệt', tone: 'success' };
@@ -1245,6 +1259,9 @@ function closedReason(job: ApiJob) {
   if (isExpired(job.deadline)) return 'Tin tuyển dụng đã hết hạn.';
   if (job.displayStatus !== visibleStatus) {
     return 'Nhà tuyển dụng đã dừng nhận hồ sơ cho tin này.';
+  }
+  if (job.ngungNhanHoSo || job.conNhanHoSo === false) {
+    return 'Tin tuyển dụng đã ngừng nhận hồ sơ mới.';
   }
   if (job.status !== approvedStatus) {
     return 'Tin tuyển dụng chưa ở trạng thái được phép nhận hồ sơ.';

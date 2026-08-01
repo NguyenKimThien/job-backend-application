@@ -4,7 +4,12 @@ import SiteShell from '@/components/SiteShell';
 import { BACKEND_API_URL } from '@/lib/backend-api';
 import { portalFetch, portalFetchBlob } from '@/lib/portal-api';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import {
+  useParams,
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation';
 import {
   MutableRefObject,
   ReactNode,
@@ -47,6 +52,7 @@ type Experience = {
 };
 
 type InterviewMode = 'TRUC_TIEP' | 'TRUC_TUYEN';
+type InterviewStatus = 'DA_LEN_LICH' | 'DA_HUY';
 
 type InterviewInfo = {
   id: number;
@@ -59,6 +65,9 @@ type InterviewInfo = {
   soDienThoaiLienHe: string;
   noiDungChuanBi?: string | null;
   ghiChuPhongVan?: string | null;
+  trangThaiPhongVan?: InterviewStatus | null;
+  lyDoHuy?: string | null;
+  thoiGianHuy?: string | null;
   ngayTao?: string | null;
   ngayCapNhat?: string | null;
 };
@@ -108,6 +117,13 @@ type ApplicantDetail = {
     title?: string | null;
     diaDiemLamViec?: string | null;
     location?: string | null;
+    soLuongTuyen?: number | null;
+    trangThaiHienThi?: string | null;
+    ngayDuChiTieu?: string | null;
+    ungTuyens?: Array<{
+      id: number;
+      trangThaiHienTai?: ApplicationStatus | string | null;
+    }>;
     nhaTuyenDung?: {
       tenDonVi?: string | null;
       nguoiDaiDien?: string | null;
@@ -168,19 +184,35 @@ const transitions: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
   DA_NOP: ['MOI_PHONG_VAN', 'KHONG_PHU_HOP'],
   DA_XEM: ['MOI_PHONG_VAN', 'KHONG_PHU_HOP'],
   DUOC_CHON_SO_BO: ['MOI_PHONG_VAN', 'KHONG_PHU_HOP'],
-  MOI_PHONG_VAN: ['DA_PHONG_VAN', 'TRUNG_TUYEN', 'KHONG_PHU_HOP'],
+  MOI_PHONG_VAN: ['DA_PHONG_VAN'],
   DA_PHONG_VAN: ['TRUNG_TUYEN', 'KHONG_PHU_HOP'],
 };
 
 export default function ApplicantDetailPage() {
   const { jobId, id } = useParams<{ jobId: string; id: string }>();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [item, setItem] = useState<ApplicantDetail | null>(null);
   const [note, setNote] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [rejectError, setRejectError] = useState('');
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [hireDialogOpen, setHireDialogOpen] = useState(false);
+  const [postInterviewRejectDialogOpen, setPostInterviewRejectDialogOpen] =
+    useState(false);
+  const [postInterviewRejectReason, setPostInterviewRejectReason] =
+    useState('');
+  const [postInterviewRejectError, setPostInterviewRejectError] =
+    useState('');
+  const [cancelInterviewDialogOpen, setCancelInterviewDialogOpen] =
+    useState(false);
+  const [cancelInterviewReason, setCancelInterviewReason] = useState('');
+  const [cancelInterviewError, setCancelInterviewError] = useState('');
   const [interviewDialogOpen, setInterviewDialogOpen] = useState(false);
+  const [interviewDoneDialogOpen, setInterviewDoneDialogOpen] =
+    useState(false);
   const [interviewForm, setInterviewForm] =
     useState<InterviewForm>(emptyInterviewForm());
   const [interviewErrors, setInterviewErrors] = useState<InterviewFormErrors>(
@@ -189,9 +221,14 @@ export default function ApplicantDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<ApplicationStatus | null>(null);
   const [interviewSaving, setInterviewSaving] = useState(false);
+  const [cancelInterviewSaving, setCancelInterviewSaving] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [cvBusy, setCvBusy] = useState<'view' | 'download' | null>(null);
   const rejectTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const rejectButtonRef = useRef<HTMLButtonElement | null>(null);
+  const hireButtonRef = useRef<HTMLButtonElement | null>(null);
+  const postInterviewRejectButtonRef = useRef<HTMLButtonElement | null>(null);
+  const cancelInterviewButtonRef = useRef<HTMLButtonElement | null>(null);
   const interviewFieldRefs = useRef<
     Partial<Record<keyof InterviewForm, HTMLElement | null>>
   >({});
@@ -247,9 +284,45 @@ export default function ApplicantDetailPage() {
     return () => document.removeEventListener('keydown', handleEscape);
   }, [interviewDialogOpen, interviewSaving]);
 
-  async function updateStatus(status: ApplicationStatus) {
+  useEffect(() => {
+    if (!item || interviewDialogOpen) return;
+    const shouldOpenInterview = searchParams.get('action') === 'interview';
+    const canOpenInterview =
+      (transitions[item.trangThaiHienTai] ?? []).includes('MOI_PHONG_VAN') &&
+      !item.thongTinPhongVan &&
+      !getJobQuotaInfo(item).isFull;
+    if (shouldOpenInterview && canOpenInterview) requestInterview();
+  }, [interviewDialogOpen, item, searchParams]);
+
+  useEffect(() => {
+    const interviewStart = getDateTimeValue(
+      item?.thongTinPhongVan?.thoiGianBatDau,
+    );
+    if (
+      item?.trangThaiHienTai !== 'MOI_PHONG_VAN' ||
+      !interviewStart ||
+      nowMs >= interviewStart
+    ) {
+      return;
+    }
+
+    const timeout = window.setTimeout(
+      () => setNowMs(Date.now()),
+      Math.min(Math.max(interviewStart - nowMs + 250, 1000), 60_000),
+    );
+    return () => window.clearTimeout(timeout);
+  }, [item?.thongTinPhongVan?.thoiGianBatDau, item?.trangThaiHienTai, nowMs]);
+
+  async function updateStatus(status: ApplicationStatus, reasonOverride?: string) {
     if (!item || !allowedTransitions.includes(status)) return false;
-    if (status === 'KHONG_PHU_HOP' && !note.trim()) {
+    if (getJobQuotaInfo(item).isFull) {
+      setError(
+        'Tin tuyển dụng đã đủ chỉ tiêu. Không thể tiếp tục xử lý ứng viên.',
+      );
+      return false;
+    }
+    const reasonText = (reasonOverride ?? note).trim();
+    if (status === 'KHONG_PHU_HOP' && !reasonText) {
       setRejectError('Vui lòng nhập lý do từ chối hồ sơ.');
       requestAnimationFrame(() => rejectTextareaRef.current?.focus());
       return false;
@@ -264,8 +337,8 @@ export default function ApplicantDetailPage() {
           method: 'PATCH',
           body: JSON.stringify({
             status,
-            note: note.trim() || undefined,
-            reason: status === 'KHONG_PHU_HOP' ? note.trim() : undefined,
+            note: reasonText || undefined,
+            reason: status === 'KHONG_PHU_HOP' ? reasonText : undefined,
           }),
         },
       );
@@ -323,18 +396,169 @@ export default function ApplicantDetailPage() {
     if (success) closeRejectDialog();
   }
 
+  function requestHire() {
+    if (updating !== null) return;
+    setError('');
+    setHireDialogOpen(true);
+  }
+
+  function closeHireDialog() {
+    if (updating === 'TRUNG_TUYEN') return;
+    setHireDialogOpen(false);
+    requestAnimationFrame(() => hireButtonRef.current?.focus());
+  }
+
+  async function confirmHire() {
+    const success = await updateStatus('TRUNG_TUYEN');
+    if (success) closeHireDialog();
+  }
+
+  function requestPostInterviewReject() {
+    if (updating !== null) return;
+    setError('');
+    setPostInterviewRejectError('');
+    setPostInterviewRejectDialogOpen(true);
+  }
+
+  function closePostInterviewRejectDialog() {
+    if (updating === 'KHONG_PHU_HOP') return;
+    setPostInterviewRejectDialogOpen(false);
+    setPostInterviewRejectError('');
+    requestAnimationFrame(() => postInterviewRejectButtonRef.current?.focus());
+  }
+
+  function handlePostInterviewRejectReasonChange(value: string) {
+    setPostInterviewRejectReason(value);
+    if (value.trim()) setPostInterviewRejectError('');
+  }
+
+  async function confirmPostInterviewReject() {
+    const reasonText = postInterviewRejectReason.trim();
+    if (!reasonText) {
+      setPostInterviewRejectError(
+        'Vui l\u00f2ng nh\u1eadp l\u00fd do \u1ee9ng vi\u00ean kh\u00f4ng ph\u00f9 h\u1ee3p.',
+      );
+      return;
+    }
+    const success = await updateStatus('KHONG_PHU_HOP', reasonText);
+    if (success) {
+      setPostInterviewRejectDialogOpen(false);
+      setPostInterviewRejectReason('');
+      setPostInterviewRejectError('');
+      requestAnimationFrame(() => postInterviewRejectButtonRef.current?.focus());
+    }
+  }
+
+  function requestCancelInterviewInvitation() {
+    if (!item || updating !== null || interviewSaving || cancelInterviewSaving) {
+      return;
+    }
+    if (getJobQuotaInfo(item).isFull) {
+      setError(
+        'Tin tuyển dụng đã đủ chỉ tiêu. Không thể tiếp tục xử lý ứng viên.',
+      );
+      return;
+    }
+    setError('');
+    setCancelInterviewError('');
+    setCancelInterviewDialogOpen(true);
+  }
+
+  function closeCancelInterviewDialog() {
+    if (cancelInterviewSaving) return;
+    setCancelInterviewDialogOpen(false);
+    setCancelInterviewError('');
+    requestAnimationFrame(() => cancelInterviewButtonRef.current?.focus());
+  }
+
+  function handleCancelInterviewReasonChange(value: string) {
+    setCancelInterviewReason(value);
+    if (value.trim()) setCancelInterviewError('');
+  }
+
+  async function confirmCancelInterviewInvitation() {
+    const reasonText = cancelInterviewReason.trim();
+    if (!reasonText) {
+      setCancelInterviewError(
+        'Vui l\u00f2ng nh\u1eadp l\u00fd do h\u1ee7y l\u1eddi m\u1eddi ph\u1ecfng v\u1ea5n.',
+      );
+      return;
+    }
+    try {
+      setCancelInterviewSaving(true);
+      setError('');
+      setMessage('');
+      const updated = await portalFetch<ApplicantDetail>(
+        `/employer/jobs/${jobId}/applicants/${id}/interview/cancel`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ lyDoHuy: reasonText }),
+        },
+      );
+      setItem(updated);
+      setCancelInterviewDialogOpen(false);
+      setCancelInterviewReason('');
+      setCancelInterviewError('');
+      setMessage(
+        '\u0110\u00e3 h\u1ee7y l\u1eddi m\u1eddi ph\u1ecfng v\u1ea5n v\u00e0 k\u1ebft th\u00fac h\u1ed3 s\u01a1.',
+      );
+      requestAnimationFrame(() => cancelInterviewButtonRef.current?.focus());
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Kh\u00f4ng th\u1ec3 h\u1ee7y l\u1eddi m\u1eddi ph\u1ecfng v\u1ea5n.',
+      );
+    } finally {
+      setCancelInterviewSaving(false);
+    }
+  }
+
+  function requestConfirmInterviewDone() {
+    if (
+      !item ||
+      !canUseInterviewDoneAction(item, nowMs) ||
+      updating !== null ||
+      getJobQuotaInfo(item).isFull
+    ) {
+      return;
+    }
+    setError('');
+    setInterviewDoneDialogOpen(true);
+  }
+
+  async function confirmInterviewDone() {
+    const success = await updateStatus('DA_PHONG_VAN');
+    if (success) setInterviewDoneDialogOpen(false);
+  }
+
   function requestInterview() {
     if (!item || interviewSaving) return;
+    if (getJobQuotaInfo(item).isFull) {
+      setError(
+        'Tin tuyển dụng đã đủ chỉ tiêu. Không thể tiếp tục xử lý ứng viên.',
+      );
+      return;
+    }
     setError('');
     setInterviewErrors({});
     setInterviewForm(createInterviewForm(item));
     setInterviewDialogOpen(true);
   }
 
+  function clearInterviewActionParam() {
+    if (searchParams.get('action') !== 'interview') return;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('action');
+    const nextUrl = params.toString() ? `${pathname}?${params}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+  }
+
   function closeInterviewDialog() {
     if (interviewSaving) return;
     setInterviewDialogOpen(false);
     setInterviewErrors({});
+    clearInterviewActionParam();
   }
 
   function changeInterviewField<K extends keyof InterviewForm>(
@@ -377,6 +601,7 @@ export default function ApplicantDetailPage() {
       setInterviewDialogOpen(false);
       setInterviewForm(emptyInterviewForm());
       setInterviewErrors({});
+      clearInterviewActionParam();
       setMessage('Đã gửi lời mời phỏng vấn đến ứng viên.');
     } catch (reason) {
       setError(
@@ -481,9 +706,33 @@ export default function ApplicantDetailPage() {
     item.lichSuTrangThaiUngTuyens,
   );
   const interviewInfo = item.thongTinPhongVan ?? null;
-  const canInviteInterview = allowedTransitions.includes('MOI_PHONG_VAN');
+  const isInterviewCancelled =
+    interviewInfo?.trangThaiPhongVan === 'DA_HUY';
+  const quota = getJobQuotaInfo(item);
+  const canInviteInterview =
+    allowedTransitions.includes('MOI_PHONG_VAN') && !quota.isFull;
   const canEditInterview =
-    item.trangThaiHienTai === 'MOI_PHONG_VAN' && Boolean(interviewInfo);
+    item.trangThaiHienTai === 'MOI_PHONG_VAN' &&
+    Boolean(interviewInfo) &&
+    !isInterviewCancelled;
+  const canCancelInterviewInvitation =
+    item.trangThaiHienTai === 'MOI_PHONG_VAN' &&
+    Boolean(interviewInfo) &&
+    !isInterviewCancelled &&
+    !quota.isFull;
+  const canShowInterviewDone =
+    allowedTransitions.includes('DA_PHONG_VAN') &&
+    !isInterviewCancelled &&
+    !quota.isFull;
+  const interviewDoneAvailability = getInterviewDoneAvailability(item, nowMs);
+  const interviewDoneDisabled =
+    updating !== null || !interviewDoneAvailability.canConfirm;
+  const isPostInterviewStage = item.trangThaiHienTai === 'DA_PHONG_VAN';
+  const canUpdatePostInterviewResult =
+    isPostInterviewStage &&
+    !quota.isFull &&
+    (allowedTransitions.includes('TRUNG_TUYEN') ||
+      allowedTransitions.includes('KHONG_PHU_HOP'));
 
   return (
     <SiteShell
@@ -753,6 +1002,13 @@ export default function ApplicantDetailPage() {
             </div>
             {message && <div className="form-message success">{message}</div>}
             {error && <div className="form-message error">{error}</div>}
+            {quota.isFull && (
+              <div className="form-message warning">
+                Tin tuyển dụng đã đạt đủ {quota.hired}/{quota.limit} chỉ tiêu.
+                Hệ thống đã ngừng tiếp nhận hồ sơ mới và không cho xác nhận
+                thêm ứng viên trúng tuyển.
+              </div>
+            )}
 
             {interviewInfo && (
               <InterviewInfoCard
@@ -772,81 +1028,153 @@ export default function ApplicantDetailPage() {
                 Mời phỏng vấn
               </button>
             )}
-            {allowedTransitions.includes('DA_PHONG_VAN') && (
+            {canCancelInterviewInvitation && (
               <button
-                className="decision interview"
-                disabled={updating !== null}
-                onClick={() => {
-                  void updateStatus('DA_PHONG_VAN');
-                }}
+                className="decision reject"
+                disabled={
+                  updating !== null || interviewSaving || cancelInterviewSaving
+                }
+                onClick={requestCancelInterviewInvitation}
+                ref={cancelInterviewButtonRef}
+                type="button"
               >
-                <DetailIcon name="checkCircle" />
-                {updating === 'DA_PHONG_VAN'
-                  ? 'Đang cập nhật...'
-                  : 'Xác nhận đã phỏng vấn'}
+                <DetailIcon name="xCircle" />
+                {cancelInterviewSaving
+                  ? '\u0110ang h\u1ee7y l\u1eddi m\u1eddi...'
+                  : 'H\u1ee7y l\u1eddi m\u1eddi v\u00e0 k\u1ebft th\u00fac h\u1ed3 s\u01a1'}
               </button>
             )}
-            {allowedTransitions.includes('TRUNG_TUYEN') && (
-              <button
-                className="decision approve"
-                disabled={updating !== null}
-                onClick={() => {
-                  void updateStatus('TRUNG_TUYEN');
-                }}
-              >
-                <DetailIcon name="checkCircle" />
-                {updating === 'TRUNG_TUYEN'
-                  ? 'Đang cập nhật...'
-                  : 'Xác nhận trúng tuyển'}
-              </button>
+            {canShowInterviewDone && (
+              <div className="interview-confirm-action">
+                <button
+                  className="decision interview"
+                  disabled={interviewDoneDisabled}
+                  onClick={requestConfirmInterviewDone}
+                  title={interviewDoneAvailability.message}
+                  type="button"
+                >
+                  <DetailIcon name="checkCircle" />
+                  {updating === 'DA_PHONG_VAN'
+                    ? 'Đang cập nhật...'
+                    : 'Xác nhận đã phỏng vấn'}
+                </button>
+                <p
+                  className={
+                    interviewDoneAvailability.canConfirm
+                      ? 'interview-confirm-help ready'
+                      : 'interview-confirm-help'
+                  }
+                >
+                  {interviewDoneAvailability.message}
+                </p>
+              </div>
+            )}
+            {canUpdatePostInterviewResult && (
+              <section className="post-interview-result">
+                <div>
+                  <h4>{'C\u1eadp nh\u1eadt k\u1ebft qu\u1ea3 ph\u1ecfng v\u1ea5n'}</h4>
+                  <p>
+                    {'Ch\u1ecdn k\u1ebft qu\u1ea3 cu\u1ed1i c\u00f9ng sau khi \u0111\u00e3 ho\u00e0n th\u00e0nh bu\u1ed5i ph\u1ecfng v\u1ea5n.'}
+                  </p>
+                </div>
+                <div className="post-interview-actions">
+                  {allowedTransitions.includes('TRUNG_TUYEN') && (
+                    <button
+                      className="decision approve"
+                      disabled={updating !== null}
+                      onClick={requestHire}
+                      ref={hireButtonRef}
+                      type="button"
+                    >
+                      <DetailIcon name="checkCircle" />
+                      {updating === 'TRUNG_TUYEN'
+                        ? '\u0110ang x\u00e1c nh\u1eadn...'
+                        : 'X\u00e1c nh\u1eadn tr\u00fang tuy\u1ec3n'}
+                    </button>
+                  )}
+                  {allowedTransitions.includes('KHONG_PHU_HOP') && (
+                    <button
+                      className="decision reject"
+                      disabled={updating !== null}
+                      onClick={requestPostInterviewReject}
+                      ref={postInterviewRejectButtonRef}
+                      type="button"
+                    >
+                      <DetailIcon name="xCircle" />
+                      {updating === 'KHONG_PHU_HOP'
+                        ? '\u0110ang c\u1eadp nh\u1eadt...'
+                        : 'X\u00e1c nh\u1eadn kh\u00f4ng ph\u00f9 h\u1ee3p'}
+                    </button>
+                  )}
+                </div>
+              </section>
             )}
 
-            {allowedTransitions.includes('KHONG_PHU_HOP') && (
-              <>
-                <label
-                  className="form-group applicant-note-field"
-                  htmlFor="reject-note"
-                >
-                  <span>Lý do từ chối</span>
-                  <small
-                    className={rejectError ? 'applicant-note-help error' : ''}
-                  >
-                    Bắt buộc nhập khi từ chối hồ sơ.
-                  </small>
-                  <textarea
-                    aria-describedby={
-                      rejectError ? 'reject-note-error' : undefined
-                    }
-                    aria-invalid={Boolean(rejectError)}
-                    id="reject-note"
-                    ref={rejectTextareaRef}
-                    value={note}
-                    onChange={(event) => handleNoteChange(event.target.value)}
-                    placeholder="Nhập lý do từ chối hồ sơ ứng viên..."
-                    rows={4}
-                  />
-                  {rejectError && (
-                    <span
-                      className="applicant-note-error"
-                      id="reject-note-error"
-                    >
-                      {rejectError}
-                    </span>
-                  )}
-                </label>
+            {allowedTransitions.includes('TRUNG_TUYEN') &&
+              !isPostInterviewStage && (
                 <button
-                  className="decision reject"
+                  className="decision approve"
                   disabled={updating !== null}
-                  onClick={requestReject}
-                  ref={rejectButtonRef}
+                  onClick={() => {
+                    void updateStatus('TRUNG_TUYEN');
+                  }}
+                  type="button"
                 >
-                  <DetailIcon name="xCircle" />
-                  {updating === 'KHONG_PHU_HOP'
-                    ? 'Đang xử lý...'
-                    : 'Từ chối hồ sơ'}
+                  <DetailIcon name="checkCircle" />
+                  {updating === 'TRUNG_TUYEN'
+                    ? '\u0110ang c\u1eadp nh\u1eadt...'
+                    : 'X\u00e1c nh\u1eadn tr\u00fang tuy\u1ec3n'}
                 </button>
-              </>
-            )}
+              )}
+
+            {allowedTransitions.includes('KHONG_PHU_HOP') &&
+              !isPostInterviewStage && (
+                <>
+                  <label
+                    className="form-group applicant-note-field"
+                    htmlFor="reject-note"
+                  >
+                    <span>{'L\u00fd do t\u1eeb ch\u1ed1i'}</span>
+                    <small
+                      className={rejectError ? 'applicant-note-help error' : ''}
+                    >
+                      {'B\u1eaft bu\u1ed9c nh\u1eadp khi t\u1eeb ch\u1ed1i h\u1ed3 s\u01a1.'}
+                    </small>
+                    <textarea
+                      aria-describedby={
+                        rejectError ? 'reject-note-error' : undefined
+                      }
+                      aria-invalid={Boolean(rejectError)}
+                      id="reject-note"
+                      ref={rejectTextareaRef}
+                      value={note}
+                      onChange={(event) => handleNoteChange(event.target.value)}
+                      placeholder={'Nh\u1eadp l\u00fd do t\u1eeb ch\u1ed1i h\u1ed3 s\u01a1 \u1ee9ng vi\u00ean...'}
+                      rows={4}
+                    />
+                    {rejectError && (
+                      <span
+                        className="applicant-note-error"
+                        id="reject-note-error"
+                      >
+                        {rejectError}
+                      </span>
+                    )}
+                  </label>
+                  <button
+                    className="decision reject"
+                    disabled={updating !== null}
+                    onClick={requestReject}
+                    ref={rejectButtonRef}
+                    type="button"
+                  >
+                    <DetailIcon name="xCircle" />
+                    {updating === 'KHONG_PHU_HOP'
+                      ? '\u0110ang x\u1eed l\u00fd...'
+                      : 'T\u1eeb ch\u1ed1i h\u1ed3 s\u01a1'}
+                  </button>
+                </>
+              )}
 
             {!allowedTransitions.length && (
               <div className="applicant-final-state">
@@ -861,7 +1189,8 @@ export default function ApplicantDetailPage() {
               </div>
             )}
             <small className="applicant-updated-time">
-              Cập nhật lần cuối: {formatDateTime(item.ngayCapNhatTrangThai)}
+              Cập nhật lần cuối:{' '}
+              {formatLastUpdatedDateTime(item.ngayCapNhatTrangThai)}
             </small>
           </aside>
         </div>
@@ -873,6 +1202,55 @@ export default function ApplicantDetailPage() {
           onCancel={closeRejectDialog}
           onConfirm={() => {
             void confirmReject();
+          }}
+        />
+      )}
+      {hireDialogOpen && (
+        <HireConfirmDialog
+          candidateName={displayName}
+          isSaving={updating === 'TRUNG_TUYEN'}
+          jobTitle={submittedJobTitle}
+          onCancel={closeHireDialog}
+          onConfirm={() => {
+            void confirmHire();
+          }}
+        />
+      )}
+      {postInterviewRejectDialogOpen && (
+        <PostInterviewRejectDialog
+          error={postInterviewRejectError}
+          isSaving={updating === 'KHONG_PHU_HOP'}
+          jobTitle={submittedJobTitle}
+          candidateName={displayName}
+          reason={postInterviewRejectReason}
+          onCancel={closePostInterviewRejectDialog}
+          onChange={handlePostInterviewRejectReasonChange}
+          onConfirm={() => {
+            void confirmPostInterviewReject();
+          }}
+        />
+      )}
+      {cancelInterviewDialogOpen && (
+        <CancelInterviewInvitationDialog
+          candidateName={displayName}
+          error={cancelInterviewError}
+          interviewInfo={interviewInfo}
+          isSaving={cancelInterviewSaving}
+          jobTitle={submittedJobTitle}
+          onCancel={closeCancelInterviewDialog}
+          onChange={handleCancelInterviewReasonChange}
+          onConfirm={() => {
+            void confirmCancelInterviewInvitation();
+          }}
+          reason={cancelInterviewReason}
+        />
+      )}
+      {interviewDoneDialogOpen && (
+        <InterviewDoneConfirmDialog
+          isSaving={updating === 'DA_PHONG_VAN'}
+          onCancel={() => setInterviewDoneDialogOpen(false)}
+          onConfirm={() => {
+            void confirmInterviewDone();
           }}
         />
       )}
@@ -930,6 +1308,7 @@ function InterviewInfoCard({
 }) {
   const isOnline = info.hinhThucPhongVan === 'TRUC_TUYEN';
   const hasValidUrl = isValidHttpUrl(info.duongDanPhongVan);
+  const isCancelled = info.trangThaiPhongVan === 'DA_HUY';
 
   return (
     <section className="applicant-interview-info">
@@ -938,14 +1317,42 @@ function InterviewInfoCard({
           <span>Thông tin phỏng vấn</span>
           <strong>{formatInterviewTimeRange(info)}</strong>
         </div>
-        {onEdit && (
-          <button onClick={onEdit} type="button">
-            <DetailIcon name="edit" />
-            Chỉnh sửa
-          </button>
+        {isCancelled ? (
+          <span className="interview-cancelled-badge">
+            {'\u0110\u00e3 h\u1ee7y'}
+          </span>
+        ) : (
+          onEdit && (
+            <button onClick={onEdit} type="button">
+              <DetailIcon name="edit" />
+              {'Ch\u1ec9nh s\u1eeda'}
+            </button>
+          )
         )}
       </div>
       <div className="applicant-interview-detail-list">
+        {isCancelled && (
+          <>
+            <InterviewDetail
+              icon="xCircle"
+              label={'Tr\u1ea1ng th\u00e1i ph\u1ecfng v\u1ea5n'}
+              value={'\u0110\u00e3 h\u1ee7y'}
+            />
+            <InterviewDetail
+              icon="fileText"
+              label={'L\u00fd do h\u1ee7y l\u1eddi m\u1eddi'}
+              value={
+                info.lyDoHuy?.trim() ||
+                'Nh\u00e0 tuy\u1ec3n d\u1ee5ng ch\u01b0a cung c\u1ea5p l\u00fd do h\u1ee7y l\u1eddi m\u1eddi.'
+              }
+            />
+            <InterviewDetail
+              icon="calendar"
+              label={'H\u1ee7y l\u00fac'}
+              value={formatLastUpdatedDateTime(info.thoiGianHuy)}
+            />
+          </>
+        )}
         <InterviewDetail
           icon="calendar"
           label="Hình thức"
@@ -962,7 +1369,7 @@ function InterviewInfoCard({
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  {info.duongDanPhongVan}
+                  {'M\u1edf \u0111\u01b0\u1eddng d\u1eabn ph\u1ecfng v\u1ea5n'}
                 </a>
               </div>
             </div>
@@ -979,11 +1386,7 @@ function InterviewInfoCard({
           label="Người liên hệ"
           value={info.nguoiLienHe}
         />
-        <InterviewDetail
-          icon="phone"
-          label="Số điện thoại"
-          value={info.soDienThoaiLienHe}
-        />
+        <InterviewPhoneDetail value={info.soDienThoaiLienHe} />
         <InterviewDetail
           icon="fileText"
           label="Nội dung chuẩn bị"
@@ -1015,6 +1418,22 @@ function InterviewDetail({
       <div>
         <span>{label}</span>
         <p>{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function InterviewPhoneDetail({ value }: { value?: string | null }) {
+  const phoneText = formatVietnamPhone(value);
+  const href = normalizeTelHref(value);
+  if (!phoneText) return null;
+
+  return (
+    <div className="applicant-interview-detail">
+      <DetailIcon name="phone" />
+      <div>
+        <span>{'S\u1ed1 \u0111i\u1ec7n tho\u1ea1i'}</span>
+        {href ? <a href={href}>{phoneText}</a> : <p>{phoneText}</p>}
       </div>
     </div>
   );
@@ -1360,10 +1779,418 @@ function RejectConfirmDialog({
   );
 }
 
+function HireConfirmDialog({
+  candidateName,
+  isSaving,
+  jobTitle,
+  onCancel,
+  onConfirm,
+}: {
+  candidateName?: string | null;
+  isSaving: boolean;
+  jobTitle?: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    cancelButtonRef.current?.focus();
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !isSaving) onCancel();
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isSaving, onCancel]);
+
+  return (
+    <div
+      className="job-applicant-dialog-backdrop applicant-reject-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSaving) onCancel();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-describedby="hire-confirm-dialog-description"
+        aria-labelledby="hire-confirm-dialog-title"
+        aria-modal="true"
+        className="job-applicant-dialog applicant-reject-dialog post-interview-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Dong hop thoai xac nhan"
+          className="job-applicant-dialog-close"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          <DetailIcon name="xCircle" />
+        </button>
+        <h2 id="hire-confirm-dialog-title">
+          {'X\u00e1c nh\u1eadn \u1ee9ng vi\u00ean tr\u00fang tuy\u1ec3n?'}
+        </h2>
+        <p id="hire-confirm-dialog-description">
+          {'\u1ee8ng vi\u00ean s\u1ebd nh\u1eadn \u0111\u01b0\u1ee3c th\u00f4ng b\u00e1o v\u1ec1 k\u1ebft qu\u1ea3 tr\u00fang tuy\u1ec3n. Vui l\u00f2ng ki\u1ec3m tra k\u1ef9 tr\u01b0\u1edbc khi x\u00e1c nh\u1eadn.'}
+        </p>
+        {(candidateName || jobTitle) && (
+          <dl className="post-interview-modal-summary">
+            {candidateName && (
+              <div>
+                <dt>{'\u1ee8ng vi\u00ean'}</dt>
+                <dd>{candidateName}</dd>
+              </div>
+            )}
+            {jobTitle && (
+              <div>
+                <dt>{'Tin tuy\u1ec3n d\u1ee5ng'}</dt>
+                <dd>{jobTitle}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+        <div>
+          <button
+            disabled={isSaving}
+            onClick={onCancel}
+            ref={cancelButtonRef}
+            type="button"
+          >
+            {'H\u1ee7y'}
+          </button>
+          <button
+            className="success"
+            disabled={isSaving}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isSaving
+              ? '\u0110ang x\u00e1c nh\u1eadn...'
+              : 'X\u00e1c nh\u1eadn tr\u00fang tuy\u1ec3n'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PostInterviewRejectDialog({
+  candidateName,
+  error,
+  isSaving,
+  jobTitle,
+  onCancel,
+  onChange,
+  onConfirm,
+  reason,
+}: {
+  candidateName?: string | null;
+  error?: string;
+  isSaving: boolean;
+  jobTitle?: string | null;
+  onCancel: () => void;
+  onChange: (value: string) => void;
+  onConfirm: () => void;
+  reason: string;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const reasonIsValid = reason.trim().length > 0;
+  const descriptionId = 'post-interview-reject-description';
+  const helperId = 'post-interview-reject-helper';
+  const errorId = 'post-interview-reject-error';
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !isSaving) onCancel();
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isSaving, onCancel]);
+
+  useEffect(() => {
+    if (error) textareaRef.current?.focus();
+  }, [error]);
+
+  return (
+    <div
+      className="job-applicant-dialog-backdrop applicant-reject-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSaving) onCancel();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-describedby={descriptionId}
+        aria-labelledby="post-interview-reject-title"
+        aria-modal="true"
+        className="job-applicant-dialog applicant-reject-dialog post-interview-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Dong hop thoai xac nhan"
+          className="job-applicant-dialog-close"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          <DetailIcon name="xCircle" />
+        </button>
+        <h2 id="post-interview-reject-title">
+          {'X\u00e1c nh\u1eadn \u1ee9ng vi\u00ean kh\u00f4ng ph\u00f9 h\u1ee3p?'}
+        </h2>
+        <p id={descriptionId}>
+          {'\u1ee8ng vi\u00ean s\u1ebd nh\u1eadn \u0111\u01b0\u1ee3c th\u00f4ng b\u00e1o v\u1ec1 k\u1ebft qu\u1ea3 v\u00e0 l\u00fd do kh\u00f4ng ph\u00f9 h\u1ee3p.'}
+        </p>
+        {(candidateName || jobTitle) && (
+          <dl className="post-interview-modal-summary">
+            {candidateName && (
+              <div>
+                <dt>{'\u1ee8ng vi\u00ean'}</dt>
+                <dd>{candidateName}</dd>
+              </div>
+            )}
+            {jobTitle && (
+              <div>
+                <dt>{'Tin tuy\u1ec3n d\u1ee5ng'}</dt>
+                <dd>{jobTitle}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+        <label className="post-interview-reason-field" htmlFor="post-interview-reject-reason">
+          <span>{'L\u00fd do kh\u00f4ng ph\u00f9 h\u1ee3p'}</span>
+          <small id={helperId}>
+            {'Th\u00f4ng tin n\u00e0y s\u1ebd \u0111\u01b0\u1ee3c hi\u1ec3n th\u1ecb cho \u1ee9ng vi\u00ean.'}
+          </small>
+          <textarea
+            aria-describedby={error ? `${helperId} ${errorId}` : helperId}
+            aria-invalid={Boolean(error)}
+            id="post-interview-reject-reason"
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={'Nh\u1eadp l\u00fd do \u1ee9ng vi\u00ean ch\u01b0a ph\u00f9 h\u1ee3p sau bu\u1ed5i ph\u1ecfng v\u1ea5n...'}
+            ref={textareaRef}
+            rows={5}
+            value={reason}
+          />
+          {error && (
+            <span className="applicant-note-error" id={errorId} role="alert">
+              {error}
+            </span>
+          )}
+        </label>
+        <div>
+          <button disabled={isSaving} onClick={onCancel} type="button">
+            {'Quay l\u1ea1i'}
+          </button>
+          <button
+            className="danger"
+            disabled={isSaving || !reasonIsValid}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isSaving
+              ? '\u0110ang c\u1eadp nh\u1eadt...'
+              : 'X\u00e1c nh\u1eadn kh\u00f4ng ph\u00f9 h\u1ee3p'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function CancelInterviewInvitationDialog({
+  candidateName,
+  error,
+  interviewInfo,
+  isSaving,
+  jobTitle,
+  onCancel,
+  onChange,
+  onConfirm,
+  reason,
+}: {
+  candidateName?: string | null;
+  error?: string;
+  interviewInfo?: InterviewInfo | null;
+  isSaving: boolean;
+  jobTitle?: string | null;
+  onCancel: () => void;
+  onChange: (value: string) => void;
+  onConfirm: () => void;
+  reason: string;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const reasonIsValid = reason.trim().length > 0;
+  const descriptionId = 'cancel-interview-dialog-description';
+  const helperId = 'cancel-interview-reason-helper';
+  const errorId = 'cancel-interview-reason-error';
+
+  useEffect(() => {
+    textareaRef.current?.focus();
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape' && !isSaving) onCancel();
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isSaving, onCancel]);
+
+  useEffect(() => {
+    if (error) textareaRef.current?.focus();
+  }, [error]);
+
+  return (
+    <div
+      className="job-applicant-dialog-backdrop applicant-reject-dialog-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isSaving) onCancel();
+      }}
+      role="presentation"
+    >
+      <section
+        aria-describedby={descriptionId}
+        aria-labelledby="cancel-interview-dialog-title"
+        aria-modal="true"
+        className="job-applicant-dialog applicant-reject-dialog post-interview-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Dong hop thoai huy loi moi phong van"
+          className="job-applicant-dialog-close"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          <DetailIcon name="xCircle" />
+        </button>
+        <h2 id="cancel-interview-dialog-title">
+          {'H\u1ee7y l\u1eddi m\u1eddi ph\u1ecfng v\u1ea5n'}
+        </h2>
+        <p id={descriptionId}>
+          {'Vi\u1ec7c h\u1ee7y l\u1eddi m\u1eddi s\u1ebd k\u1ebft th\u00fac h\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n n\u00e0y. \u1ee8ng vi\u00ean s\u1ebd nh\u1eadn \u0111\u01b0\u1ee3c th\u00f4ng b\u00e1o k\u00e8m l\u00fd do h\u1ee7y v\u00e0 kh\u00f4ng th\u1ec3 ti\u1ebfp t\u1ee5c quy tr\u00ecnh tuy\u1ec3n d\u1ee5ng v\u1edbi h\u1ed3 s\u01a1 hi\u1ec7n t\u1ea1i.'}
+        </p>
+        {(candidateName || jobTitle || interviewInfo) && (
+          <dl className="post-interview-modal-summary">
+            {candidateName && (
+              <div>
+                <dt>{'\u1ee8ng vi\u00ean'}</dt>
+                <dd>{candidateName}</dd>
+              </div>
+            )}
+            {jobTitle && (
+              <div>
+                <dt>{'Tin tuy\u1ec3n d\u1ee5ng'}</dt>
+                <dd>{jobTitle}</dd>
+              </div>
+            )}
+            {interviewInfo && (
+              <div>
+                <dt>{'L\u1ecbch ph\u1ecfng v\u1ea5n'}</dt>
+                <dd>{formatInterviewTimeRange(interviewInfo)}</dd>
+              </div>
+            )}
+          </dl>
+        )}
+        <label className="post-interview-reason-field" htmlFor="cancel-interview-reason">
+          <span>{'L\u00fd do h\u1ee7y l\u1eddi m\u1eddi'}</span>
+          <small id={helperId}>
+            {'Th\u00f4ng tin n\u00e0y s\u1ebd \u0111\u01b0\u1ee3c g\u1eedi \u0111\u1ebfn \u1ee9ng vi\u00ean.'}
+          </small>
+          <textarea
+            aria-describedby={error ? `${helperId} ${errorId}` : helperId}
+            aria-invalid={Boolean(error)}
+            id="cancel-interview-reason"
+            onChange={(event) => onChange(event.target.value)}
+            placeholder={'V\u00ed d\u1ee5: V\u1ecb tr\u00ed tuy\u1ec3n d\u1ee5ng \u0111\u00e3 \u0111\u01b0\u1ee3c l\u1ea5p \u0111\u1ea7y n\u00ean c\u00f4ng ty kh\u00f4ng ti\u1ebfp t\u1ee5c t\u1ed5 ch\u1ee9c bu\u1ed5i ph\u1ecfng v\u1ea5n...'}
+            ref={textareaRef}
+            rows={5}
+            value={reason}
+          />
+          {error && (
+            <span className="applicant-note-error" id={errorId} role="alert">
+              {error}
+            </span>
+          )}
+        </label>
+        <div>
+          <button disabled={isSaving} onClick={onCancel} type="button">
+            {'Quay l\u1ea1i'}
+          </button>
+          <button
+            className="danger"
+            disabled={isSaving || !reasonIsValid}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isSaving
+              ? '\u0110ang h\u1ee7y l\u1eddi m\u1eddi...'
+              : 'H\u1ee7y l\u1eddi m\u1eddi v\u00e0 k\u1ebft th\u00fac h\u1ed3 s\u01a1'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function documentUrl(value?: string | null) {
   if (!value) return null;
   if (/^(https?:|data:|blob:)/i.test(value)) return value;
   return `${BACKEND_API_URL}${value.startsWith('/') ? '' : '/'}${value}`;
+}
+
+function InterviewDoneConfirmDialog({
+  isSaving,
+  onCancel,
+  onConfirm,
+}: {
+  isSaving: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="job-applicant-dialog-backdrop">
+      <section
+        aria-labelledby="interview-done-dialog-title"
+        aria-modal="true"
+        className="job-applicant-dialog applicant-reject-dialog interview-done-dialog"
+        role="dialog"
+      >
+        <button
+          aria-label="Đóng hộp thoại xác nhận"
+          className="job-applicant-dialog-close"
+          disabled={isSaving}
+          onClick={onCancel}
+          type="button"
+        >
+          <DetailIcon name="xCircle" />
+        </button>
+        <h2 id="interview-done-dialog-title">
+          Xác nhận buổi phỏng vấn đã diễn ra?
+        </h2>
+        <p>
+          Thao tác này chỉ ghi nhận ứng viên đã hoàn tất buổi phỏng vấn và
+          chuyển hồ sơ sang trạng thái Đã phỏng vấn, không đồng nghĩa với việc
+          ứng viên đã trúng tuyển.
+        </p>
+        <div>
+          <button disabled={isSaving} onClick={onCancel} type="button">
+            Hủy
+          </button>
+          <button
+            className="primary"
+            disabled={isSaving}
+            onClick={onConfirm}
+            type="button"
+          >
+            {isSaving ? 'Đang cập nhật...' : 'Xác nhận đã phỏng vấn'}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
 }
 
 function formatDate(value?: string | null) {
@@ -1385,13 +2212,19 @@ function formatDateTime(value?: string | null) {
     hour12: false,
     minute: '2-digit',
     month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
     year: 'numeric',
   }).formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes) =>
     parts.find((item) => item.type === type)?.value ?? '';
-  return `${part('hour')}:${part('minute')}, ${part('day')}/${part(
-    'month',
-  )}/${part('year')}`;
+  return `${part('day')}/${part('month')}/${part('year')} ${part(
+    'hour',
+  )}:${part('minute')}`;
+}
+
+function formatLastUpdatedDateTime(value?: string | null) {
+  const parts = getVietnamDateTimeParts(value);
+  return parts ? `${parts.time}, ${parts.date}` : formatDateTime(value);
 }
 
 function formatFileSize(size?: number | null) {
@@ -1438,6 +2271,68 @@ function emptyInterviewForm(): InterviewForm {
     soDienThoaiLienHe: '',
     noiDungChuanBi: '',
     ghiChuPhongVan: '',
+  };
+}
+
+function canUseInterviewDoneAction(
+  item: ApplicantDetail | null,
+  nowMs: number,
+) {
+  return getInterviewDoneAvailability(item, nowMs).canConfirm;
+}
+
+function getJobQuotaInfo(item: ApplicantDetail) {
+  const limit = Number(item.tinTuyenDung?.soLuongTuyen ?? 0);
+  const hired = Array.isArray(item.tinTuyenDung?.ungTuyens)
+    ? item.tinTuyenDung.ungTuyens.filter(
+        (application) => application.trangThaiHienTai === 'TRUNG_TUYEN',
+      ).length
+    : 0;
+  return {
+    hired,
+    isFull: limit > 0 && hired >= limit,
+    limit,
+  };
+}
+
+function getInterviewDoneAvailability(
+  item: ApplicantDetail | null,
+  nowMs: number,
+) {
+  const interviewStart = getDateTimeValue(
+    item?.thongTinPhongVan?.thoiGianBatDau,
+  );
+  if (!item || item.trangThaiHienTai !== 'MOI_PHONG_VAN') {
+    return {
+      canConfirm: false,
+      message: 'Chỉ có thể xác nhận khi hồ sơ đang ở bước mời phỏng vấn.',
+    };
+  }
+  if (item.thongTinPhongVan?.trangThaiPhongVan === 'DA_HUY') {
+    return {
+      canConfirm: false,
+      message:
+        'L\u1eddi m\u1eddi ph\u1ecfng v\u1ea5n \u0111\u00e3 b\u1ecb h\u1ee7y.',
+    };
+  }
+  if (!interviewStart) {
+    return {
+      canConfirm: false,
+      message: 'Cần có lịch phỏng vấn hợp lệ trước khi xác nhận.',
+    };
+  }
+  const interviewTimeText = formatDateTime(
+    item.thongTinPhongVan?.thoiGianBatDau,
+  );
+  if (nowMs < interviewStart) {
+    return {
+      canConfirm: false,
+      message: `Chỉ có thể xác nhận sau thời gian phỏng vấn: ${interviewTimeText}.`,
+    };
+  }
+  return {
+    canConfirm: true,
+    message: `Có thể xác nhận vì thời gian phỏng vấn ${interviewTimeText} đã đến.`,
   };
 }
 
@@ -1604,9 +2499,53 @@ function interviewModeLabel(value: InterviewMode) {
 }
 
 function formatInterviewTimeRange(info: InterviewInfo) {
-  const start = formatDateTime(info.thoiGianBatDau);
-  const end = info.thoiGianKetThuc ? formatDateTime(info.thoiGianKetThuc) : '';
-  return end ? `${start} - ${end}` : start;
+  const start = getVietnamDateTimeParts(info.thoiGianBatDau);
+  const end = getVietnamDateTimeParts(info.thoiGianKetThuc);
+  if (!start) return formatDateTime(info.thoiGianBatDau);
+  if (!end) return `${start.time}, ${start.date}`;
+  if (start.date === end.date) {
+    return `${start.time} \u2013 ${end.time}, ${start.date}`;
+  }
+  return `${start.time}, ${start.date} \u2013 ${end.time}, ${end.date}`;
+}
+
+function getVietnamDateTimeParts(value?: string | null) {
+  const date = parseDate(value);
+  if (!date) return null;
+  const parts = new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    hour: '2-digit',
+    hour12: false,
+    minute: '2-digit',
+    month: '2-digit',
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? '';
+  return {
+    date: `${part('day')}/${part('month')}/${part('year')}`,
+    time: `${part('hour')}:${part('minute')}`,
+  };
+}
+
+function formatVietnamPhone(value?: string | null) {
+  const normalized = normalizePhoneInput(value ?? '');
+  if (!normalized) return '';
+  const local = normalized.startsWith('+84')
+    ? `0${normalized.slice(3)}`
+    : normalized;
+  if (/^0\d{9}$/.test(local)) {
+    return `${local.slice(0, 4)} ${local.slice(4, 7)} ${local.slice(7)}`;
+  }
+  return value?.trim() ?? '';
+}
+
+function normalizeTelHref(value?: string | null) {
+  const normalized = normalizePhoneInput(value ?? '');
+  if (/^\+84\d{9}$/.test(normalized)) return `tel:${normalized}`;
+  if (/^0\d{9}$/.test(normalized)) return `tel:${normalized}`;
+  return null;
 }
 
 function isValidHttpUrl(value?: string | null) {

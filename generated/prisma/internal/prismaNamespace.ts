@@ -1990,11 +1990,13 @@ export const TinTuyenDungScalarFieldEnum = {
   thoiHanNhanHoSo: 'thoiHanNhanHoSo',
   trangThaiKiemDuyet: 'trangThaiKiemDuyet',
   trangThaiHienThi: 'trangThaiHienThi',
+  ngungNhanHoSo: 'ngungNhanHoSo',
   lyDoTuChoi: 'lyDoTuChoi',
   soLanChinhSua: 'soLanChinhSua',
   ngayGuiDuyet: 'ngayGuiDuyet',
   ngayDuyet: 'ngayDuyet',
   ngayDang: 'ngayDang',
+  ngayDuChiTieu: 'ngayDuChiTieu',
   ngayTao: 'ngayTao',
   ngayCapNhat: 'ngayCapNhat'
 } as const
@@ -2047,7 +2049,11 @@ export const ThongTinPhongVanScalarFieldEnum = {
   soDienThoaiLienHe: 'soDienThoaiLienHe',
   noiDungChuanBi: 'noiDungChuanBi',
   ghiChuPhongVan: 'ghiChuPhongVan',
+  trangThaiPhongVan: 'trangThaiPhongVan',
+  lyDoHuy: 'lyDoHuy',
+  thoiGianHuy: 'thoiGianHuy',
   nguoiTaoId: 'nguoiTaoId',
+  nguoiHuyId: 'nguoiHuyId',
   ngayTao: 'ngayTao',
   ngayCapNhat: 'ngayCapNhat'
 } as const
@@ -2369,6 +2375,20 @@ export type ListEnumHinhThucPhongVanFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
+ * Reference to a field of type 'TrangThaiPhongVan'
+ */
+export type EnumTrangThaiPhongVanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TrangThaiPhongVan'>
+
+
+
+/**
+ * Reference to a field of type 'TrangThaiPhongVan[]'
+ */
+export type ListEnumTrangThaiPhongVanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TrangThaiPhongVan[]'>
+
+
+
+/**
  * Reference to a field of type 'LoaiDoiTuongKiemDuyet'
  */
 export type EnumLoaiDoiTuongKiemDuyetFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'LoaiDoiTuongKiemDuyet'>
@@ -2640,4 +2660,3 @@ export type PrismaAction =
  * `PrismaClient` proxy available in interactive transactions.
  */
 export type TransactionClient = Omit<DefaultPrismaClient, runtime.ITXClientDenyList>
-

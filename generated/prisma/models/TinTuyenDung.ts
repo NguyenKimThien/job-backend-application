@@ -72,11 +72,13 @@ export type TinTuyenDungMinAggregateOutputType = {
   thoiHanNhanHoSo: Date | null
   trangThaiKiemDuyet: $Enums.TrangThaiKiemDuyet | null
   trangThaiHienThi: $Enums.TrangThaiHienThiTin | null
+  ngungNhanHoSo: boolean | null
   lyDoTuChoi: string | null
   soLanChinhSua: number | null
   ngayGuiDuyet: Date | null
   ngayDuyet: Date | null
   ngayDang: Date | null
+  ngayDuChiTieu: Date | null
   ngayTao: Date | null
   ngayCapNhat: Date | null
 }
@@ -105,11 +107,13 @@ export type TinTuyenDungMaxAggregateOutputType = {
   thoiHanNhanHoSo: Date | null
   trangThaiKiemDuyet: $Enums.TrangThaiKiemDuyet | null
   trangThaiHienThi: $Enums.TrangThaiHienThiTin | null
+  ngungNhanHoSo: boolean | null
   lyDoTuChoi: string | null
   soLanChinhSua: number | null
   ngayGuiDuyet: Date | null
   ngayDuyet: Date | null
   ngayDang: Date | null
+  ngayDuChiTieu: Date | null
   ngayTao: Date | null
   ngayCapNhat: Date | null
 }
@@ -138,11 +142,13 @@ export type TinTuyenDungCountAggregateOutputType = {
   thoiHanNhanHoSo: number
   trangThaiKiemDuyet: number
   trangThaiHienThi: number
+  ngungNhanHoSo: number
   lyDoTuChoi: number
   soLanChinhSua: number
   ngayGuiDuyet: number
   ngayDuyet: number
   ngayDang: number
+  ngayDuChiTieu: number
   ngayTao: number
   ngayCapNhat: number
   _all: number
@@ -195,11 +201,13 @@ export type TinTuyenDungMinAggregateInputType = {
   thoiHanNhanHoSo?: true
   trangThaiKiemDuyet?: true
   trangThaiHienThi?: true
+  ngungNhanHoSo?: true
   lyDoTuChoi?: true
   soLanChinhSua?: true
   ngayGuiDuyet?: true
   ngayDuyet?: true
   ngayDang?: true
+  ngayDuChiTieu?: true
   ngayTao?: true
   ngayCapNhat?: true
 }
@@ -228,11 +236,13 @@ export type TinTuyenDungMaxAggregateInputType = {
   thoiHanNhanHoSo?: true
   trangThaiKiemDuyet?: true
   trangThaiHienThi?: true
+  ngungNhanHoSo?: true
   lyDoTuChoi?: true
   soLanChinhSua?: true
   ngayGuiDuyet?: true
   ngayDuyet?: true
   ngayDang?: true
+  ngayDuChiTieu?: true
   ngayTao?: true
   ngayCapNhat?: true
 }
@@ -261,11 +271,13 @@ export type TinTuyenDungCountAggregateInputType = {
   thoiHanNhanHoSo?: true
   trangThaiKiemDuyet?: true
   trangThaiHienThi?: true
+  ngungNhanHoSo?: true
   lyDoTuChoi?: true
   soLanChinhSua?: true
   ngayGuiDuyet?: true
   ngayDuyet?: true
   ngayDang?: true
+  ngayDuChiTieu?: true
   ngayTao?: true
   ngayCapNhat?: true
   _all?: true
@@ -381,11 +393,13 @@ export type TinTuyenDungGroupByOutputType = {
   thoiHanNhanHoSo: Date
   trangThaiKiemDuyet: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo: boolean
   lyDoTuChoi: string | null
   soLanChinhSua: number
   ngayGuiDuyet: Date | null
   ngayDuyet: Date | null
   ngayDang: Date | null
+  ngayDuChiTieu: Date | null
   ngayTao: Date
   ngayCapNhat: Date
   _count: TinTuyenDungCountAggregateOutputType | null
@@ -437,11 +451,13 @@ export type TinTuyenDungWhereInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFilter<"TinTuyenDung"> | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFilter<"TinTuyenDung"> | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFilter<"TinTuyenDung"> | boolean
   lyDoTuChoi?: Prisma.StringNullableFilter<"TinTuyenDung"> | string | null
   soLanChinhSua?: Prisma.IntFilter<"TinTuyenDung"> | number
   ngayGuiDuyet?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayDuyet?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayDang?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
+  ngayDuChiTieu?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayTao?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   nhaTuyenDung?: Prisma.XOR<Prisma.HoSoNhaTuyenDungScalarRelationFilter, Prisma.HoSoNhaTuyenDungWhereInput>
@@ -476,11 +492,13 @@ export type TinTuyenDungOrderByWithRelationInput = {
   thoiHanNhanHoSo?: Prisma.SortOrder
   trangThaiKiemDuyet?: Prisma.SortOrder
   trangThaiHienThi?: Prisma.SortOrder
+  ngungNhanHoSo?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrderInput | Prisma.SortOrder
   soLanChinhSua?: Prisma.SortOrder
   ngayGuiDuyet?: Prisma.SortOrderInput | Prisma.SortOrder
   ngayDuyet?: Prisma.SortOrderInput | Prisma.SortOrder
   ngayDang?: Prisma.SortOrderInput | Prisma.SortOrder
+  ngayDuChiTieu?: Prisma.SortOrderInput | Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungOrderByWithRelationInput
@@ -518,11 +536,13 @@ export type TinTuyenDungWhereUniqueInput = Prisma.AtLeast<{
   thoiHanNhanHoSo?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFilter<"TinTuyenDung"> | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFilter<"TinTuyenDung"> | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFilter<"TinTuyenDung"> | boolean
   lyDoTuChoi?: Prisma.StringNullableFilter<"TinTuyenDung"> | string | null
   soLanChinhSua?: Prisma.IntFilter<"TinTuyenDung"> | number
   ngayGuiDuyet?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayDuyet?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayDang?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
+  ngayDuChiTieu?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayTao?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   nhaTuyenDung?: Prisma.XOR<Prisma.HoSoNhaTuyenDungScalarRelationFilter, Prisma.HoSoNhaTuyenDungWhereInput>
@@ -557,11 +577,13 @@ export type TinTuyenDungOrderByWithAggregationInput = {
   thoiHanNhanHoSo?: Prisma.SortOrder
   trangThaiKiemDuyet?: Prisma.SortOrder
   trangThaiHienThi?: Prisma.SortOrder
+  ngungNhanHoSo?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrderInput | Prisma.SortOrder
   soLanChinhSua?: Prisma.SortOrder
   ngayGuiDuyet?: Prisma.SortOrderInput | Prisma.SortOrder
   ngayDuyet?: Prisma.SortOrderInput | Prisma.SortOrder
   ngayDang?: Prisma.SortOrderInput | Prisma.SortOrder
+  ngayDuChiTieu?: Prisma.SortOrderInput | Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
   _count?: Prisma.TinTuyenDungCountOrderByAggregateInput
@@ -598,11 +620,13 @@ export type TinTuyenDungScalarWhereWithAggregatesInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeWithAggregatesFilter<"TinTuyenDung"> | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetWithAggregatesFilter<"TinTuyenDung"> | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinWithAggregatesFilter<"TinTuyenDung"> | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolWithAggregatesFilter<"TinTuyenDung"> | boolean
   lyDoTuChoi?: Prisma.StringNullableWithAggregatesFilter<"TinTuyenDung"> | string | null
   soLanChinhSua?: Prisma.IntWithAggregatesFilter<"TinTuyenDung"> | number
   ngayGuiDuyet?: Prisma.DateTimeNullableWithAggregatesFilter<"TinTuyenDung"> | Date | string | null
   ngayDuyet?: Prisma.DateTimeNullableWithAggregatesFilter<"TinTuyenDung"> | Date | string | null
   ngayDang?: Prisma.DateTimeNullableWithAggregatesFilter<"TinTuyenDung"> | Date | string | null
+  ngayDuChiTieu?: Prisma.DateTimeNullableWithAggregatesFilter<"TinTuyenDung"> | Date | string | null
   ngayTao?: Prisma.DateTimeWithAggregatesFilter<"TinTuyenDung"> | Date | string
   ngayCapNhat?: Prisma.DateTimeWithAggregatesFilter<"TinTuyenDung"> | Date | string
 }
@@ -628,11 +652,13 @@ export type TinTuyenDungCreateInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nhaTuyenDung: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTinTuyenDungsInput
@@ -667,11 +693,13 @@ export type TinTuyenDungUncheckedCreateInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -701,11 +729,13 @@ export type TinTuyenDungUpdateInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -740,11 +770,13 @@ export type TinTuyenDungUncheckedUpdateInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -777,11 +809,13 @@ export type TinTuyenDungCreateManyInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
 }
@@ -807,11 +841,13 @@ export type TinTuyenDungUpdateManyMutationInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -840,11 +876,13 @@ export type TinTuyenDungUncheckedUpdateManyInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -883,11 +921,13 @@ export type TinTuyenDungCountOrderByAggregateInput = {
   thoiHanNhanHoSo?: Prisma.SortOrder
   trangThaiKiemDuyet?: Prisma.SortOrder
   trangThaiHienThi?: Prisma.SortOrder
+  ngungNhanHoSo?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrder
   soLanChinhSua?: Prisma.SortOrder
   ngayGuiDuyet?: Prisma.SortOrder
   ngayDuyet?: Prisma.SortOrder
   ngayDang?: Prisma.SortOrder
+  ngayDuChiTieu?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
 }
@@ -927,11 +967,13 @@ export type TinTuyenDungMaxOrderByAggregateInput = {
   thoiHanNhanHoSo?: Prisma.SortOrder
   trangThaiKiemDuyet?: Prisma.SortOrder
   trangThaiHienThi?: Prisma.SortOrder
+  ngungNhanHoSo?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrder
   soLanChinhSua?: Prisma.SortOrder
   ngayGuiDuyet?: Prisma.SortOrder
   ngayDuyet?: Prisma.SortOrder
   ngayDang?: Prisma.SortOrder
+  ngayDuChiTieu?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
 }
@@ -960,11 +1002,13 @@ export type TinTuyenDungMinOrderByAggregateInput = {
   thoiHanNhanHoSo?: Prisma.SortOrder
   trangThaiKiemDuyet?: Prisma.SortOrder
   trangThaiHienThi?: Prisma.SortOrder
+  ngungNhanHoSo?: Prisma.SortOrder
   lyDoTuChoi?: Prisma.SortOrder
   soLanChinhSua?: Prisma.SortOrder
   ngayGuiDuyet?: Prisma.SortOrder
   ngayDuyet?: Prisma.SortOrder
   ngayDang?: Prisma.SortOrder
+  ngayDuChiTieu?: Prisma.SortOrder
   ngayTao?: Prisma.SortOrder
   ngayCapNhat?: Prisma.SortOrder
 }
@@ -1165,11 +1209,13 @@ export type TinTuyenDungCreateWithoutNhaTuyenDungInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nganhNghe: Prisma.NganhNgheCreateNestedOneWithoutTinTuyenDungsInput
@@ -1202,11 +1248,13 @@ export type TinTuyenDungUncheckedCreateWithoutNhaTuyenDungInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -1268,11 +1316,13 @@ export type TinTuyenDungScalarWhereInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFilter<"TinTuyenDung"> | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFilter<"TinTuyenDung"> | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFilter<"TinTuyenDung"> | boolean
   lyDoTuChoi?: Prisma.StringNullableFilter<"TinTuyenDung"> | string | null
   soLanChinhSua?: Prisma.IntFilter<"TinTuyenDung"> | number
   ngayGuiDuyet?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayDuyet?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayDang?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
+  ngayDuChiTieu?: Prisma.DateTimeNullableFilter<"TinTuyenDung"> | Date | string | null
   ngayTao?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
   ngayCapNhat?: Prisma.DateTimeFilter<"TinTuyenDung"> | Date | string
 }
@@ -1298,11 +1348,13 @@ export type TinTuyenDungCreateWithoutNganhNgheInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nhaTuyenDung: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTinTuyenDungsInput
@@ -1335,11 +1387,13 @@ export type TinTuyenDungUncheckedCreateWithoutNganhNgheInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -1395,11 +1449,13 @@ export type TinTuyenDungCreateWithoutTinTuyenDungKyNangsInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nhaTuyenDung: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTinTuyenDungsInput
@@ -1433,11 +1489,13 @@ export type TinTuyenDungUncheckedCreateWithoutTinTuyenDungKyNangsInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   ungTuyens?: Prisma.UngTuyenUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -1482,11 +1540,13 @@ export type TinTuyenDungUpdateWithoutTinTuyenDungKyNangsInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -1520,11 +1580,13 @@ export type TinTuyenDungUncheckedUpdateWithoutTinTuyenDungKyNangsInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ungTuyens?: Prisma.UngTuyenUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -1553,11 +1615,13 @@ export type TinTuyenDungCreateWithoutUngTuyensInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nhaTuyenDung: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTinTuyenDungsInput
@@ -1591,11 +1655,13 @@ export type TinTuyenDungUncheckedCreateWithoutUngTuyensInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -1640,11 +1706,13 @@ export type TinTuyenDungUpdateWithoutUngTuyensInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -1678,11 +1746,13 @@ export type TinTuyenDungUncheckedUpdateWithoutUngTuyensInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -1711,11 +1781,13 @@ export type TinTuyenDungCreateWithoutNguoiLaoDongDaLuuInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nhaTuyenDung: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTinTuyenDungsInput
@@ -1749,11 +1821,13 @@ export type TinTuyenDungUncheckedCreateWithoutNguoiLaoDongDaLuuInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -1798,11 +1872,13 @@ export type TinTuyenDungUpdateWithoutNguoiLaoDongDaLuuInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -1836,11 +1912,13 @@ export type TinTuyenDungUncheckedUpdateWithoutNguoiLaoDongDaLuuInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -1869,11 +1947,13 @@ export type TinTuyenDungCreateWithoutLichSuKiemDuyetsInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   nhaTuyenDung: Prisma.HoSoNhaTuyenDungCreateNestedOneWithoutTinTuyenDungsInput
@@ -1907,11 +1987,13 @@ export type TinTuyenDungUncheckedCreateWithoutLichSuKiemDuyetsInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedCreateNestedManyWithoutTinTuyenDungInput
@@ -1956,11 +2038,13 @@ export type TinTuyenDungUpdateWithoutLichSuKiemDuyetsInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -1994,11 +2078,13 @@ export type TinTuyenDungUncheckedUpdateWithoutLichSuKiemDuyetsInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -2029,11 +2115,13 @@ export type TinTuyenDungCreateManyNhaTuyenDungInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
 }
@@ -2059,11 +2147,13 @@ export type TinTuyenDungUpdateWithoutNhaTuyenDungInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nganhNghe?: Prisma.NganhNgheUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -2096,11 +2186,13 @@ export type TinTuyenDungUncheckedUpdateWithoutNhaTuyenDungInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -2132,11 +2224,13 @@ export type TinTuyenDungUncheckedUpdateManyWithoutNhaTuyenDungInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2164,11 +2258,13 @@ export type TinTuyenDungCreateManyNganhNgheInput = {
   thoiHanNhanHoSo: Date | string
   trangThaiKiemDuyet?: $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: string | null
   soLanChinhSua?: number
   ngayGuiDuyet?: Date | string | null
   ngayDuyet?: Date | string | null
   ngayDang?: Date | string | null
+  ngayDuChiTieu?: Date | string | null
   ngayTao?: Date | string
   ngayCapNhat?: Date | string
 }
@@ -2194,11 +2290,13 @@ export type TinTuyenDungUpdateWithoutNganhNgheInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   nhaTuyenDung?: Prisma.HoSoNhaTuyenDungUpdateOneRequiredWithoutTinTuyenDungsNestedInput
@@ -2231,11 +2329,13 @@ export type TinTuyenDungUncheckedUpdateWithoutNganhNgheInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   tinTuyenDungKyNangs?: Prisma.TinTuyenDungKyNangUncheckedUpdateManyWithoutTinTuyenDungNestedInput
@@ -2267,11 +2367,13 @@ export type TinTuyenDungUncheckedUpdateManyWithoutNganhNgheInput = {
   thoiHanNhanHoSo?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   trangThaiKiemDuyet?: Prisma.EnumTrangThaiKiemDuyetFieldUpdateOperationsInput | $Enums.TrangThaiKiemDuyet
   trangThaiHienThi?: Prisma.EnumTrangThaiHienThiTinFieldUpdateOperationsInput | $Enums.TrangThaiHienThiTin
+  ngungNhanHoSo?: Prisma.BoolFieldUpdateOperationsInput | boolean
   lyDoTuChoi?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   soLanChinhSua?: Prisma.IntFieldUpdateOperationsInput | number
   ngayGuiDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDuyet?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayDang?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  ngayDuChiTieu?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ngayTao?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   ngayCapNhat?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -2358,11 +2460,13 @@ export type TinTuyenDungSelect<ExtArgs extends runtime.Types.Extensions.Internal
   thoiHanNhanHoSo?: boolean
   trangThaiKiemDuyet?: boolean
   trangThaiHienThi?: boolean
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: boolean
   soLanChinhSua?: boolean
   ngayGuiDuyet?: boolean
   ngayDuyet?: boolean
   ngayDang?: boolean
+  ngayDuChiTieu?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
   nhaTuyenDung?: boolean | Prisma.HoSoNhaTuyenDungDefaultArgs<ExtArgs>
@@ -2398,11 +2502,13 @@ export type TinTuyenDungSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   thoiHanNhanHoSo?: boolean
   trangThaiKiemDuyet?: boolean
   trangThaiHienThi?: boolean
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: boolean
   soLanChinhSua?: boolean
   ngayGuiDuyet?: boolean
   ngayDuyet?: boolean
   ngayDang?: boolean
+  ngayDuChiTieu?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
   nhaTuyenDung?: boolean | Prisma.HoSoNhaTuyenDungDefaultArgs<ExtArgs>
@@ -2433,11 +2539,13 @@ export type TinTuyenDungSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   thoiHanNhanHoSo?: boolean
   trangThaiKiemDuyet?: boolean
   trangThaiHienThi?: boolean
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: boolean
   soLanChinhSua?: boolean
   ngayGuiDuyet?: boolean
   ngayDuyet?: boolean
   ngayDang?: boolean
+  ngayDuChiTieu?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
   nhaTuyenDung?: boolean | Prisma.HoSoNhaTuyenDungDefaultArgs<ExtArgs>
@@ -2468,16 +2576,18 @@ export type TinTuyenDungSelectScalar = {
   thoiHanNhanHoSo?: boolean
   trangThaiKiemDuyet?: boolean
   trangThaiHienThi?: boolean
+  ngungNhanHoSo?: boolean
   lyDoTuChoi?: boolean
   soLanChinhSua?: boolean
   ngayGuiDuyet?: boolean
   ngayDuyet?: boolean
   ngayDang?: boolean
+  ngayDuChiTieu?: boolean
   ngayTao?: boolean
   ngayCapNhat?: boolean
 }
 
-export type TinTuyenDungOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nhaTuyenDungId" | "nganhNgheId" | "viTriTuyenDung" | "moTaCongViec" | "yeuCauUngVien" | "quyenLoi" | "mucLuongTu" | "mucLuongDen" | "coTheThoaThuan" | "diaDiemLamViec" | "tinhThanhPho" | "quanHuyen" | "diaChiLamViecCuThe" | "hinhThucLamViec" | "phuongThucLamViec" | "chuyenMon" | "soLuongTuyen" | "soNamKinhNghiemToiThieu" | "trinhDoYeuCau" | "thoiHanNhanHoSo" | "trangThaiKiemDuyet" | "trangThaiHienThi" | "lyDoTuChoi" | "soLanChinhSua" | "ngayGuiDuyet" | "ngayDuyet" | "ngayDang" | "ngayTao" | "ngayCapNhat", ExtArgs["result"]["tinTuyenDung"]>
+export type TinTuyenDungOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "nhaTuyenDungId" | "nganhNgheId" | "viTriTuyenDung" | "moTaCongViec" | "yeuCauUngVien" | "quyenLoi" | "mucLuongTu" | "mucLuongDen" | "coTheThoaThuan" | "diaDiemLamViec" | "tinhThanhPho" | "quanHuyen" | "diaChiLamViecCuThe" | "hinhThucLamViec" | "phuongThucLamViec" | "chuyenMon" | "soLuongTuyen" | "soNamKinhNghiemToiThieu" | "trinhDoYeuCau" | "thoiHanNhanHoSo" | "trangThaiKiemDuyet" | "trangThaiHienThi" | "ngungNhanHoSo" | "lyDoTuChoi" | "soLanChinhSua" | "ngayGuiDuyet" | "ngayDuyet" | "ngayDang" | "ngayDuChiTieu" | "ngayTao" | "ngayCapNhat", ExtArgs["result"]["tinTuyenDung"]>
 export type TinTuyenDungInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   nhaTuyenDung?: boolean | Prisma.HoSoNhaTuyenDungDefaultArgs<ExtArgs>
   nganhNghe?: boolean | Prisma.NganhNgheDefaultArgs<ExtArgs>
@@ -2530,11 +2640,13 @@ export type $TinTuyenDungPayload<ExtArgs extends runtime.Types.Extensions.Intern
     thoiHanNhanHoSo: Date
     trangThaiKiemDuyet: $Enums.TrangThaiKiemDuyet
     trangThaiHienThi: $Enums.TrangThaiHienThiTin
+    ngungNhanHoSo: boolean
     lyDoTuChoi: string | null
     soLanChinhSua: number
     ngayGuiDuyet: Date | null
     ngayDuyet: Date | null
     ngayDang: Date | null
+    ngayDuChiTieu: Date | null
     ngayTao: Date
     ngayCapNhat: Date
   }, ExtArgs["result"]["tinTuyenDung"]>
@@ -2989,11 +3101,13 @@ export interface TinTuyenDungFieldRefs {
   readonly thoiHanNhanHoSo: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
   readonly trangThaiKiemDuyet: Prisma.FieldRef<"TinTuyenDung", 'TrangThaiKiemDuyet'>
   readonly trangThaiHienThi: Prisma.FieldRef<"TinTuyenDung", 'TrangThaiHienThiTin'>
+  readonly ngungNhanHoSo: Prisma.FieldRef<"TinTuyenDung", 'Boolean'>
   readonly lyDoTuChoi: Prisma.FieldRef<"TinTuyenDung", 'String'>
   readonly soLanChinhSua: Prisma.FieldRef<"TinTuyenDung", 'Int'>
   readonly ngayGuiDuyet: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
   readonly ngayDuyet: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
   readonly ngayDang: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
+  readonly ngayDuChiTieu: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
   readonly ngayTao: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
   readonly ngayCapNhat: Prisma.FieldRef<"TinTuyenDung", 'DateTime'>
 }

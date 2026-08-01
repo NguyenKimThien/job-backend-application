@@ -272,11 +272,13 @@ export const TinTuyenDungScalarFieldEnum = {
   thoiHanNhanHoSo: 'thoiHanNhanHoSo',
   trangThaiKiemDuyet: 'trangThaiKiemDuyet',
   trangThaiHienThi: 'trangThaiHienThi',
+  ngungNhanHoSo: 'ngungNhanHoSo',
   lyDoTuChoi: 'lyDoTuChoi',
   soLanChinhSua: 'soLanChinhSua',
   ngayGuiDuyet: 'ngayGuiDuyet',
   ngayDuyet: 'ngayDuyet',
   ngayDang: 'ngayDang',
+  ngayDuChiTieu: 'ngayDuChiTieu',
   ngayTao: 'ngayTao',
   ngayCapNhat: 'ngayCapNhat'
 } as const
@@ -329,7 +331,11 @@ export const ThongTinPhongVanScalarFieldEnum = {
   soDienThoaiLienHe: 'soDienThoaiLienHe',
   noiDungChuanBi: 'noiDungChuanBi',
   ghiChuPhongVan: 'ghiChuPhongVan',
+  trangThaiPhongVan: 'trangThaiPhongVan',
+  lyDoHuy: 'lyDoHuy',
+  thoiGianHuy: 'thoiGianHuy',
   nguoiTaoId: 'nguoiTaoId',
+  nguoiHuyId: 'nguoiHuyId',
   ngayTao: 'ngayTao',
   ngayCapNhat: 'ngayCapNhat'
 } as const

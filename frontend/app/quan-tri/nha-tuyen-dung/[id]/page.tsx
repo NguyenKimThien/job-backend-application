@@ -133,7 +133,9 @@ export default function EmployerApprovalDetailPage() {
       <section className="container portal-content admin-content employer-review-layout">
         <article className="content-card company-profile-card">
           <div className="company-profile-head">
-            <span>{companyInitials(profile.tenDonVi)}</span>
+            <span className="company-profile-logo">
+              {companyInitials(profile.tenDonVi)}
+            </span>
             <div>
               <small>HỒ SƠ DOANH NGHIỆP</small>
               <h2>{profile.tenDonVi}</h2>

@@ -6,10 +6,15 @@ import {
   VaiTroTaiKhoan,
 } from '../../../generated/prisma/client.js';
 import { ApiError } from '../../common/api-error.js';
+import {
+  defaultPermissions,
+  isPermissionCode,
+  PERMISSION_GROUPS,
+} from '../../common/auth/permissions.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto.js';
-import { UpdateUserRoleDto } from './dto/update-user-role.dto.js';
+import { UpdateUserPermissionsDto } from './dto/update-user-permissions.dto.js';
 
 @Injectable()
 export class AdminUsersService {
@@ -25,6 +30,32 @@ export class AdminUsersService {
       where.vaiTro = query.role;
     }
     if (query.status) where.trangThaiTaiKhoan = query.status;
+    if (query.verified === 'true') where.emailXacThucLuc = { not: null };
+    if (query.verified === 'false') where.emailXacThucLuc = null;
+    if (query.from || query.to) {
+      where.ngayTao = {
+        ...(query.from
+          ? { gte: new Date(`${query.from.slice(0, 10)}T00:00:00.000Z`) }
+          : {}),
+        ...(query.to
+          ? { lte: new Date(`${query.to.slice(0, 10)}T23:59:59.999Z`) }
+          : {}),
+      };
+    }
+    if (query.hasProfile === 'true') {
+      where.AND = [
+        {
+          OR: [
+            { hoSoNguoiLaoDong: { isNot: null } },
+            { hoSoNhaTuyenDung: { isNot: null } },
+          ],
+        },
+      ];
+    }
+    if (query.hasProfile === 'false') {
+      where.hoSoNguoiLaoDong = { is: null };
+      where.hoSoNhaTuyenDung = { is: null };
+    }
     if (search) {
       where.OR = [
         { tenDangNhap: { contains: search, mode: 'insensitive' } },
@@ -131,6 +162,7 @@ export class AdminUsersService {
           },
         },
         hoSoNhaTuyenDung: { include: { linhVuc: true } },
+        phanQuyens: true,
       },
     });
 
@@ -141,8 +173,21 @@ export class AdminUsersService {
       });
     }
 
-    const { matKhauHash: _password, ...safeAccount } = account;
-    return { success: true, data: safeAccount };
+    const { matKhauHash: _password, phanQuyens, ...safeAccount } = account;
+    const defaults = new Set(defaultPermissions(account.vaiTro));
+    const overrides = new Map(
+      phanQuyens.map((item) => [item.maQuyen, item.duocPhep]),
+    );
+    const permissionGroups = PERMISSION_GROUPS[account.vaiTro].map((group) => ({
+      resource: group.resource,
+      permissions: group.permissions.map((permission) => ({
+        ...permission,
+        allowed:
+          overrides.get(permission.code) ?? defaults.has(permission.code),
+        inherited: !overrides.has(permission.code),
+      })),
+    }));
+    return { success: true, data: { ...safeAccount, permissionGroups } };
   }
 
   async updateStatus(
@@ -228,21 +273,21 @@ export class AdminUsersService {
     };
   }
 
-  async updateRole(
+  async updatePermissions(
     id: number,
-    dto: UpdateUserRoleDto,
+    dto: UpdateUserPermissionsDto,
     currentAdminId: number,
   ) {
-    const role = dto.role;
-    if (id === currentAdminId || role === VaiTroTaiKhoan.QUAN_TRI_VIEN) {
+    if (id === currentAdminId) {
       throw new ApiError(HttpStatus.FORBIDDEN, {
-        code: 'INVALID_ROLE_ASSIGNMENT',
-        message: 'Không được cấp quyền quản trị hoặc sửa vai trò của chính mình.',
+        code: 'CANNOT_CHANGE_CURRENT_PERMISSIONS',
+        message:
+          'Quản trị viên không thể tự thay đổi quyền của tài khoản đang đăng nhập.',
       });
     }
     const account = await this.prisma.taiKhoan.findUnique({
       where: { id },
-      include: { hoSoNguoiLaoDong: true, hoSoNhaTuyenDung: true },
+      select: { id: true, vaiTro: true },
     });
     if (!account || account.vaiTro === VaiTroTaiKhoan.QUAN_TRI_VIEN) {
       throw new ApiError(HttpStatus.NOT_FOUND, {
@@ -250,143 +295,42 @@ export class AdminUsersService {
         message: 'Không tìm thấy tài khoản có thể phân quyền.',
       });
     }
-    if (role === account.vaiTro) {
+    const allowedCodes = new Set(defaultPermissions(account.vaiTro));
+    const invalid = dto.permissions.find(
+      (item) =>
+        !isPermissionCode(item.code) || !allowedCodes.has(item.code as never),
+    );
+    if (invalid) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
-        code: 'ROLE_UNCHANGED',
-        message: 'Tài khoản đang sử dụng vai trò này.',
+        code: 'INVALID_PERMISSION',
+        message: `Quyền ${invalid.code} không thuộc nhóm quyền của tài khoản này.`,
       });
     }
-
-    const hoTen = dto.hoTen?.trim();
-    const tenDonVi = dto.tenDonVi?.trim();
-    const maSoThue = dto.maSoThue?.trim();
-    const diaChiTruSo = dto.diaChiTruSo?.trim();
-    if (role === VaiTroTaiKhoan.NGUOI_LAO_DONG && !hoTen) {
-      throw new ApiError(HttpStatus.BAD_REQUEST, {
-        code: 'WORKER_PROFILE_REQUIRED',
-        message: 'Vui lòng nhập họ tên để tạo hồ sơ người lao động mới.',
-      });
-    }
-    if (
-      role === VaiTroTaiKhoan.NHA_TUYEN_DUNG &&
-      (!tenDonVi || !maSoThue || !diaChiTruSo)
-    ) {
-      throw new ApiError(HttpStatus.BAD_REQUEST, {
-        code: 'EMPLOYER_PROFILE_REQUIRED',
-        message:
-          'Vui lòng nhập tên đơn vị, mã số thuế và địa chỉ trụ sở để tạo hồ sơ nhà tuyển dụng mới.',
-      });
-    }
-    if (
-      role === VaiTroTaiKhoan.NHA_TUYEN_DUNG &&
-      !/^(?:\d{10}|\d{13})$/.test(maSoThue!)
-    ) {
-      throw new ApiError(HttpStatus.BAD_REQUEST, {
-        code: 'INVALID_TAX_CODE',
-        message: 'Mã số thuế phải gồm 10 hoặc 13 chữ số.',
-      });
-    }
-    if (role === VaiTroTaiKhoan.NHA_TUYEN_DUNG) {
-      const duplicateTaxCode = await this.prisma.hoSoNhaTuyenDung.findUnique({
-        where: { maSoThue: maSoThue! },
-        select: { id: true },
-      });
-      if (duplicateTaxCode) {
-        throw new ApiError(HttpStatus.CONFLICT, {
-          code: 'TAX_CODE_EXISTS',
-          message: 'Mã số thuế đã được sử dụng bởi nhà tuyển dụng khác.',
-        });
-      }
-    }
-
     await this.prisma.$transaction(async (tx) => {
-      if (account.hoSoNguoiLaoDong) {
-        const applicationIds = (
-          await tx.ungTuyen.findMany({
-            where: { hoSoNguoiLaoDongId: account.hoSoNguoiLaoDong.id },
-            select: { id: true },
-          })
-        ).map((item) => item.id);
-        if (applicationIds.length) {
-          await tx.lichSuTrangThaiUngTuyen.deleteMany({
-            where: { ungTuyenId: { in: applicationIds } },
-          });
-          await tx.ungTuyen.deleteMany({
-            where: { id: { in: applicationIds } },
-          });
-        }
-        await tx.hoSoNguoiLaoDong.delete({
-          where: { id: account.hoSoNguoiLaoDong.id },
-        });
-      }
-
-      if (account.hoSoNhaTuyenDung) {
-        const jobIds = (
-          await tx.tinTuyenDung.findMany({
-            where: { nhaTuyenDungId: account.hoSoNhaTuyenDung.id },
-            select: { id: true },
-          })
-        ).map((item) => item.id);
-        if (jobIds.length) {
-          const applicationIds = (
-            await tx.ungTuyen.findMany({
-              where: { tinTuyenDungId: { in: jobIds } },
-              select: { id: true },
-            })
-          ).map((item) => item.id);
-          if (applicationIds.length) {
-            await tx.lichSuTrangThaiUngTuyen.deleteMany({
-              where: { ungTuyenId: { in: applicationIds } },
-            });
-            await tx.ungTuyen.deleteMany({
-              where: { id: { in: applicationIds } },
-            });
-          }
-          await tx.lichSuKiemDuyet.deleteMany({
-            where: { tinTuyenDungId: { in: jobIds } },
-          });
-          await tx.tinTuyenDung.deleteMany({
-            where: { id: { in: jobIds } },
-          });
-        }
-        await tx.lichSuKiemDuyet.deleteMany({
-          where: { hoSoNhaTuyenDungId: account.hoSoNhaTuyenDung.id },
-        });
-        await tx.hoSoNhaTuyenDung.delete({
-          where: { id: account.hoSoNhaTuyenDung.id },
-        });
-      }
-
-      if (role === VaiTroTaiKhoan.NGUOI_LAO_DONG) {
-        await tx.hoSoNguoiLaoDong.create({
-          data: { taiKhoanId: id, hoTen: hoTen! },
-        });
-      } else {
-        await tx.hoSoNhaTuyenDung.create({
-          data: {
+      await tx.phanQuyenTaiKhoan.deleteMany({ where: { taiKhoanId: id } });
+      if (dto.permissions.length) {
+        await tx.phanQuyenTaiKhoan.createMany({
+          data: dto.permissions.map((item) => ({
             taiKhoanId: id,
-            tenDonVi: tenDonVi!,
-            maSoThue: maSoThue!,
-            diaChiTruSo: diaChiTruSo!,
-          },
+            maQuyen: item.code,
+            duocPhep: item.allowed,
+          })),
         });
       }
-
-      await tx.taiKhoan.update({ where: { id }, data: { vaiTro: role } });
       await tx.thongBao.create({
         data: {
           taiKhoanId: id,
-          tieuDe: 'Vai trò tài khoản đã thay đổi',
+          tieuDe: 'Quyền truy cập đã được cập nhật',
           noiDung:
-            'Quản trị viên đã thay đổi vai trò và tạo hồ sơ mới cho tài khoản của bạn. Vui lòng đăng nhập lại để sử dụng.',
-          loaiThongBao: 'TAI_KHOAN',
-          duongDanDich: '/',
+            'Quản trị viên đã cập nhật quyền xem, thêm, sửa hoặc xóa dữ liệu của tài khoản bạn.',
+          loaiThongBao: LoaiThongBao.TAI_KHOAN,
+          duongDanDich: '/thong-bao',
         },
       });
     });
     return {
       success: true,
-      message: 'Đã đổi vai trò, xóa hồ sơ cũ và tạo hồ sơ mới.',
+      message: 'Phân quyền người dùng thành công.',
     };
   }
 

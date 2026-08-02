@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard.js';
 import { RolesGuard } from '../../common/auth/roles.guard.js';
+import { PermissionsGuard } from '../../common/auth/permissions.guard.js';
 import { MailModule } from '../mail/mail.module.js';
 import {
   ProtectedPortalController,
@@ -24,6 +25,6 @@ import { PortalService } from './portal.service.js';
     }),
   ],
   controllers: [PublicPortalController, ProtectedPortalController],
-  providers: [PortalService, JwtAuthGuard, RolesGuard],
+  providers: [PortalService, JwtAuthGuard, RolesGuard, PermissionsGuard],
 })
 export class PortalModule {}

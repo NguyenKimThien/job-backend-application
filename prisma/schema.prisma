@@ -130,11 +130,28 @@ model TaiKhoan {
   lichSuTrangThaiUngTuyens LichSuTrangThaiUngTuyen[] @relation("NguoiThucHienTrangThaiUngTuyen")
   lichSuKiemDuyets         LichSuKiemDuyet[]         @relation("NguoiThucHienKiemDuyet")
   thongTinPhongVans        ThongTinPhongVan[]        @relation("NguoiTaoThongTinPhongVan")
+<<<<<<< HEAD
   thongTinPhongVanDaHuys   ThongTinPhongVan[]        @relation("NguoiHuyThongTinPhongVan")
+=======
+  phanQuyens               PhanQuyenTaiKhoan[]
+>>>>>>> d9548b166905cb7ef8c14a5c32f632cef4d8b04d
 
   @@index([vaiTro], map: "idx_tai_khoan_vai_tro")
   @@index([trangThaiTaiKhoan], map: "idx_tai_khoan_trang_thai")
   @@map("tai_khoan")
+}
+
+model PhanQuyenTaiKhoan {
+  id           Int       @id @default(autoincrement()) @map("id")
+  taiKhoanId   Int       @map("tai_khoan_id")
+  maQuyen      String    @map("ma_quyen") @db.VarChar(80)
+  duocPhep     Boolean   @map("duoc_phep")
+  ngayCapNhat  DateTime  @updatedAt @map("ngay_cap_nhat") @db.Timestamptz(6)
+  taiKhoan     TaiKhoan  @relation(fields: [taiKhoanId], references: [id], onDelete: Cascade)
+
+  @@unique([taiKhoanId, maQuyen], map: "uq_phan_quyen_tai_khoan")
+  @@index([taiKhoanId], map: "idx_phan_quyen_tai_khoan")
+  @@map("phan_quyen_tai_khoan")
 }
 
 model MaXacThuc {

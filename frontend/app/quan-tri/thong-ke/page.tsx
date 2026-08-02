@@ -27,16 +27,28 @@ type StatisticsData = {
   jobs: number;
   applications: number;
   approvedJobs: number;
+  activeJobs: number;
+  hiredApplications: number;
+  totalVacancies: number;
+  recruitmentRate: number;
   users?: {
+    byStatus?: Record<string, number>;
+    total?: number;
+  };
+  employerStatistics?: {
     byStatus?: Record<string, number>;
     total?: number;
   };
   jobStatistics?: {
     byStatus?: Record<string, number>;
+    byDisplayStatus?: Record<string, number>;
+    byWorkType?: Record<string, number>;
+    byCategory?: Record<string, number>;
     total?: number;
   };
   applicationStatistics?: {
     byStatus?: Record<string, number>;
+    topJobs?: Array<{ label: string; value: number }>;
     total?: number;
   };
 };
@@ -48,7 +60,12 @@ type ReportRow = {
   value: number;
 };
 
-type ReportType = 'summary' | 'users' | 'jobs' | 'applications';
+type ReportType =
+  | 'summary'
+  | 'users'
+  | 'employers'
+  | 'jobs'
+  | 'applications';
 type ReportFormat = 'csv' | 'json';
 
 const accountStatusLabels: Record<string, string> = {
@@ -75,6 +92,22 @@ const applicationStatusLabels: Record<string, string> = {
   TRUNG_TUYEN: 'Trúng tuyển',
   KHONG_PHU_HOP: 'Không phù hợp',
   DA_RUT: 'Đã rút',
+};
+
+const displayStatusLabels: Record<string, string> = {
+  CHUA_DANG: 'Chưa đăng',
+  DANG_HIEN_THI: 'Đang hiển thị',
+  TAM_AN: 'Tạm ẩn',
+  DA_DONG: 'Đã đóng',
+  HET_HAN: 'Hết hạn',
+};
+
+const workTypeLabels: Record<string, string> = {
+  TOAN_THOI_GIAN: 'Toàn thời gian',
+  BAN_THOI_GIAN: 'Bán thời gian',
+  THUC_TAP: 'Thực tập',
+  THOI_VU: 'Thời vụ',
+  TU_XA: 'Từ xa',
 };
 
 export default function StatisticsPage() {
@@ -231,6 +264,29 @@ export default function StatisticsPage() {
                 label="Hồ sơ ứng tuyển"
                 value={data.applications}
               />
+              <AdminStatCard
+                icon="checkCircle"
+                label="Tin đang tuyển"
+                tone="success"
+                value={data.activeJobs}
+              />
+              <AdminStatCard
+                icon="users"
+                label="Tổng nhu cầu tuyển"
+                value={data.totalVacancies}
+              />
+              <AdminStatCard
+                icon="checkCircle"
+                label="Ứng viên trúng tuyển"
+                tone="success"
+                value={data.hiredApplications}
+              />
+              <AdminStatCard
+                icon="fileText"
+                label="Tỷ lệ trúng tuyển"
+                tone="info"
+                value={`${data.recruitmentRate.toLocaleString('vi-VN')}%`}
+              />
             </AdminStatsGrid>
 
             <div className="content-card admin-table-card admin-report-panel">
@@ -274,6 +330,9 @@ export default function StatisticsPage() {
                     >
                       <option value="summary">Báo cáo tổng hợp</option>
                       <option value="users">Báo cáo người dùng</option>
+                      <option value="employers">
+                        Báo cáo nhà tuyển dụng
+                      </option>
                       <option value="jobs">Báo cáo tin tuyển dụng</option>
                       <option value="applications">Báo cáo ứng tuyển</option>
                     </select>
@@ -353,6 +412,7 @@ export default function StatisticsPage() {
 const reportFileNames: Record<ReportType, string> = {
   summary: 'tong-hop',
   users: 'nguoi-dung',
+  employers: 'nha-tuyen-dung',
   jobs: 'tin-tuyen-dung',
   applications: 'ung-tuyen',
 };
@@ -377,6 +437,11 @@ function buildRows(data: StatisticsData, type: ReportType): ReportRow[] {
     summary: [
       ...rowsFromRecord('Tài khoản', data.users?.byStatus, accountStatusLabels),
       ...rowsFromRecord(
+        'Nhà tuyển dụng',
+        data.employerStatistics?.byStatus,
+        jobStatusLabels,
+      ),
+      ...rowsFromRecord(
         'Tin tuyển dụng',
         data.jobStatistics?.byStatus,
         jobStatusLabels,
@@ -392,16 +457,46 @@ function buildRows(data: StatisticsData, type: ReportType): ReportRow[] {
       data.users?.byStatus,
       accountStatusLabels,
     ),
-    jobs: rowsFromRecord(
-      'Tin tuyển dụng',
-      data.jobStatistics?.byStatus,
+    employers: rowsFromRecord(
+      'Nhà tuyển dụng',
+      data.employerStatistics?.byStatus,
       jobStatusLabels,
     ),
-    applications: rowsFromRecord(
-      'Ứng tuyển',
-      data.applicationStatistics?.byStatus,
-      applicationStatusLabels,
-    ),
+    jobs: [
+      ...rowsFromRecord(
+        'Trạng thái kiểm duyệt',
+        data.jobStatistics?.byStatus,
+        jobStatusLabels,
+      ),
+      ...rowsFromRecord(
+        'Trạng thái hiển thị',
+        data.jobStatistics?.byDisplayStatus,
+        displayStatusLabels,
+      ),
+      ...rowsFromRecord(
+        'Hình thức làm việc',
+        data.jobStatistics?.byWorkType,
+        workTypeLabels,
+      ),
+      ...rowsFromRecord(
+        'Ngành nghề',
+        data.jobStatistics?.byCategory,
+        {},
+      ),
+    ],
+    applications: [
+      ...rowsFromRecord(
+        'Trạng thái ứng tuyển',
+        data.applicationStatistics?.byStatus,
+        applicationStatusLabels,
+      ),
+      ...(data.applicationStatistics?.topJobs ?? []).map((item) => ({
+        group: 'Tin có nhiều ứng viên',
+        label: item.label,
+        tone: 'info' as BadgeTone,
+        value: item.value,
+      })),
+    ],
   };
 
   return sections[type];

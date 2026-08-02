@@ -25,6 +25,10 @@ import { maskEmail } from './utils/mask-email.util.js';
 import { normalizeEmail } from './utils/normalize-email.util.js';
 import { normalizePhone } from './utils/normalize-phone.util.js';
 import { normalizeTaxCode } from './utils/normalize-tax-code.util.js';
+import {
+  defaultPermissions,
+  type PermissionCode,
+} from '../../common/auth/permissions.js';
 
 type CreatedRegistration = {
   accountId: number;
@@ -42,14 +46,13 @@ type CreatedEmployerRegistration = CreatedRegistration & {
 };
 
 type LoginIdentifierType =
-  | 'WORKER_CCCD'
-  | 'EMPLOYER_TAX_CODE'
-  | 'ADMIN_USERNAME';
+  'WORKER_CCCD' | 'EMPLOYER_TAX_CODE' | 'ADMIN_USERNAME';
 
 type LoginAccount = Prisma.TaiKhoanGetPayload<{
   include: {
     hoSoNguoiLaoDong: true;
     hoSoNhaTuyenDung: true;
+    phanQuyens: true;
   };
 }>;
 
@@ -600,8 +603,11 @@ export class AuthService {
       return 'ADMIN_USERNAME';
     }
 
-    this.throwLoginError(HttpStatus.BAD_REQUEST, 'INVALID_LOGIN_IDENTIFIER',
-      'Thông tin đăng nhập không hợp lệ.');
+    this.throwLoginError(
+      HttpStatus.BAD_REQUEST,
+      'INVALID_LOGIN_IDENTIFIER',
+      'Thông tin đăng nhập không hợp lệ.',
+    );
   }
 
   private findAccountByLoginIdentifier(
@@ -610,10 +616,9 @@ export class AuthService {
   ): Promise<LoginAccount | null> {
     const prisma = this.getPrismaService();
 
-    const phone =
-      /^0\d{9}$/.test(identifier)
-        ? `+84${identifier.slice(1)}`
-        : identifier;
+    const phone = /^0\d{9}$/.test(identifier)
+      ? `+84${identifier.slice(1)}`
+      : identifier;
     return prisma.taiKhoan.findFirst({
       where: {
         OR: [
@@ -627,6 +632,7 @@ export class AuthService {
       include: {
         hoSoNguoiLaoDong: true,
         hoSoNhaTuyenDung: true,
+        phanQuyens: true,
       },
     });
   }
@@ -687,11 +693,20 @@ export class AuthService {
       include: {
         hoSoNguoiLaoDong: true,
         hoSoNhaTuyenDung: true,
+        phanQuyens: true,
       },
     });
   }
 
   private buildLoginResponse(account: LoginAccount, accessToken: string) {
+    const permissions = new Set<PermissionCode>(
+      defaultPermissions(account.vaiTro),
+    );
+    for (const override of account.phanQuyens) {
+      if (override.duocPhep)
+        permissions.add(override.maQuyen as PermissionCode);
+      else permissions.delete(override.maQuyen as PermissionCode);
+    }
     const baseAccount = {
       id: account.id,
       tenDangNhap: account.tenDangNhap,
@@ -703,6 +718,7 @@ export class AuthService {
       soDienThoai: account.soDienThoai,
       vaiTro: account.vaiTro,
       trangThaiTaiKhoan: account.trangThaiTaiKhoan,
+      quyenHan: [...permissions],
     };
 
     if (account.vaiTro === VaiTroTaiKhoan.NGUOI_LAO_DONG) {

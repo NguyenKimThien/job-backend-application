@@ -1,5 +1,14 @@
 import { Transform } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import {
   TrangThaiTaiKhoan,
   VaiTroTaiKhoan,
@@ -17,6 +26,22 @@ export class ListUsersQueryDto {
   @IsOptional()
   @IsEnum(TrangThaiTaiKhoan)
   status?: TrangThaiTaiKhoan;
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  verified?: 'true' | 'false';
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  hasProfile?: 'true' | 'false';
+
+  @IsOptional()
+  @IsDateString()
+  from?: string;
+
+  @IsOptional()
+  @IsDateString()
+  to?: string;
 
   @IsOptional()
   @Transform(({ value }) => Number(value))

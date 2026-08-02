@@ -1,186 +1,315 @@
-# Việc làm Thanh niên Hà Nội — bản chạy một lệnh
+# Việc làm Thanh niên Hà Nội
 
-Đây là dự án full-stack đã gom thư viện frontend và backend vào **một**
-`package.json` và **một** thư mục `node_modules`.
+Hệ thống kết nối cung – cầu lao động dành cho Người lao động, Nhà tuyển dụng
+và Cán bộ quản trị. Dự án sử dụng NestJS, Next.js, Prisma và PostgreSQL.
+Frontend và backend dùng chung một `package.json` và một thư mục
+`node_modules`.
 
-## Cấu trúc
+## 1. Công nghệ sử dụng
+
+- Backend: NestJS, TypeScript, Prisma ORM.
+- Frontend: Next.js, React, TypeScript.
+- Database: PostgreSQL.
+- Xác thực: JWT, bcrypt và OTP qua email.
+- Phân quyền: RBAC kết hợp quyền riêng theo từng tài khoản.
+
+## 2. Cấu trúc dự án
 
 ```text
-viec-lam-thanh-nien-one-command/
-├── src/                 Backend NestJS
-├── prisma/              Prisma và PostgreSQL
+viec-lam-thanh-nien/
 ├── frontend/            Frontend Next.js
-├── scripts/             Chạy đồng thời hai máy chủ
-├── .env.example
-└── package.json         Toàn bộ thư viện của dự án
+├── generated/           Prisma Client được sinh tự động
+├── prisma/
+│   ├── migrations/      Lịch sử thay đổi database
+│   ├── schema.prisma    Mô hình dữ liệu
+│   └── seed.ts          Dữ liệu mẫu
+├── scripts/             Script chạy frontend và backend
+├── src/                 Backend NestJS
+├── .env.example         Cấu hình môi trường mẫu
+├── package.json         Thư viện và câu lệnh chung
+└── README.md
 ```
 
-Không chạy `npm install` trong `frontend`. Thư mục này không còn
+Không chạy `npm install` trong thư mục `frontend` vì frontend không có
 `package.json` riêng.
 
-## Bước 1: tạo database
+## 3. Yêu cầu cài đặt
 
-Trong pgAdmin, tạo database tên `jobconnect`, hoặc chạy:
+- Node.js phiên bản 20 trở lên.
+- npm.
+- PostgreSQL Server.
+- pgAdmin 4 là tùy chọn, dùng để quản lý database bằng giao diện.
+
+Kiểm tra môi trường:
+
+```powershell
+node -v
+npm.cmd -v
+```
+
+Nếu PowerShell chặn `npm.ps1`, hãy dùng `npm.cmd` như các ví dụ trong tài liệu.
+
+## 4. Tạo và cấu hình database
+
+Tạo database bằng pgAdmin hoặc SQL:
 
 ```sql
 CREATE DATABASE jobconnect;
 ```
 
-## Bước 2: cấu hình
-
-Mở PowerShell tại thư mục dự án:
+Tạo file `.env` từ file mẫu:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Mở `.env` và thay mật khẩu PostgreSQL trong `DATABASE_URL`:
+Mở `.env` và sửa chuỗi kết nối PostgreSQL:
 
 ```env
-DATABASE_URL="postgresql://postgres:MAT_KHAU_CUA_BAN@localhost:5432/jobconnect?schema=public"
+DATABASE_URL="postgresql://postgres:MAT_KHAU@localhost:5432/jobconnect?schema=public"
 ```
 
-## Bước 3: cài và tạo dữ liệu
+Đồng thời cấu hình tối thiểu:
 
-Chỉ thực hiện một lần:
+```env
+OTP_PEPPER="chuoi-bi-mat-co-it-nhat-32-ky-tu"
+JWT_SECRET="chuoi-bi-mat-jwt-dai-va-kho-doan"
+
+SEED_ADMIN_EMAIL="admin@jobconnect.local"
+SEED_ADMIN_USERNAME="admin"
+SEED_ADMIN_PASSWORD="Admin@123456"
+```
+
+Không đưa file `.env` lên Git.
+
+## 5. Cài thư viện
+
+Tại thư mục gốc của dự án, chạy:
 
 ```powershell
 npm.cmd install
-npm.cmd run setup
 ```
 
-Tài khoản quản trị mẫu:
-
-- Tên đăng nhập: `admin`
-- Mật khẩu mặc định: `Admin@123456`
-
-## Bước 4: chạy toàn bộ dự án
+Nếu npm yêu cầu duyệt install script:
 
 ```powershell
-npm.cmd run dev
+npm.cmd approve-scripts
 ```
 
-Một lệnh trên tự chạy:
+Cho phép các gói cần thiết như Prisma, bcrypt, esbuild, sharp,
+`@prisma/engines` và `unrs-resolver`.
 
-- Website: `http://localhost:3000`
-- Backend API: `http://localhost:3001`
+## 6. Khởi tạo database mới
 
-Giữ cửa sổ PowerShell đang chạy. Nhấn `Ctrl + C` để dừng cả hai.
-
-## Các lệnh riêng
+Phần này dành cho thành viên tạo database `jobconnect` mới và database đang
+trống.
 
 ```powershell
-npm.cmd run dev:frontend
-npm.cmd run dev:backend
-npm.cmd run prisma:studio
-npm.cmd run build
+npx.cmd prisma migrate deploy
+npm.cmd run prisma:generate
+npm.cmd run db:seed
 ```
 
-## Quản lý người dùng
+`migrate deploy` tự chạy lần lượt toàn bộ file trong `prisma/migrations`.
+Không cần mở từng file SQL để chạy thủ công.
 
-Sau khi đăng nhập quản trị, truy cập:
+## 7. Cập nhật database sau khi Git pull
 
-```text
-http://localhost:3000/quan-tri/tai-khoan
-```
-
-Đã có tìm kiếm, lọc, phân trang, xem chi tiết hồ sơ, tạm khóa, khóa và mở
-khóa tài khoản. API được bảo vệ bằng JWT và quyền `QUAN_TRI_VIEN`.
-
-## Các chức năng đã kết nối frontend với backend
-
-- Đăng ký, xác thực OTP, đăng nhập, quên và đổi mật khẩu.
-- Danh mục ngành nghề, danh sách/chi tiết việc làm và thông tin công ty.
-- Hồ sơ người lao động: học vấn, kinh nghiệm, kỹ năng, nguyện vọng và CV.
-- Nộp hồ sơ, theo dõi việc đã ứng tuyển, lưu và bỏ lưu tin.
-- Hồ sơ nhà tuyển dụng, tạo tin và xem/xử lý ứng viên theo từng tin.
-- Quản trị tài khoản, ngành nghề, duyệt nhà tuyển dụng, duyệt tin và thống kê.
-- Thông báo được lấy riêng theo tài khoản đang đăng nhập.
-
-Frontend gọi backend tại `http://localhost:3001` thông qua
-`NEXT_PUBLIC_API_URL` trong `.env`.
-
-Sau khi nhận phiên bản mới có thay đổi Prisma, luôn chạy:
+Mỗi khi nhận code mới, chạy:
 
 ```powershell
-npm.cmd run setup
-```
-
-Lệnh này tạo/cập nhật các bảng, sinh Prisma Client và nạp dữ liệu mẫu.
-
-## Email OTP
-
-OTP xác thực tài khoản và đặt lại mật khẩu luôn được gửi qua SMTP. Cần cấu hình
-đúng `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM_NAME`
-và `SMTP_FROM_EMAIL` trong `.env` trước khi đăng ký hoặc gửi lại OTP.
-
-Nếu PowerShell chặn `npm.ps1`, dùng `npm.cmd` như các câu lệnh trên.
-
-## Backend API đã triển khai
-
-Backend NestJS chạy tại `http://localhost:3001`. Các API riêng tư dùng header:
-
-```text
-Authorization: Bearer <accessToken>
-```
-
-Các nhóm chức năng chính:
-
-- `/auth/*`: đăng ký người lao động/nhà tuyển dụng, OTP, gửi lại OTP, đăng nhập.
-- `/auth/forgot-password`, `/auth/reset-password`, `/account/password`,
-  `/account/logout`: quên, đặt lại, đổi mật khẩu và đăng xuất.
-- `/jobs`, `/jobs/:id`, `/companies/:id`, `/categories`, `/fields`: dữ liệu
-  công khai; danh sách việc hỗ trợ lọc `keyword`, `category`, `location`,
-  `type`, `salaryMin`, `salaryMax`, `experienceMax`.
-- `/worker/profile`, `/worker/applications`, `/worker/saved-jobs`: hồ sơ,
-  ứng tuyển, lịch sử ứng tuyển và tin đã lưu của người lao động.
-- `/employer/profile`, `/employer/jobs`: hồ sơ nhà tuyển dụng, tạo tin, xem
-  tin và sửa/gửi lại tin để kiểm duyệt (tối đa 3 lần; tin đang chờ duyệt
-  không thể sửa).
-- `/employer/jobs/:jobId/applicants/*`: danh sách, chi tiết và cập nhật quy
-  trình ứng viên theo từng tin thuộc doanh nghiệp.
-- `/admin/users/*`: tìm kiếm, xem chi tiết, khóa/mở khóa và phân quyền tài khoản.
-- `/admin/employers/*`, `/admin/jobs/*`: kiểm duyệt nhà tuyển dụng và tin,
-  lưu lịch sử kiểm duyệt, gửi thông báo kết quả.
-- `/admin/categories/*`: thêm, sửa, ẩn/hiện danh mục; thao tác xóa chỉ ẩn để
-  không làm mất dữ liệu liên kết.
-- `/notifications`, `/notifications/read-all`, `/notifications/:id/read`:
-  thông báo riêng của từng tài khoản.
-- `/admin/statistics?from=YYYY-MM-DD&to=YYYY-MM-DD`: bảng số liệu tài khoản,
-  tin và ứng tuyển theo trạng thái.
-- `/admin/reports/export?from=YYYY-MM-DD&to=YYYY-MM-DD`: tải báo cáo CSV.
-
-## Ba chức năng bổ sung
-
-### Phân quyền
-
-- Backend kiểm tra JWT và vai trò ở từng nhóm API; không chỉ ẩn nút trên giao
-  diện.
-- Frontend tự chuyển người dùng ra khỏi khu vực `/quan-tri` hoặc
-  `/nha-tuyen-dung` nếu vai trò không phù hợp.
-- Quản trị viên đổi vai trò tại **Quản trị → Tài khoản → Chi tiết tài khoản →
-  Phân quyền tài khoản**. Chỉ chuyển được khi tài khoản có hồ sơ tương ứng;
-  không thể tự cấp quyền quản trị.
-
-### Chỉnh sửa tin tuyển dụng
-
-Tại **Nhà tuyển dụng → Tin tuyển dụng**, mở nút ba chấm của tin và chọn
-**Chỉnh sửa tin**. Hệ thống nạp sẵn nội dung cũ, kiểm tra tin có thuộc đúng nhà
-tuyển dụng đang đăng nhập và gửi phiên bản cập nhật về trạng thái chờ kiểm
-duyệt. Tin đang chờ duyệt và tin đã đủ ba lần sửa sẽ không hiện thao tác sửa.
-
-### Xuất báo cáo
-
-Tại **Quản trị → Thống kê và báo cáo**, chọn **Từ ngày**, **Đến ngày**, bấm
-**Lọc số liệu**, sau đó chọn **Xuất báo cáo CSV**. File dùng UTF-8 có BOM để
-Excel hiển thị đúng tiếng Việt và chỉ chứa dữ liệu trong khoảng ngày đã chọn.
-
-Sau khi cập nhật bản này trên cơ sở dữ liệu đã có, chạy:
-
-```powershell
-npm.cmd run db:push
+git pull
+npm.cmd install
+npx.cmd prisma migrate deploy
 npm.cmd run prisma:generate
 npm.cmd run dev
 ```
 
-`db:push` bổ sung cột đếm số lần chỉnh sửa tin và không xóa dữ liệu hiện có.
+Nếu migration đã được áp dụng trước đó, Prisma sẽ tự bỏ qua và chỉ chạy các
+migration mới.
+
+## 8. Xử lý database cũ báo lỗi P3005
+
+Lỗi `P3005: The database schema is not empty` xảy ra khi database đã có bảng
+nhưng chưa có lịch sử Prisma Migration. Không xóa database nếu đang có dữ liệu.
+
+Sao lưu database, sau đó chỉ đánh dấu các migration cũ tương ứng với cấu trúc
+đã tồn tại:
+
+```powershell
+npx.cmd prisma migrate resolve --applied 00000000000000_init
+npx.cmd prisma migrate resolve --applied 20260727000000_make_employer_profile_optional_fields_nullable
+npx.cmd prisma migrate resolve --applied 20260730000000_add_interview_invitation
+npx.cmd prisma migrate resolve --applied 20260731000000_add_job_matching_fields
+```
+
+Tiếp theo chạy migration mới:
+
+```powershell
+npx.cmd prisma migrate deploy
+npm.cmd run prisma:generate
+```
+
+Không chạy lệnh `resolve --applied` cho migration
+`20260802000000_add_account_permissions` trước `migrate deploy`, vì migration
+này phải thực sự tạo bảng `phan_quyen_tai_khoan`.
+
+Kiểm tra bằng pgAdmin:
+
+```sql
+SELECT * FROM public.phan_quyen_tai_khoan;
+```
+
+## 9. Chạy dự án
+
+Chạy đồng thời frontend và backend:
+
+```powershell
+npm.cmd run dev
+```
+
+Địa chỉ truy cập:
+
+- Website: `http://localhost:3000`
+- Backend API: `http://localhost:3001`
+
+Nhấn `Ctrl + C` để dừng cả hai.
+
+Các lệnh chạy riêng:
+
+```powershell
+npm.cmd run dev:backend
+npm.cmd run dev:frontend
+npm.cmd run prisma:studio
+npm.cmd run build
+```
+
+## 10. Phân quyền RBAC
+
+Phân quyền không phải là đổi vai trò tài khoản. Vai trò Người lao động hoặc
+Nhà tuyển dụng được xác định khi đăng ký và không bị thay đổi trong quá trình
+phân quyền.
+
+Mỗi vai trò có một nhóm quyền mặc định. Cán bộ quản trị có thể cấp hoặc giới
+hạn quyền riêng cho từng tài khoản tại:
+
+```text
+Quản trị → Tài khoản → Chi tiết → Phân quyền tài khoản
+```
+
+Các quyền được chia theo dữ liệu và hành động Xem, Thêm, Sửa, Xóa, gồm:
+
+- Hồ sơ cá nhân và CV.
+- Hồ sơ ứng tuyển và việc làm đã lưu.
+- Hồ sơ nhà tuyển dụng.
+- Tin tuyển dụng.
+- Hồ sơ ứng viên.
+- Thông báo.
+- Tài khoản người dùng.
+- Danh mục ngành nghề.
+- Kiểm duyệt nhà tuyển dụng và tin tuyển dụng.
+- Thống kê và xuất báo cáo.
+
+Quyền riêng được lưu trong bảng `phan_quyen_tai_khoan`. Backend kiểm tra quyền
+trên từng API nên người dùng không thể vượt quyền bằng cách nhập URL hoặc gọi
+API trực tiếp. Phân quyền không xóa hồ sơ, tin tuyển dụng hoặc lịch sử ứng
+tuyển của người dùng.
+
+## 11. Chức năng chính
+
+### Người lao động
+
+- Đăng ký, xác thực OTP và đăng nhập.
+- Quản lý hồ sơ, học vấn, kinh nghiệm, kỹ năng và CV.
+- Tìm kiếm, lọc, lưu và ứng tuyển việc làm.
+- Theo dõi trạng thái hồ sơ ứng tuyển.
+- Xem thông báo và đổi mật khẩu.
+
+### Nhà tuyển dụng
+
+- Đăng ký và hoàn thiện hồ sơ doanh nghiệp.
+- Tạo, xem và chỉnh sửa tin tuyển dụng.
+- Xem ứng viên theo từng tin tuyển dụng.
+- Xem CV, cập nhật trạng thái và mời phỏng vấn.
+- Xem thông báo kết quả kiểm duyệt.
+
+### Cán bộ quản trị
+
+- Tìm kiếm, lọc, khóa và mở khóa tài khoản.
+- Cấp hoặc giới hạn quyền theo từng tài khoản.
+- Quản lý danh mục ngành nghề.
+- Kiểm duyệt hồ sơ nhà tuyển dụng và tin tuyển dụng.
+- Xem thống kê và xuất báo cáo.
+
+## 12. Email OTP
+
+Cấu hình SMTP trong `.env`:
+
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_FORCE_IPV4=false
+SMTP_USER="email-cua-ban@gmail.com"
+SMTP_PASSWORD="mat-khau-ung-dung"
+SMTP_FROM_NAME="JobConnect"
+SMTP_FROM_EMAIL="email-cua-ban@gmail.com"
+```
+
+Với Gmail, `SMTP_PASSWORD` phải là mật khẩu ứng dụng, không phải mật khẩu đăng
+nhập Gmail thông thường.
+
+## 13. Đưa thay đổi lên Git
+
+Phải commit cả Prisma schema và migration:
+
+```powershell
+git add README.md prisma/schema.prisma prisma/migrations src frontend
+git commit -m "feat: them phan quyen RBAC theo chuc nang"
+git push
+```
+
+Không đưa các nội dung sau lên Git:
+
+```text
+.env
+node_modules/
+dist/
+frontend/.next/
+```
+
+Migration phân quyền bắt buộc phải có trên Git:
+
+```text
+prisma/migrations/20260802000000_add_account_permissions/migration.sql
+```
+
+## 14. Một số lỗi thường gặp
+
+### Bảng phân quyền chưa tồn tại
+
+```text
+The table public.phan_quyen_tai_khoan does not exist
+```
+
+Chạy:
+
+```powershell
+npx.cmd prisma migrate deploy
+npm.cmd run prisma:generate
+```
+
+### Không kết nối được backend
+
+Kiểm tra backend đang chạy tại `http://localhost:3001` và biến
+`NEXT_PUBLIC_API_URL` trong `.env`.
+
+### Prisma không nhận biến DATABASE_URL
+
+Kiểm tra file `.env` nằm tại thư mục gốc và `DATABASE_URL` đúng tên database,
+cổng, tài khoản và mật khẩu PostgreSQL.
+
+### Không chạy được seed
+
+Đảm bảo đã khai báo `SEED_ADMIN_EMAIL`, `SEED_ADMIN_USERNAME` và
+`SEED_ADMIN_PASSWORD` trong `.env`.

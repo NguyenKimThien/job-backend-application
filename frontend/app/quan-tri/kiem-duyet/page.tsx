@@ -13,14 +13,14 @@ import {
   AdminStatusBadge,
   AdminTable,
   AdminTableSkeleton,
-  AdminToolbar,
-  AdminToolbarGroup,
   BadgeTone,
   formatAdminDate,
 } from '@/components/admin/AdminUI';
 import SiteShell from '@/components/SiteShell';
 import { ApiJob, portalFetch, salaryLabel } from '@/lib/portal-api';
-import { useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+
+type Category = { id: number; name: string };
 
 type ReviewStatus =
   'BAN_NHAP' | 'CHO_DUYET' | 'DA_DUYET' | 'TU_CHOI' | 'YEU_CAU_BO_SUNG';
@@ -35,14 +35,26 @@ const statusMeta: Record<ReviewStatus, { label: string; tone: BadgeTone }> = {
 
 export default function ModerationPage() {
   const [items, setItems] = useState<ApiJob[]>([]);
+  const [searchInput, setSearchInput] = useState('');
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
+  const [displayStatus, setDisplayStatus] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [workType, setWorkType] = useState('');
+  const [salaryBand, setSalaryBand] = useState('');
+  const [location, setLocation] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
   const [sort, setSort] = useState('newest');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     void loadJobs();
+    portalFetch<Category[]>('/categories')
+      .then(setCategories)
+      .catch(() => setCategories([]));
   }, []);
 
   async function loadJobs() {
@@ -65,6 +77,19 @@ export default function ModerationPage() {
     const term = query.trim().toLocaleLowerCase('vi-VN');
     return items
       .filter((item) => !status || item.status === status)
+      .filter((item) => !displayStatus || item.displayStatus === displayStatus)
+      .filter((item) => !categoryId || item.categoryId === Number(categoryId))
+      .filter((item) => !workType || item.type === workType)
+      .filter((item) => matchesSalaryBand(item, salaryBand))
+      .filter(
+        (item) =>
+          !location ||
+          `${item.location} ${item.province ?? ''} ${item.district ?? ''}`
+            .toLocaleLowerCase('vi-VN')
+            .includes(location.trim().toLocaleLowerCase('vi-VN')),
+      )
+      .filter((item) => !from || item.postedAt.slice(0, 10) >= from)
+      .filter((item) => !to || item.postedAt.slice(0, 10) <= to)
       .filter((item) => {
         if (!term) return true;
         return `${item.company} ${item.title}`
@@ -76,9 +101,49 @@ export default function ModerationPage() {
           ? Date.parse(a.postedAt) - Date.parse(b.postedAt)
           : Date.parse(b.postedAt) - Date.parse(a.postedAt),
       );
-  }, [items, query, sort, status]);
+  }, [
+    categoryId,
+    displayStatus,
+    from,
+    items,
+    location,
+    query,
+    salaryBand,
+    sort,
+    status,
+    to,
+    workType,
+  ]);
 
-  const hasFilters = Boolean(query || status);
+  const hasFilters = Boolean(
+    query ||
+    status ||
+    displayStatus ||
+    categoryId ||
+    workType ||
+    salaryBand ||
+    location ||
+    from ||
+    to,
+  );
+
+  function resetFilters() {
+    setSearchInput('');
+    setQuery('');
+    setStatus('');
+    setDisplayStatus('');
+    setCategoryId('');
+    setWorkType('');
+    setSalaryBand('');
+    setLocation('');
+    setFrom('');
+    setTo('');
+  }
+
+  function submitSearch(event: FormEvent) {
+    event.preventDefault();
+    setQuery(searchInput.trim());
+  }
 
   return (
     <SiteShell
@@ -116,51 +181,127 @@ export default function ModerationPage() {
         </AdminStatsGrid>
 
         <div className="content-card admin-table-card">
-          <AdminToolbar>
-            <AdminToolbarGroup>
-              <AdminSearchInput
-                label="Tìm tin tuyển dụng"
-                onChange={setQuery}
-                onClear={() => setQuery('')}
-                placeholder="Tìm doanh nghiệp hoặc tiêu đề..."
-                value={query}
+          <form className="admin-search-row" onSubmit={submitSearch}>
+            <AdminSearchInput
+              label="Tìm tin tuyển dụng"
+              onChange={setSearchInput}
+              onClear={() => {
+                setSearchInput('');
+                setQuery('');
+              }}
+              placeholder="Tìm doanh nghiệp hoặc tiêu đề..."
+              value={searchInput}
+            />
+            <AdminButton icon="search" tone="primary" type="submit">
+              Tìm kiếm
+            </AdminButton>
+          </form>
+          <div className="admin-filter-row">
+            <AdminFilterSelect
+              label="Trạng thái"
+              onChange={setStatus}
+              options={[
+                { label: 'Tất cả trạng thái', value: '' },
+                { label: 'Chờ duyệt', value: 'CHO_DUYET' },
+                { label: 'Đã phê duyệt', value: 'DA_DUYET' },
+                { label: 'Cần chỉnh sửa', value: 'YEU_CAU_BO_SUNG' },
+                { label: 'Từ chối', value: 'TU_CHOI' },
+              ]}
+              value={status}
+            />
+            <AdminFilterSelect
+              label="Ngành nghề"
+              onChange={setCategoryId}
+              options={[
+                { label: 'Tất cả ngành nghề', value: '' },
+                ...categories.map((category) => ({
+                  label: category.name,
+                  value: String(category.id),
+                })),
+              ]}
+              value={categoryId}
+            />
+            <AdminFilterSelect
+              label="Hình thức"
+              onChange={setWorkType}
+              options={[
+                { label: 'Tất cả hình thức', value: '' },
+                { label: 'Toàn thời gian', value: 'TOAN_THOI_GIAN' },
+                { label: 'Bán thời gian', value: 'BAN_THOI_GIAN' },
+                { label: 'Thực tập', value: 'THUC_TAP' },
+                { label: 'Thời vụ', value: 'THOI_VU' },
+                { label: 'Từ xa', value: 'TU_XA' },
+              ]}
+              value={workType}
+            />
+            <AdminFilterSelect
+              label="Mức lương"
+              onChange={setSalaryBand}
+              options={[
+                { label: 'Tất cả mức lương', value: '' },
+                { label: 'Dưới 10 triệu', value: 'under10' },
+                { label: '10 - 20 triệu', value: '10to20' },
+                { label: '20 - 30 triệu', value: '20to30' },
+                { label: 'Từ 30 triệu', value: 'from30' },
+                { label: 'Lương thỏa thuận', value: 'negotiable' },
+              ]}
+              value={salaryBand}
+            />
+            <AdminFilterSelect
+              label="Hiển thị"
+              onChange={setDisplayStatus}
+              options={[
+                { label: 'Tất cả', value: '' },
+                { label: 'Đang hiển thị', value: 'DANG_HIEN_THI' },
+                { label: 'Chưa đăng', value: 'CHUA_DANG' },
+                { label: 'Tạm ẩn', value: 'TAM_AN' },
+                { label: 'Đã đóng', value: 'DA_DONG' },
+                { label: 'Hết hạn', value: 'HET_HAN' },
+              ]}
+              value={displayStatus}
+            />
+            <label className="admin-date-filter admin-text-filter">
+              <span>Địa điểm</span>
+              <input
+                onChange={(event) => setLocation(event.target.value)}
+                placeholder="Hà Nội..."
+                type="text"
+                value={location}
               />
-            </AdminToolbarGroup>
-            <AdminToolbarGroup>
-              <AdminFilterSelect
-                label="Trạng thái"
-                onChange={setStatus}
-                options={[
-                  { label: 'Tất cả trạng thái', value: '' },
-                  { label: 'Chờ duyệt', value: 'CHO_DUYET' },
-                  { label: 'Đã phê duyệt', value: 'DA_DUYET' },
-                  { label: 'Cần chỉnh sửa', value: 'YEU_CAU_BO_SUNG' },
-                  { label: 'Từ chối', value: 'TU_CHOI' },
-                ]}
-                value={status}
+            </label>
+            <label className="admin-date-filter">
+              <span>Từ ngày</span>
+              <input
+                max={to || undefined}
+                onChange={(event) => setFrom(event.target.value)}
+                type="date"
+                value={from}
               />
-              <AdminFilterSelect
-                label="Sắp xếp"
-                onChange={setSort}
-                options={[
-                  { label: 'Mới nhất', value: 'newest' },
-                  { label: 'Cũ nhất', value: 'oldest' },
-                ]}
-                value={sort}
+            </label>
+            <label className="admin-date-filter">
+              <span>Đến ngày</span>
+              <input
+                min={from || undefined}
+                onChange={(event) => setTo(event.target.value)}
+                type="date"
+                value={to}
               />
-              {hasFilters && (
-                <AdminButton
-                  icon="refresh"
-                  onClick={() => {
-                    setQuery('');
-                    setStatus('');
-                  }}
-                >
-                  Đặt lại
-                </AdminButton>
-              )}
-            </AdminToolbarGroup>
-          </AdminToolbar>
+            </label>
+            <AdminFilterSelect
+              label="Sắp xếp"
+              onChange={setSort}
+              options={[
+                { label: 'Mới nhất', value: 'newest' },
+                { label: 'Cũ nhất', value: 'oldest' },
+              ]}
+              value={sort}
+            />
+            {hasFilters && (
+              <AdminButton icon="refresh" onClick={resetFilters}>
+                Đặt lại
+              </AdminButton>
+            )}
+          </div>
 
           {message && !loading ? (
             <AdminErrorState
@@ -175,26 +316,22 @@ export default function ModerationPage() {
                 <tr>
                   <th scope="col">Doanh nghiệp</th>
                   <th scope="col">Tiêu đề tin</th>
+                  <th scope="col">Ngành nghề</th>
+                  <th scope="col">Ứng viên</th>
                   <th scope="col">Ngày gửi</th>
                   <th scope="col">Trạng thái</th>
                   <th scope="col">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {loading && <AdminTableSkeleton columns={5} />}
+                {loading && <AdminTableSkeleton columns={7} />}
                 {!loading && shown.length === 0 && (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={7}>
                       <AdminEmptyState
                         action={
                           hasFilters ? (
-                            <AdminButton
-                              icon="refresh"
-                              onClick={() => {
-                                setQuery('');
-                                setStatus('');
-                              }}
-                            >
+                            <AdminButton icon="refresh" onClick={resetFilters}>
                               Xóa bộ lọc
                             </AdminButton>
                           ) : undefined
@@ -229,6 +366,10 @@ export default function ModerationPage() {
                             {salaryLabel(item)} · Hạn{' '}
                             {formatAdminDate(item.deadline)}
                           </small>
+                        </td>
+                        <td data-label="Ngành nghề">{item.category}</td>
+                        <td data-label="Ứng viên">
+                          {(item.applicantCount ?? 0).toLocaleString('vi-VN')}
                         </td>
                         <td data-label="Ngày gửi">
                           {formatAdminDate(item.postedAt)}
@@ -285,4 +426,17 @@ function actionLabel(status: string) {
   if (status === 'CHO_DUYET') return 'Kiểm duyệt tin';
   if (status === 'YEU_CAU_BO_SUNG') return 'Xem yêu cầu';
   return 'Xem kết quả';
+}
+
+function matchesSalaryBand(job: ApiJob, band: string) {
+  if (!band) return true;
+  if (band === 'negotiable') return job.negotiable;
+  if (job.negotiable) return false;
+  const from = Number(job.salaryFrom ?? 0);
+  const to = Number(job.salaryTo ?? from);
+  if (band === 'under10') return from < 10_000_000;
+  if (band === '10to20') return to >= 10_000_000 && from <= 20_000_000;
+  if (band === '20to30') return to >= 20_000_000 && from <= 30_000_000;
+  if (band === 'from30') return to >= 30_000_000;
+  return true;
 }

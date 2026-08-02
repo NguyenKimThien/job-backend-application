@@ -15,8 +15,6 @@ import {
   AdminStatusBadge,
   AdminTable,
   AdminTableSkeleton,
-  AdminToolbar,
-  AdminToolbarGroup,
   BadgeTone,
   ConfirmDialogState,
   formatAdminDate,
@@ -91,6 +89,10 @@ export default function AccountManagementPage() {
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
+  const [verified, setVerified] = useState('');
+  const [hasProfile, setHasProfile] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'error' | 'success'>(
@@ -109,6 +111,10 @@ export default function AccountManagementPage() {
     if (search) params.set('search', search);
     if (role) params.set('role', role);
     if (status) params.set('status', status);
+    if (verified) params.set('verified', verified);
+    if (hasProfile) params.set('hasProfile', hasProfile);
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
 
     try {
       const data = await portalFetch<AccountListData>(`/admin/users?${params}`);
@@ -124,7 +130,17 @@ export default function AccountManagementPage() {
     } finally {
       setLoading(false);
     }
-  }, [pagination.page, pagination.limit, role, search, status]);
+  }, [
+    from,
+    hasProfile,
+    pagination.page,
+    pagination.limit,
+    role,
+    search,
+    status,
+    to,
+    verified,
+  ]);
 
   useEffect(() => {
     void loadAccounts();
@@ -141,6 +157,10 @@ export default function AccountManagementPage() {
     setSearch('');
     setRole('');
     setStatus('');
+    setVerified('');
+    setHasProfile('');
+    setFrom('');
+    setTo('');
     setPagination((value) => ({ ...value, page: 1 }));
   }
 
@@ -195,7 +215,9 @@ export default function AccountManagementPage() {
     }
   }
 
-  const hasFilters = Boolean(search || role || status);
+  const hasFilters = Boolean(
+    search || role || status || verified || hasProfile || from || to,
+  );
 
   return (
     <SiteShell
@@ -233,61 +255,107 @@ export default function AccountManagementPage() {
         </AdminStatsGrid>
 
         <div className="content-card admin-table-card">
-          <form onSubmit={submitSearch}>
-            <AdminToolbar>
-              <AdminToolbarGroup>
-                <AdminSearchInput
-                  label="Tìm tài khoản"
-                  onChange={setQuery}
-                  onClear={() => {
-                    setQuery('');
-                    setSearch('');
-                    setPagination((value) => ({ ...value, page: 1 }));
-                  }}
-                  placeholder="Tìm tên, email, số điện thoại..."
-                  value={query}
-                />
-                <AdminButton icon="search" tone="primary" type="submit">
-                  Tìm kiếm
-                </AdminButton>
-              </AdminToolbarGroup>
-              <AdminToolbarGroup>
-                <AdminFilterSelect
-                  label="Vai trò"
-                  onChange={(value) => {
-                    setRole(value);
-                    setPagination((current) => ({ ...current, page: 1 }));
-                  }}
-                  options={[
-                    { label: 'Tất cả vai trò', value: '' },
-                    { label: 'Người lao động', value: 'NGUOI_LAO_DONG' },
-                    { label: 'Nhà tuyển dụng', value: 'NHA_TUYEN_DUNG' },
-                  ]}
-                  value={role}
-                />
-                <AdminFilterSelect
-                  label="Trạng thái"
-                  onChange={(value) => {
-                    setStatus(value);
-                    setPagination((current) => ({ ...current, page: 1 }));
-                  }}
-                  options={[
-                    { label: 'Tất cả trạng thái', value: '' },
-                    { label: 'Hoạt động', value: 'HOAT_DONG' },
-                    { label: 'Chờ xác thực', value: 'CHO_XAC_THUC_EMAIL' },
-                    { label: 'Tạm khóa', value: 'TAM_KHOA' },
-                    { label: 'Đã khóa', value: 'DA_KHOA' },
-                  ]}
-                  value={status}
-                />
-                {hasFilters && (
-                  <AdminButton icon="refresh" onClick={resetFilters}>
-                    Đặt lại
-                  </AdminButton>
-                )}
-              </AdminToolbarGroup>
-            </AdminToolbar>
+          <form className="admin-search-row" onSubmit={submitSearch}>
+            <AdminSearchInput
+              label="Tìm tài khoản"
+              onChange={setQuery}
+              onClear={() => {
+                setQuery('');
+                setSearch('');
+                setPagination((value) => ({ ...value, page: 1 }));
+              }}
+              placeholder="Tìm tên, email, số điện thoại..."
+              value={query}
+            />
+            <AdminButton icon="search" tone="primary" type="submit">
+              Tìm kiếm
+            </AdminButton>
           </form>
+          <div className="admin-filter-row">
+            <AdminFilterSelect
+              label="Vai trò"
+              onChange={(value) => {
+                setRole(value);
+                setPagination((current) => ({ ...current, page: 1 }));
+              }}
+              options={[
+                { label: 'Tất cả vai trò', value: '' },
+                { label: 'Người lao động', value: 'NGUOI_LAO_DONG' },
+                { label: 'Nhà tuyển dụng', value: 'NHA_TUYEN_DUNG' },
+              ]}
+              value={role}
+            />
+            <AdminFilterSelect
+              label="Trạng thái"
+              onChange={(value) => {
+                setStatus(value);
+                setPagination((current) => ({ ...current, page: 1 }));
+              }}
+              options={[
+                { label: 'Tất cả trạng thái', value: '' },
+                { label: 'Hoạt động', value: 'HOAT_DONG' },
+                { label: 'Chờ xác thực', value: 'CHO_XAC_THUC_EMAIL' },
+                { label: 'Tạm khóa', value: 'TAM_KHOA' },
+                { label: 'Đã khóa', value: 'DA_KHOA' },
+              ]}
+              value={status}
+            />
+            <AdminFilterSelect
+              label="Xác thực email"
+              onChange={(value) => {
+                setVerified(value);
+                setPagination((current) => ({ ...current, page: 1 }));
+              }}
+              options={[
+                { label: 'Tất cả', value: '' },
+                { label: 'Đã xác thực', value: 'true' },
+                { label: 'Chưa xác thực', value: 'false' },
+              ]}
+              value={verified}
+            />
+            <AdminFilterSelect
+              label="Hồ sơ"
+              onChange={(value) => {
+                setHasProfile(value);
+                setPagination((current) => ({ ...current, page: 1 }));
+              }}
+              options={[
+                { label: 'Tất cả', value: '' },
+                { label: 'Đã có hồ sơ', value: 'true' },
+                { label: 'Chưa có hồ sơ', value: 'false' },
+              ]}
+              value={hasProfile}
+            />
+            <label className="admin-date-filter">
+              <span>Từ ngày</span>
+              <input
+                max={to || undefined}
+                onChange={(event) => {
+                  setFrom(event.target.value);
+                  setPagination((current) => ({ ...current, page: 1 }));
+                }}
+                type="date"
+                value={from}
+              />
+            </label>
+            <label className="admin-date-filter">
+              <span>Đến ngày</span>
+              <input
+                min={from || undefined}
+                onChange={(event) => {
+                  setTo(event.target.value);
+                  setPagination((current) => ({ ...current, page: 1 }));
+                }}
+                type="date"
+                value={to}
+              />
+            </label>
+            {hasFilters && (
+              <AdminButton icon="refresh" onClick={resetFilters}>
+                Đặt lại
+              </AdminButton>
+            )}
+          </div>
 
           {message && (
             <div

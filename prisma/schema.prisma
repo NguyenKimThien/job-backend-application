@@ -130,12 +130,8 @@ model TaiKhoan {
   lichSuTrangThaiUngTuyens LichSuTrangThaiUngTuyen[] @relation("NguoiThucHienTrangThaiUngTuyen")
   lichSuKiemDuyets         LichSuKiemDuyet[]         @relation("NguoiThucHienKiemDuyet")
   thongTinPhongVans        ThongTinPhongVan[]        @relation("NguoiTaoThongTinPhongVan")
-<<<<<<< HEAD
   thongTinPhongVanDaHuys   ThongTinPhongVan[]        @relation("NguoiHuyThongTinPhongVan")
-=======
   phanQuyens               PhanQuyenTaiKhoan[]
->>>>>>> d9548b166905cb7ef8c14a5c32f632cef4d8b04d
-
   @@index([vaiTro], map: "idx_tai_khoan_vai_tro")
   @@index([trangThaiTaiKhoan], map: "idx_tai_khoan_trang_thai")
   @@map("tai_khoan")

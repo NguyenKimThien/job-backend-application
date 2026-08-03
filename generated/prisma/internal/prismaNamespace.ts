@@ -398,6 +398,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   TaiKhoan: 'TaiKhoan',
+  PhanQuyenTaiKhoan: 'PhanQuyenTaiKhoan',
   MaXacThuc: 'MaXacThuc',
   HoSoNguoiLaoDong: 'HoSoNguoiLaoDong',
   HocVan: 'HocVan',
@@ -430,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "taiKhoan" | "maXacThuc" | "hoSoNguoiLaoDong" | "hocVan" | "kinhNghiemLamViec" | "kyNang" | "hoSoKyNang" | "linhVuc" | "hoSoNhaTuyenDung" | "nganhNghe" | "tinTuyenDung" | "tinTuyenDungKyNang" | "ungTuyen" | "thongTinPhongVan" | "tinTuyenDungDaLuu" | "lichSuTrangThaiUngTuyen" | "lichSuKiemDuyet" | "thongBao"
+    modelProps: "taiKhoan" | "phanQuyenTaiKhoan" | "maXacThuc" | "hoSoNguoiLaoDong" | "hocVan" | "kinhNghiemLamViec" | "kyNang" | "hoSoKyNang" | "linhVuc" | "hoSoNhaTuyenDung" | "nganhNghe" | "tinTuyenDung" | "tinTuyenDungKyNang" | "ungTuyen" | "thongTinPhongVan" | "tinTuyenDungDaLuu" | "lichSuTrangThaiUngTuyen" | "lichSuKiemDuyet" | "thongBao"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -505,6 +506,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.TaiKhoanCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.TaiKhoanCountAggregateOutputType> | number
+        }
+      }
+    }
+    PhanQuyenTaiKhoan: {
+      payload: Prisma.$PhanQuyenTaiKhoanPayload<ExtArgs>
+      fields: Prisma.PhanQuyenTaiKhoanFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PhanQuyenTaiKhoanFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PhanQuyenTaiKhoanFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>
+        }
+        findFirst: {
+          args: Prisma.PhanQuyenTaiKhoanFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PhanQuyenTaiKhoanFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>
+        }
+        findMany: {
+          args: Prisma.PhanQuyenTaiKhoanFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>[]
+        }
+        create: {
+          args: Prisma.PhanQuyenTaiKhoanCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>
+        }
+        createMany: {
+          args: Prisma.PhanQuyenTaiKhoanCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.PhanQuyenTaiKhoanCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>[]
+        }
+        delete: {
+          args: Prisma.PhanQuyenTaiKhoanDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>
+        }
+        update: {
+          args: Prisma.PhanQuyenTaiKhoanUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>
+        }
+        deleteMany: {
+          args: Prisma.PhanQuyenTaiKhoanDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PhanQuyenTaiKhoanUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.PhanQuyenTaiKhoanUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>[]
+        }
+        upsert: {
+          args: Prisma.PhanQuyenTaiKhoanUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PhanQuyenTaiKhoanPayload>
+        }
+        aggregate: {
+          args: Prisma.PhanQuyenTaiKhoanAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePhanQuyenTaiKhoan>
+        }
+        groupBy: {
+          args: Prisma.PhanQuyenTaiKhoanGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PhanQuyenTaiKhoanGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PhanQuyenTaiKhoanCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PhanQuyenTaiKhoanCountAggregateOutputType> | number
         }
       }
     }
@@ -1822,6 +1897,17 @@ export const TaiKhoanScalarFieldEnum = {
 export type TaiKhoanScalarFieldEnum = (typeof TaiKhoanScalarFieldEnum)[keyof typeof TaiKhoanScalarFieldEnum]
 
 
+export const PhanQuyenTaiKhoanScalarFieldEnum = {
+  id: 'id',
+  taiKhoanId: 'taiKhoanId',
+  maQuyen: 'maQuyen',
+  duocPhep: 'duocPhep',
+  ngayCapNhat: 'ngayCapNhat'
+} as const
+
+export type PhanQuyenTaiKhoanScalarFieldEnum = (typeof PhanQuyenTaiKhoanScalarFieldEnum)[keyof typeof PhanQuyenTaiKhoanScalarFieldEnum]
+
+
 export const MaXacThucScalarFieldEnum = {
   id: 'id',
   taiKhoanId: 'taiKhoanId',
@@ -2214,6 +2300,13 @@ export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaM
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'MucDichMaXacThuc'
  */
 export type EnumMucDichMaXacThucFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MucDichMaXacThuc'>
@@ -2224,13 +2317,6 @@ export type EnumMucDichMaXacThucFieldRefInput<$PrismaModel> = FieldRefInputType<
  * Reference to a field of type 'MucDichMaXacThuc[]'
  */
 export type ListEnumMucDichMaXacThucFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MucDichMaXacThuc[]'>
-    
-
-
-/**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
     
 
 
@@ -2378,14 +2464,14 @@ export type ListEnumHinhThucPhongVanFieldRefInput<$PrismaModel> = FieldRefInputT
  * Reference to a field of type 'TrangThaiPhongVan'
  */
 export type EnumTrangThaiPhongVanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TrangThaiPhongVan'>
-
+    
 
 
 /**
  * Reference to a field of type 'TrangThaiPhongVan[]'
  */
 export type ListEnumTrangThaiPhongVanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TrangThaiPhongVan[]'>
-
+    
 
 
 /**
@@ -2581,6 +2667,7 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   taiKhoan?: Prisma.TaiKhoanOmit
+  phanQuyenTaiKhoan?: Prisma.PhanQuyenTaiKhoanOmit
   maXacThuc?: Prisma.MaXacThucOmit
   hoSoNguoiLaoDong?: Prisma.HoSoNguoiLaoDongOmit
   hocVan?: Prisma.HocVanOmit
@@ -2660,3 +2747,4 @@ export type PrismaAction =
  * `PrismaClient` proxy available in interactive transactions.
  */
 export type TransactionClient = Omit<DefaultPrismaClient, runtime.ITXClientDenyList>
+

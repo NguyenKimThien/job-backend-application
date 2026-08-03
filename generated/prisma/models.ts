@@ -9,6 +9,7 @@
  * 🟢 You can import this file directly.
  */
 export type * from './models/TaiKhoan.js'
+export type * from './models/PhanQuyenTaiKhoan.js'
 export type * from './models/MaXacThuc.js'
 export type * from './models/HoSoNguoiLaoDong.js'
 export type * from './models/HocVan.js'

@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   TaiKhoan: 'TaiKhoan',
+  PhanQuyenTaiKhoan: 'PhanQuyenTaiKhoan',
   MaXacThuc: 'MaXacThuc',
   HoSoNguoiLaoDong: 'HoSoNguoiLaoDong',
   HocVan: 'HocVan',
@@ -102,6 +103,17 @@ export const TaiKhoanScalarFieldEnum = {
 } as const
 
 export type TaiKhoanScalarFieldEnum = (typeof TaiKhoanScalarFieldEnum)[keyof typeof TaiKhoanScalarFieldEnum]
+
+
+export const PhanQuyenTaiKhoanScalarFieldEnum = {
+  id: 'id',
+  taiKhoanId: 'taiKhoanId',
+  maQuyen: 'maQuyen',
+  duocPhep: 'duocPhep',
+  ngayCapNhat: 'ngayCapNhat'
+} as const
+
+export type PhanQuyenTaiKhoanScalarFieldEnum = (typeof PhanQuyenTaiKhoanScalarFieldEnum)[keyof typeof PhanQuyenTaiKhoanScalarFieldEnum]
 
 
 export const MaXacThucScalarFieldEnum = {

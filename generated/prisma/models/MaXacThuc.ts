@@ -482,10 +482,6 @@ export type EnumMucDichMaXacThucFieldUpdateOperationsInput = {
   set?: $Enums.MucDichMaXacThuc
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type MaXacThucCreateWithoutTaiKhoanInput = {
   maXacThucHash: string
   mucDich: $Enums.MucDichMaXacThuc

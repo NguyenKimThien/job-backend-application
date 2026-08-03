@@ -196,16 +196,24 @@ export type DateTimeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDateTimeFilter<$PrismaModel>
 }
 
+export type BoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
+export type BoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
 export type EnumMucDichMaXacThucFilter<$PrismaModel = never> = {
   equals?: $Enums.MucDichMaXacThuc | Prisma.EnumMucDichMaXacThucFieldRefInput<$PrismaModel>
   in?: $Enums.MucDichMaXacThuc[] | Prisma.ListEnumMucDichMaXacThucFieldRefInput<$PrismaModel>
   notIn?: $Enums.MucDichMaXacThuc[] | Prisma.ListEnumMucDichMaXacThucFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumMucDichMaXacThucFilter<$PrismaModel> | $Enums.MucDichMaXacThuc
-}
-
-export type BoolFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
 }
 
 export type EnumMucDichMaXacThucWithAggregatesFilter<$PrismaModel = never> = {
@@ -216,14 +224,6 @@ export type EnumMucDichMaXacThucWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumMucDichMaXacThucFilter<$PrismaModel>
   _max?: Prisma.NestedEnumMucDichMaXacThucFilter<$PrismaModel>
-}
-
-export type BoolWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedBoolFilter<$PrismaModel>
-  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 export type EnumGioiTinhNullableFilter<$PrismaModel = never> = {
@@ -774,16 +774,24 @@ export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedDateTimeFilter<$PrismaModel>
 }
 
+export type NestedBoolFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
+}
+
+export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedBoolFilter<$PrismaModel>
+  _max?: Prisma.NestedBoolFilter<$PrismaModel>
+}
+
 export type NestedEnumMucDichMaXacThucFilter<$PrismaModel = never> = {
   equals?: $Enums.MucDichMaXacThuc | Prisma.EnumMucDichMaXacThucFieldRefInput<$PrismaModel>
   in?: $Enums.MucDichMaXacThuc[] | Prisma.ListEnumMucDichMaXacThucFieldRefInput<$PrismaModel>
   notIn?: $Enums.MucDichMaXacThuc[] | Prisma.ListEnumMucDichMaXacThucFieldRefInput<$PrismaModel>
   not?: Prisma.NestedEnumMucDichMaXacThucFilter<$PrismaModel> | $Enums.MucDichMaXacThuc
-}
-
-export type NestedBoolFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolFilter<$PrismaModel> | boolean
 }
 
 export type NestedEnumMucDichMaXacThucWithAggregatesFilter<$PrismaModel = never> = {
@@ -794,14 +802,6 @@ export type NestedEnumMucDichMaXacThucWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumMucDichMaXacThucFilter<$PrismaModel>
   _max?: Prisma.NestedEnumMucDichMaXacThucFilter<$PrismaModel>
-}
-
-export type NestedBoolWithAggregatesFilter<$PrismaModel = never> = {
-  equals?: boolean | Prisma.BooleanFieldRefInput<$PrismaModel>
-  not?: Prisma.NestedBoolWithAggregatesFilter<$PrismaModel> | boolean
-  _count?: Prisma.NestedIntFilter<$PrismaModel>
-  _min?: Prisma.NestedBoolFilter<$PrismaModel>
-  _max?: Prisma.NestedBoolFilter<$PrismaModel>
 }
 
 export type NestedEnumGioiTinhNullableFilter<$PrismaModel = never> = {

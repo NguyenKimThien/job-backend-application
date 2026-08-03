@@ -14,6 +14,7 @@ import {
   ReactNode,
   SVGProps,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -24,11 +25,7 @@ type ReviewStatus =
   'BAN_NHAP' | 'CHO_DUYET' | 'DA_DUYET' | 'TU_CHOI' | 'YEU_CAU_BO_SUNG';
 
 type DisplayStatus =
-  | 'CHUA_DANG'
-  | 'DANG_HIEN_THI'
-  | 'TAM_AN'
-  | 'DA_DONG'
-  | 'HET_HAN';
+  'CHUA_DANG' | 'DANG_HIEN_THI' | 'TAM_AN' | 'DA_DONG' | 'HET_HAN';
 
 type StatusTone = 'danger' | 'neutral' | 'success' | 'warning';
 
@@ -48,6 +45,20 @@ type StatusMeta = {
   icon: IconName;
   label: string;
   tone: StatusTone;
+};
+
+type RecruitmentProgressInfo = {
+  hired: number;
+  isFullQuota: boolean;
+  label: string;
+  percent: number;
+  quota: number;
+};
+
+type ApplicationReceivingState = {
+  backupLabel: string;
+  label: string;
+  tone: 'closed' | 'open' | 'reserve';
 };
 
 type FilterKey =
@@ -177,6 +188,8 @@ const filters: Array<{
   },
 ];
 
+const lifecycleFilters = filters.filter((item) => item.key !== 'full');
+
 const sortOptions: Array<{ key: SortKey; label: string }> = [
   { key: 'updated-desc', label: 'Mới cập nhật nhất' },
   { key: 'posted-desc', label: 'Ngày đăng mới nhất' },
@@ -190,11 +203,7 @@ export default function EmployerJobsPage() {
       fallback={
         <SiteShell
           action={
-            <button
-              className="employer-jobs-create"
-              disabled
-              type="button"
-            >
+            <button className="employer-jobs-create" disabled type="button">
               <Icon name="plus" />
               Đăng tin tuyển dụng
             </button>
@@ -462,9 +471,7 @@ function EmployerJobsContent() {
                   <JobPostsTable
                     jobs={pagedJobs}
                     pendingActionId={jobActionPendingId}
-                    onRequestAction={(job, kind) =>
-                      setJobAction({ job, kind })
-                    }
+                    onRequestAction={(job, kind) => setJobAction({ job, kind })}
                   />
                   <JobPostsPagination
                     currentPage={currentPage}
@@ -620,9 +627,9 @@ function JobPostStatusTabs({
     <div
       className="employer-job-tabs"
       role="tablist"
-      aria-label="Lọc tin tuyển dụng theo trạng thái"
+      aria-label="Lọc tin tuyển dụng theo trạng thái hiển thị"
     >
-      {filters.map((item) => (
+      {lifecycleFilters.map((item) => (
         <button
           aria-selected={filter === item.key}
           className={filter === item.key ? 'active' : ''}
@@ -651,12 +658,19 @@ function JobPostsTable({
   return (
     <div className="employer-jobs-table-wrap">
       <table className="employer-jobs-table">
+        <colgroup>
+          <col className="employer-job-col-info" />
+          <col className="employer-job-col-status" />
+          <col className="employer-job-col-progress" />
+          <col className="employer-job-col-applicants" />
+          <col className="employer-job-col-actions" />
+        </colgroup>
         <thead>
           <tr>
             <th scope="col">Tin tuyển dụng</th>
-            <th scope="col">Ngày đăng và hạn nộp</th>
-            <th scope="col">Ứng viên</th>
-            <th scope="col">Trạng thái</th>
+            <th scope="col">Trạng thái hiển thị</th>
+            <th scope="col">Tiến độ tuyển dụng</th>
+            <th scope="col">Hồ sơ</th>
             <th scope="col">Thao tác</th>
           </tr>
         </thead>
@@ -687,62 +701,49 @@ function JobPostTableRow({
   const meta = getJobStatusMeta(job);
   const applicantCount = job.applicantCount ?? 0;
   const showStatusDescription = shouldShowStatusDescription(job);
-  const isFullQuota = Boolean(job.daDatChiTieu ?? job.daDuChiTieu);
-  const quotaSupport = job.conNhanHoSo
-    ? 'Vẫn tiếp nhận hồ sơ dự phòng'
-    : 'Ngừng nhận hồ sơ';
+  const progress = getRecruitmentProgress(job);
+  const receiving = getApplicationReceivingState(job, progress.isFullQuota);
+  const location = formatJobLocation(job);
 
   return (
     <tr>
       <td>
         <div className="employer-job-title-cell">
           <Link href={`/viec-lam/${job.id}`}>{job.title}</Link>
-          <small>
-            {joinMeta([salaryLabel(job), job.location, jobTypeLabel(job.type)])}
+          <small className="employer-job-meta-line">
+            {joinMeta([salaryLabel(job), jobTypeLabel(job.type)])}
           </small>
+          {location && (
+            <small className="employer-job-location-line">{location}</small>
+          )}
+          <small className="employer-job-date-line">
+            Đăng {formatDate(job.postedAt)} · Hạn nhận hồ sơ{' '}
+            {formatDate(job.deadline)}
+          </small>
+          <DeadlineHint deadline={job.deadline} />
           {job.rejectionReason && (
             <p className="employer-job-reason">Lý do: {job.rejectionReason}</p>
-          )}
-          <small className="employer-job-hired-count">
-            Đã tuyển: {(job.soLuongTrungTuyen ?? 0).toLocaleString('vi-VN')}/
-            {(job.soLuongCanTuyen ?? job.quantity ?? 0).toLocaleString('vi-VN')}{' '}
-            người
-          </small>
-          {isFullQuota && (
-            <>
-              <span className="employer-job-status warning employer-job-quota-status">
-                <Icon name="checkCircle" />
-                Đã đủ chỉ tiêu
-              </span>
-              <small className="employer-status-desc">{quotaSupport}</small>
-            </>
           )}
           <EditQuota job={job} />
         </div>
       </td>
       <td>
-        <div className="employer-job-date-cell">
-          <span>Đăng {formatDate(job.postedAt)}</span>
-          <span>Hạn {formatDate(job.deadline)}</span>
-          <DeadlineHint deadline={job.deadline} />
+        <div className="employer-job-status-cell">
+          <JobPostStatusBadge meta={meta} />
+          {showStatusDescription && (
+            <small className="employer-status-desc">{meta.description}</small>
+          )}
         </div>
       </td>
       <td>
-        <Link
-          aria-label={`${applicantCount} ứng viên cho tin ${job.title}`}
-          className={`employer-applicant-link ${
-            applicantCount ? 'has-applicants' : ''
-          }`}
-          href={`/nha-tuyen-dung/tin-tuyen-dung/${job.id}/ung-vien`}
-        >
-          {applicantCount ? `${applicantCount} ứng viên` : 'Chưa có ứng viên'}
-        </Link>
+        <RecruitmentProgress progress={progress} receiving={receiving} />
       </td>
       <td>
-        <JobPostStatusBadge meta={meta} />
-        {showStatusDescription && (
-          <small className="employer-status-desc">{meta.description}</small>
-        )}
+        <ApplicationSummary
+          applicantCount={applicantCount}
+          hiredCount={progress.hired}
+          job={job}
+        />
       </td>
       <td>
         <JobPostActions
@@ -768,19 +769,93 @@ function JobPostActions({
   onRequestAction: (job: EmployerJob, kind: JobActionKind) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const hasApplicants = applicantCount > 0;
   const primaryHref = hasApplicants
     ? `/nha-tuyen-dung/tin-tuyen-dung/${job.id}/ung-vien`
     : `/viec-lam/${job.id}`;
-  const primaryLabel = hasApplicants ? 'Xem ứng viên' : 'Xem tin';
+  const primaryLabel = hasApplicants
+    ? `Xem hồ sơ (${applicantCount.toLocaleString('vi-VN')})`
+    : 'Xem tin';
   const canCloseApplications = canCloseJobApplications(job);
   const canCloseJobPost = canCloseJob(job);
 
-  function closeMenu() {
+  useEffect(() => {
+    if (!open) return;
+
+    function updateMenuPosition() {
+      const button = buttonRef.current;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const dropdown = dropdownRef.current;
+      const dropdownWidth = dropdown?.offsetWidth ?? 220;
+      const dropdownHeight = dropdown?.offsetHeight ?? 160;
+      const viewportGap = 12;
+      const left = Math.min(
+        Math.max(viewportGap, rect.right - dropdownWidth),
+        window.innerWidth - dropdownWidth - viewportGap,
+      );
+      const opensUp =
+        rect.bottom + 8 + dropdownHeight > window.innerHeight - viewportGap &&
+        rect.top - dropdownHeight - 8 >= viewportGap;
+      setMenuPosition({
+        left,
+        top: opensUp
+          ? rect.top - dropdownHeight - 8
+          : Math.min(
+              rect.bottom + 8,
+              window.innerHeight - dropdownHeight - viewportGap,
+            ),
+      });
+    }
+
+    updateMenuPosition();
+    const animationFrame = window.requestAnimationFrame(updateMenuPosition);
+    window.addEventListener('resize', updateMenuPosition);
+    window.addEventListener('scroll', updateMenuPosition, true);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.removeEventListener('resize', updateMenuPosition);
+      window.removeEventListener('scroll', updateMenuPosition, true);
+    };
+  }, [open]);
+
+  const closeMenu = useCallback(() => {
     setOpen(false);
+    setMenuPosition(null);
     requestAnimationFrame(() => buttonRef.current?.focus());
-  }
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target as Node;
+      if (
+        buttonRef.current?.contains(target) ||
+        dropdownRef.current?.contains(target)
+      ) {
+        return;
+      }
+      closeMenu();
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') closeMenu();
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [closeMenu, open]);
 
   return (
     <div className="employer-job-actions">
@@ -804,7 +879,22 @@ function JobPostActions({
           <Icon name="more" />
         </button>
         {open && (
-          <div role="menu">
+          <div
+            className="employer-job-action-dropdown"
+            ref={dropdownRef}
+            role="menu"
+            style={
+              menuPosition
+                ? {
+                    left: `${menuPosition.left}px`,
+                    top: `${menuPosition.top}px`,
+                  }
+                : undefined
+            }
+          >
+            <Link href={`/viec-lam/${job.id}`} role="menuitem">
+              Xem tin tuyển dụng
+            </Link>
             {canEditJob(job) && (
               <Link
                 href={`/nha-tuyen-dung/tin-tuyen-dung/${job.id}/chinh-sua`}
@@ -813,11 +903,16 @@ function JobPostActions({
                 Chỉnh sửa tin
               </Link>
             )}
+            {(canCloseApplications || canCloseJobPost) && (
+              <span className="employer-job-action-divider" role="separator" />
+            )}
             {canCloseApplications && (
               <button
+                className="warning"
                 disabled={isPending}
                 onClick={() => {
                   setOpen(false);
+                  setMenuPosition(null);
                   onRequestAction(job, 'close-applications');
                 }}
                 role="menuitem"
@@ -826,11 +921,16 @@ function JobPostActions({
                 {isPending ? 'Đang cập nhật...' : 'Đóng nhận hồ sơ'}
               </button>
             )}
+            {canCloseApplications && canCloseJobPost && (
+              <span className="employer-job-action-divider" role="separator" />
+            )}
             {canCloseJobPost && (
               <button
+                className="danger"
                 disabled={isPending}
                 onClick={() => {
                   setOpen(false);
+                  setMenuPosition(null);
                   onRequestAction(job, 'close-job');
                 }}
                 role="menuitem"
@@ -839,11 +939,7 @@ function JobPostActions({
                 {isPending ? 'Đang cập nhật...' : 'Đóng tin tuyển dụng'}
               </button>
             )}
-            {hasApplicants ? (
-              <Link href={`/viec-lam/${job.id}`} role="menuitem">
-                Xem tin tuyển dụng
-              </Link>
-            ) : (
+            {!hasApplicants && (
               <Link
                 href={`/nha-tuyen-dung/tin-tuyen-dung/${job.id}/ung-vien`}
                 role="menuitem"
@@ -863,17 +959,90 @@ function canEditJob(job: EmployerJob) {
 }
 
 function EditQuota({ job }: { job: EmployerJob }) {
+  if (job.status !== 'TU_CHOI') return null;
+
   const remaining = Math.max(0, 3 - (job.editCount ?? 0));
   return (
     <small
       className={`employer-job-edit-quota ${
         remaining === 0 ? 'exhausted' : ''
       }`}
+      title={
+        remaining > 0
+          ? `Còn ${remaining}/3 lượt chỉnh sửa sau từ chối`
+          : 'Đã hết 3 lượt chỉnh sửa sau từ chối'
+      }
     >
-      {remaining > 0
-        ? `Còn ${remaining}/3 lượt chỉnh sửa`
-        : 'Đã hết 3 lượt chỉnh sửa'}
+      {remaining > 0 ? `Còn ${remaining} lượt chỉnh sửa` : 'Hết lượt chỉnh sửa'}
     </small>
+  );
+}
+
+function RecruitmentProgress({
+  progress,
+  receiving,
+}: {
+  progress: RecruitmentProgressInfo;
+  receiving: ApplicationReceivingState;
+}) {
+  return (
+    <div className="employer-job-progress">
+      <div className="employer-job-progress-head">
+        <strong>
+          {progress.hired.toLocaleString('vi-VN')}/
+          {progress.quota.toLocaleString('vi-VN')} ứng viên
+        </strong>
+        <span
+          className={`employer-job-status ${
+            progress.isFullQuota ? 'warning' : 'neutral'
+          }`}
+        >
+          {progress.label}
+        </span>
+      </div>
+      <div
+        aria-label={`Tiến độ tuyển dụng ${progress.percent}%`}
+        className="employer-job-progress-bar"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progress.percent}
+      >
+        <span style={{ width: `${progress.percent}%` }} />
+      </div>
+      <small className={`employer-job-receiving ${receiving.tone}`}>
+        {receiving.label}
+      </small>
+    </div>
+  );
+}
+
+function ApplicationSummary({
+  applicantCount,
+  hiredCount,
+  job,
+}: {
+  applicantCount: number;
+  hiredCount: number;
+  job: EmployerJob;
+}) {
+  return (
+    <Link
+      aria-label={`${applicantCount} hồ sơ ứng viên cho tin ${job.title}`}
+      className={`employer-applicant-link ${
+        applicantCount ? 'has-applicants' : ''
+      }`}
+      href={`/nha-tuyen-dung/tin-tuyen-dung/${job.id}/ung-vien`}
+    >
+      <span>
+        <small>Tổng hồ sơ</small>
+        <strong>{applicantCount.toLocaleString('vi-VN')}</strong>
+      </span>
+      <span>
+        <small>Đã tuyển</small>
+        <strong>{hiredCount.toLocaleString('vi-VN')}</strong>
+      </span>
+    </Link>
   );
 }
 
@@ -892,9 +1061,9 @@ function JobPostStatusBadge({ meta }: { meta: StatusMeta }) {
 function DeadlineHint({ deadline }: { deadline?: string | null }) {
   const days = daysUntil(deadline);
   if (days === null) return null;
-  if (days < 0) return <em className="expired">Đã quá hạn</em>;
+  if (days < 0) return <em className="expired">Đã quá hạn nhận hồ sơ</em>;
   if (days <= 7) {
-    return <em className="warning">Còn {days} ngày</em>;
+    return <em className="warning">Còn {days} ngày nhận hồ sơ</em>;
   }
   return null;
 }
@@ -1197,22 +1366,63 @@ function getJobStatusMeta(job: EmployerJob) {
   if (displayStatus === 'HET_HAN' || displayStatus === 'DA_DONG') {
     return displayStatusMeta[displayStatus];
   }
-  if (
-    reviewStatus === 'DA_DUYET' &&
-    displayStatus === 'DANG_HIEN_THI' &&
-    job.ngungNhanHoSo
-  ) {
-    return {
-      label: 'Ngừng nhận hồ sơ',
-      tone: 'warning',
-      icon: 'archive',
-      description: 'Tin vẫn hiển thị nhưng đã ngừng nhận hồ sơ mới.',
-    } satisfies StatusMeta;
-  }
   if (reviewStatus === 'DA_DUYET' && displayStatus) {
     return displayStatusMeta[displayStatus];
   }
   return reviewStatusMeta[reviewStatus] ?? reviewStatusMeta.CHO_DUYET;
+}
+
+function getRecruitmentProgress(job: EmployerJob): RecruitmentProgressInfo {
+  const hired = Math.max(
+    0,
+    Number(job.soLuongTrungTuyen ?? job.soLuongDaTrungTuyen ?? 0),
+  );
+  const quota = Math.max(0, Number(job.soLuongCanTuyen ?? job.quantity ?? 0));
+  const isFullQuota = Boolean(job.daDatChiTieu ?? job.daDuChiTieu);
+  const percent =
+    quota > 0 ? Math.min(100, Math.round((hired / quota) * 100)) : 0;
+  const remaining = Math.max(
+    0,
+    Number(job.conThieu ?? Math.max(quota - hired, 0)),
+  );
+
+  return {
+    hired,
+    isFullQuota,
+    label: isFullQuota
+      ? 'Đã đủ chỉ tiêu'
+      : remaining > 0
+        ? `Còn tuyển ${remaining.toLocaleString('vi-VN')} người`
+        : 'Chưa đặt chỉ tiêu',
+    percent,
+    quota,
+  };
+}
+
+function getApplicationReceivingState(
+  job: EmployerJob,
+  isFullQuota: boolean,
+): ApplicationReceivingState {
+  const isReceiving = Boolean(job.conNhanHoSo) && !job.ngungNhanHoSo;
+  if (!isReceiving) {
+    return {
+      backupLabel: 'Không nhận',
+      label: 'Đã ngừng nhận hồ sơ',
+      tone: 'closed',
+    };
+  }
+  if (isFullQuota) {
+    return {
+      backupLabel: 'Đang nhận',
+      label: `Vẫn nhận hồ sơ dự phòng đến ${formatDate(job.deadline)}`,
+      tone: 'reserve',
+    };
+  }
+  return {
+    backupLabel: 'Chưa áp dụng',
+    label: `Đang nhận hồ sơ đến ${formatDate(job.deadline)}`,
+    tone: 'open',
+  };
 }
 
 function shouldShowStatusDescription(job: EmployerJob) {
@@ -1222,8 +1432,7 @@ function shouldShowStatusDescription(job: EmployerJob) {
     reviewStatus === 'CHO_DUYET' ||
     reviewStatus === 'TU_CHOI' ||
     reviewStatus === 'YEU_CAU_BO_SUNG' ||
-    displayStatus === 'CHUA_DANG' ||
-    Boolean(job.ngungNhanHoSo)
+    displayStatus === 'CHUA_DANG'
   );
 }
 
@@ -1362,6 +1571,30 @@ function normalizeText(value: string) {
 
 function joinMeta(values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(' · ');
+}
+
+function formatJobLocation(job: EmployerJob) {
+  return joinUniqueLocationParts([
+    job.specificAddress,
+    job.district,
+    job.province,
+    job.location,
+  ]);
+}
+
+function joinUniqueLocationParts(values: Array<string | null | undefined>) {
+  const parts: string[] = [];
+  for (const value of values) {
+    const text = value?.trim();
+    if (!text) continue;
+    const key = normalizeText(text);
+    const isDuplicate = parts.some((part) => {
+      const current = normalizeText(part);
+      return current === key || current.includes(key) || key.includes(current);
+    });
+    if (!isDuplicate) parts.push(text);
+  }
+  return parts.join(', ');
 }
 
 function formatDate(value?: string | null) {

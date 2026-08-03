@@ -23,6 +23,11 @@ export * from './enums.js';
  */
 export type TaiKhoan = Prisma.TaiKhoanModel
 /**
+ * Model PhanQuyenTaiKhoan
+ * 
+ */
+export type PhanQuyenTaiKhoan = Prisma.PhanQuyenTaiKhoanModel
+/**
  * Model MaXacThuc
  * 
  */

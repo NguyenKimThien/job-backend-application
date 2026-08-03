@@ -51,15 +51,6 @@ type Detail = {
     trangThaiDuyet: string;
     linhVuc: { tenLinhVuc: string } | null;
   } | null;
-  permissionGroups: Array<{
-    resource: string;
-    permissions: Array<{
-      code: string;
-      action: string;
-      allowed: boolean;
-      inherited: boolean;
-    }>;
-  }>;
 };
 
 const accountStatusLabels: Record<string, { label: string; tone: BadgeTone }> =
@@ -91,9 +82,6 @@ export default function AccountDetailPage() {
   const [account, setAccount] = useState<Detail | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [savingPermissions, setSavingPermissions] = useState(false);
-  const [permissionMessage, setPermissionMessage] = useState('');
-  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     void loadAccount();
@@ -105,16 +93,6 @@ export default function AccountDetailPage() {
     try {
       const data = await portalFetch<Detail>(`/admin/users/${params.id}`);
       setAccount(data);
-      setPermissions(
-        Object.fromEntries(
-          data.permissionGroups.flatMap((group) =>
-            group.permissions.map((permission) => [
-              permission.code,
-              permission.allowed,
-            ]),
-          ),
-        ),
-      );
     } catch (error) {
       setAccount(null);
       setMessage(
@@ -131,39 +109,21 @@ export default function AccountDetailPage() {
     account?.tenDangNhap ??
     '';
 
-  async function updatePermissions() {
-    if (!account) return;
-    setSavingPermissions(true);
-    setPermissionMessage('');
-    try {
-      await portalFetch(`/admin/users/${account.id}/permissions`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          permissions: Object.entries(permissions).map(([code, allowed]) => ({
-            code,
-            allowed,
-          })),
-        }),
-      });
-      await loadAccount();
-      setPermissionMessage('Phân quyền người dùng thành công.');
-    } catch (error) {
-      setPermissionMessage(
-        error instanceof Error
-          ? error.message
-          : 'Không thể cập nhật quyền tài khoản.',
-      );
-    } finally {
-      setSavingPermissions(false);
-    }
-  }
-
   return (
     <SiteShell
       action={
-        <AdminLinkButton href="/quan-tri/tai-khoan" icon="chevronLeft">
-          Quay lại
-        </AdminLinkButton>
+        <div className="admin-page-actions">
+          <AdminLinkButton href="/quan-tri/tai-khoan" icon="chevronLeft">
+            Quay lại
+          </AdminLinkButton>
+          <AdminLinkButton
+            href={`/quan-tri/phan-quyen?taiKhoan=${params.id}`}
+            icon="shield"
+            tone="primary"
+          >
+            Phân quyền
+          </AdminLinkButton>
+        </div>
       }
       breadcrumb="Trang chủ / Quản lý tài khoản / Chi tiết"
       pageClassName="admin-page"
@@ -232,59 +192,6 @@ export default function AccountDetailPage() {
                       : 'Chưa đăng nhập'
                   }
                 />
-              </div>
-            </article>
-
-            <article className="content-card account-detail-card">
-              <h3>Phân quyền tài khoản</h3>
-              <p>
-                Nhóm quyền hiện tại:{' '}
-                <strong>{roleLabels[account.vaiTro] ?? account.vaiTro}</strong>.
-                Việc cấp hoặc giới hạn quyền không làm thay đổi vai trò, hồ sơ
-                hay dữ liệu hiện có của người dùng.
-              </p>
-              {permissionMessage && (
-                <div
-                  className={`admin-inline-message ${
-                    permissionMessage.includes('thành công')
-                      ? 'success'
-                      : 'error'
-                  }`}
-                >
-                  {permissionMessage}
-                </div>
-              )}
-              <div className="permission-matrix">
-                {account.permissionGroups.map((group) => (
-                  <fieldset className="permission-group" key={group.resource}>
-                    <legend>{group.resource}</legend>
-                    <div className="permission-options">
-                      {group.permissions.map((permission) => (
-                        <label key={permission.code}>
-                          <input
-                            checked={permissions[permission.code] ?? false}
-                            onChange={(event) =>
-                              setPermissions((current) => ({
-                                ...current,
-                                [permission.code]: event.target.checked,
-                              }))
-                            }
-                            type="checkbox"
-                          />
-                          <span>{permission.action}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                ))}
-                <button
-                  className="btn btn-primary"
-                  disabled={savingPermissions}
-                  onClick={() => void updatePermissions()}
-                  type="button"
-                >
-                  {savingPermissions ? 'Đang lưu...' : 'Lưu phân quyền'}
-                </button>
               </div>
             </article>
 

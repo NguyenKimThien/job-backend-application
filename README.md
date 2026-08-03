@@ -194,8 +194,13 @@ Mỗi vai trò có một nhóm quyền mặc định. Cán bộ quản trị có
 hạn quyền riêng cho từng tài khoản tại:
 
 ```text
-Quản trị → Tài khoản → Chi tiết → Phân quyền tài khoản
+Quản trị → Phân quyền
 ```
+
+Trang phân quyền được tách riêng khỏi trang chi tiết tài khoản. Quản trị viên có
+thể tìm tài khoản, lọc theo vai trò, chọn người dùng và cấp hoặc thu hồi từng
+quyền xem, thêm, sửa, xóa. Từ trang chi tiết tài khoản cũng có nút chuyển nhanh
+sang trang phân quyền đúng tài khoản đang xem.
 
 Các quyền được chia theo dữ liệu và hành động Xem, Thêm, Sửa, Xóa, gồm:
 

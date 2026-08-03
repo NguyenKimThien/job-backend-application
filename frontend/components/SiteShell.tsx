@@ -52,6 +52,11 @@ const menus: Record<ShellRole, MenuItem[]> = {
   admin: [
     { href: '/quan-tri/tai-khoan', label: 'Tài khoản' },
     {
+      href: '/quan-tri/phan-quyen',
+      label: 'Phân quyền',
+      title: 'Phân quyền người dùng',
+    },
+    {
       href: '/quan-tri/nha-tuyen-dung',
       label: 'Nhà tuyển dụng',
       title: 'Kiểm duyệt nhà tuyển dụng',

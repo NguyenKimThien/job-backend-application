@@ -1,6 +1,8 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import bcrypt from 'bcrypt';
+import ExcelJS from 'exceljs';
 import { randomInt, randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import {
   copyFile,
   mkdir,
@@ -10,6 +12,8 @@ import {
   writeFile,
 } from 'node:fs/promises';
 import path from 'node:path';
+import PDFDocument from 'pdfkit';
+import sharp from 'sharp';
 import {
   HinhThucLamViec,
   HinhThucPhongVan,
@@ -176,15 +180,15 @@ export class PortalService {
         nganhNgheMongMuon: true,
       },
     });
-    if (!profile) this.notFound('Chua co ho so nguoi lao dong.');
+    if (!profile) this.notFound('Chưa có hồ sơ người lao động.');
 
     const hasPreferences = Boolean(
       profile.nganhNgheMongMuonId ||
-        profile.viTriMongMuon ||
-        profile.tinhThanhPhoMongMuon ||
-        profile.mucLuongMongMuonTu ||
-        profile.mucLuongMongMuonDen ||
-        profile.hoSoKyNangs.length,
+      profile.viTriMongMuon ||
+      profile.tinhThanhPhoMongMuon ||
+      profile.mucLuongMongMuonTu ||
+      profile.mucLuongMongMuonDen ||
+      profile.hoSoKyNangs.length,
     );
     if (!hasPreferences) {
       return {
@@ -196,52 +200,23 @@ export class PortalService {
           total: 0,
           items: [],
           message:
-            'Vui long bo sung nhu cau tim viec de nhan de xuat phu hop.',
+            'Vui lòng bổ sung nguyện vọng việc làm trong hồ sơ để nhận đề xuất phù hợp.',
         },
       };
     }
 
     const page = Math.max(1, Number(query.page || 1));
     const pageSize = Math.min(20, Math.max(1, Number(query.pageSize || 8)));
-    const candidateWhere: Prisma.TinTuyenDungWhereInput = {
-      ...this.activeJobWhere(),
-      OR: [
-        profile.nganhNgheMongMuonId
-          ? { nganhNgheId: profile.nganhNgheMongMuonId }
-          : undefined,
-        profile.tinhThanhPhoMongMuon
-          ? {
-              tinhThanhPho: {
-                equals: profile.tinhThanhPhoMongMuon,
-                mode: 'insensitive',
-              },
-            }
-          : undefined,
-        profile.viTriMongMuon
-          ? {
-              viTriTuyenDung: {
-                contains: profile.viTriMongMuon,
-                mode: 'insensitive',
-              },
-            }
-          : undefined,
-        profile.chapNhanLamTuXa
-          ? { phuongThucLamViec: PhuongThucLamViec.TU_XA }
-          : undefined,
-      ].filter(Boolean) as Prisma.TinTuyenDungWhereInput[],
-    };
-    if (!candidateWhere.OR?.length) delete candidateWhere.OR;
-
     const candidates = await this.prisma.tinTuyenDung.findMany({
-      where: candidateWhere,
+      where: this.activeJobWhere(),
       include: this.jobInclude(),
       orderBy: [{ ngayDang: 'desc' }, { id: 'desc' }],
-      take: 200,
+      take: 500,
     });
 
     const scored = candidates
       .map((job) => this.scoreRecommendedJob(profile, job))
-      .filter((item) => item.diemPhuHop >= 40)
+      .filter((item) => item.diemPhuHop > 0)
       .sort(
         (a, b) =>
           b.diemPhuHop - a.diemPhuHop ||
@@ -694,6 +669,185 @@ export class PortalService {
     };
   }
 
+  async employerStatistics(
+    accountId: number,
+    query: Record<string, string | undefined> = {},
+  ) {
+    const employer = await this.prisma.hoSoNhaTuyenDung.findUnique({
+      where: { taiKhoanId: accountId },
+      select: { id: true, tenDonVi: true },
+    });
+    if (!employer) this.notFound('Không tìm thấy hồ sơ nhà tuyển dụng.');
+
+    const days = Math.min(365, Math.max(30, Number(query.days || 180)));
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    from.setDate(from.getDate() - days + 1);
+
+    const jobs = await this.prisma.tinTuyenDung.findMany({
+      where: { nhaTuyenDungId: employer.id },
+      select: {
+        id: true,
+        viTriTuyenDung: true,
+        soLuongTuyen: true,
+        trangThaiKiemDuyet: true,
+        trangThaiHienThi: true,
+        thoiHanNhanHoSo: true,
+        ngayDang: true,
+        ngayTao: true,
+        _count: { select: { nguoiLaoDongDaLuu: true } },
+        ungTuyens: {
+          where: { ngayNop: { gte: from } },
+          select: {
+            id: true,
+            hoTenSnapshot: true,
+            trangThaiHienTai: true,
+            ngayNop: true,
+          },
+        },
+      },
+      orderBy: { ngayTao: 'desc' },
+    });
+
+    const applications = jobs.flatMap((job) =>
+      job.ungTuyens.map((application) => ({
+        ...application,
+        jobId: job.id,
+        jobTitle: job.viTriTuyenDung,
+      })),
+    );
+    const statusCounts = Object.fromEntries(
+      Object.values(TrangThaiUngTuyen).map((status) => [status, 0]),
+    ) as Record<TrangThaiUngTuyen, number>;
+    applications.forEach((item) => {
+      statusCounts[item.trangThaiHienTai] += 1;
+    });
+
+    const hired = statusCounts[TrangThaiUngTuyen.TRUNG_TUYEN];
+    const interviewed =
+      statusCounts[TrangThaiUngTuyen.MOI_PHONG_VAN] +
+      statusCounts[TrangThaiUngTuyen.DA_PHONG_VAN];
+    const processed =
+      applications.length - statusCounts[TrangThaiUngTuyen.DA_NOP];
+    const activeJobs = jobs.filter(
+      (job) => job.trangThaiHienThi === TrangThaiHienThiTin.DANG_HIEN_THI,
+    ).length;
+    const now = new Date();
+    const sevenDaysLater = new Date(now);
+    sevenDaysLater.setDate(sevenDaysLater.getDate() + 7);
+
+    const monthKeys = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+      return {
+        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+        label: `T${date.getMonth() + 1}/${date.getFullYear()}`,
+        applications: 0,
+        hired: 0,
+      };
+    });
+    const monthMap = new Map(monthKeys.map((item) => [item.key, item]));
+    applications.forEach((item) => {
+      const date = new Date(item.ngayNop);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const month = monthMap.get(key);
+      if (!month) return;
+      month.applications += 1;
+      if (item.trangThaiHienTai === TrangThaiUngTuyen.TRUNG_TUYEN) {
+        month.hired += 1;
+      }
+    });
+
+    const statusLabels: Record<TrangThaiUngTuyen, string> = {
+      DA_NOP: 'Mới nộp',
+      DA_XEM: 'Đã xem',
+      DUOC_CHON_SO_BO: 'Chọn sơ bộ',
+      MOI_PHONG_VAN: 'Mời phỏng vấn',
+      DA_PHONG_VAN: 'Đã phỏng vấn',
+      TRUNG_TUYEN: 'Trúng tuyển',
+      KHONG_PHU_HOP: 'Không phù hợp',
+      DA_RUT: 'Đã rút',
+    };
+
+    const jobPerformance = jobs
+      .map((job) => {
+        const jobHired = job.ungTuyens.filter(
+          (item) => item.trangThaiHienTai === TrangThaiUngTuyen.TRUNG_TUYEN,
+        ).length;
+        return {
+          id: job.id,
+          title: job.viTriTuyenDung,
+          applications: job.ungTuyens.length,
+          saved: job._count.nguoiLaoDongDaLuu,
+          hired: jobHired,
+          quota: job.soLuongTuyen,
+          fillRate: job.soLuongTuyen
+            ? Math.min(100, Math.round((jobHired / job.soLuongTuyen) * 100))
+            : 0,
+          status: job.trangThaiHienThi,
+          reviewStatus: job.trangThaiKiemDuyet,
+          deadline: job.thoiHanNhanHoSo,
+        };
+      })
+      .sort((a, b) => b.applications - a.applications || b.saved - a.saved);
+
+    return {
+      success: true,
+      data: {
+        employerName: employer.tenDonVi,
+        period: { days, from, to: now },
+        summary: {
+          totalJobs: jobs.length,
+          activeJobs,
+          pendingJobs: jobs.filter(
+            (job) => job.trangThaiKiemDuyet === TrangThaiKiemDuyet.CHO_DUYET,
+          ).length,
+          closedJobs: jobs.filter(
+            (job) => job.trangThaiHienThi === TrangThaiHienThiTin.DA_DONG,
+          ).length,
+          expiringSoon: jobs.filter(
+            (job) =>
+              job.trangThaiHienThi === TrangThaiHienThiTin.DANG_HIEN_THI &&
+              job.thoiHanNhanHoSo >= now &&
+              job.thoiHanNhanHoSo <= sevenDaysLater,
+          ).length,
+          totalApplications: applications.length,
+          newApplications: statusCounts[TrangThaiUngTuyen.DA_NOP],
+          interviewed,
+          hired,
+          processingRate: applications.length
+            ? Math.round((processed / applications.length) * 100)
+            : 0,
+          hiringRate: applications.length
+            ? Math.round((hired / applications.length) * 1000) / 10
+            : 0,
+        },
+        applicationStatuses: Object.values(TrangThaiUngTuyen).map((status) => ({
+          status,
+          label: statusLabels[status],
+          count: statusCounts[status],
+          percent: applications.length
+            ? Math.round((statusCounts[status] / applications.length) * 1000) /
+              10
+            : 0,
+        })),
+        monthlyTrend: monthKeys,
+        jobPerformance,
+        recentApplications: applications
+          .sort((a, b) => b.ngayNop.getTime() - a.ngayNop.getTime())
+          .slice(0, 8)
+          .map((item) => ({
+            id: item.id,
+            applicantName: item.hoTenSnapshot,
+            jobId: item.jobId,
+            jobTitle: item.jobTitle,
+            status: item.trangThaiHienTai,
+            statusLabel: statusLabels[item.trangThaiHienTai],
+            appliedAt: item.ngayNop,
+          })),
+      },
+    };
+  }
+
   async employerJob(accountId: number, jobId: number) {
     await this.assertEmployerJob(accountId, jobId);
     const item = await this.prisma.tinTuyenDung.findUnique({
@@ -756,21 +910,16 @@ export class PortalService {
     const fallbackCategoryId = await this.fallbackCategoryId();
     const job = await this.prisma.$transaction(async (tx) => {
       const created = await tx.tinTuyenDung.create({
-        data: this.jobWriteData(
-          employer.id,
-          body,
-          isDraft,
-          fallbackCategoryId,
-        ),
+        data: this.jobWriteData(employer.id, body, isDraft, fallbackCategoryId),
       });
       await this.replaceJobSkills(tx, created.id, body.skills);
       if (!isDraft) {
         await this.notifyAdmins(
-        tx,
-        'Tin tuyển dụng mới chờ duyệt',
-        `${employer.tenDonVi} vừa gửi tin “${created.viTriTuyenDung}”.`,
-        `/quan-tri/kiem-duyet-tin/${created.id}`,
-      );
+          tx,
+          'Tin tuyển dụng mới chờ duyệt',
+          `${employer.tenDonVi} vừa gửi tin “${created.viTriTuyenDung}”.`,
+          `/quan-tri/kiem-duyet-tin/${created.id}`,
+        );
       }
       return created;
     });
@@ -794,11 +943,11 @@ export class PortalService {
       this.notFound('Không tìm thấy tin tuyển dụng của doanh nghiệp.');
     if (
       !(
-        [TrangThaiKiemDuyet.BAN_NHAP, TrangThaiKiemDuyet.TU_CHOI] as
-          TrangThaiKiemDuyet[]
-      ).includes(
-        current.trangThaiKiemDuyet,
-      )
+        [
+          TrangThaiKiemDuyet.BAN_NHAP,
+          TrangThaiKiemDuyet.TU_CHOI,
+        ] as TrangThaiKiemDuyet[]
+      ).includes(current.trangThaiKiemDuyet)
     ) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_EDITABLE',
@@ -834,10 +983,10 @@ export class PortalService {
       await this.replaceJobSkills(tx, jobId, body.skills);
       if (!isDraft) {
         await this.notifyAdmins(
-        tx,
-        'Tin tuyển dụng đã được gửi lại',
-        `${current.nhaTuyenDung.tenDonVi} đã chỉnh sửa và gửi lại tin “${item.viTriTuyenDung}”.`,
-        `/quan-tri/kiem-duyet-tin/${jobId}`,
+          tx,
+          'Tin tuyển dụng đã được gửi lại',
+          `${current.nhaTuyenDung.tenDonVi} đã chỉnh sửa và gửi lại tin “${item.viTriTuyenDung}”.`,
+          `/quan-tri/kiem-duyet-tin/${jobId}`,
         );
       }
       return item;
@@ -967,9 +1116,7 @@ export class PortalService {
       [TrangThaiUngTuyen.DA_NOP]: [TrangThaiUngTuyen.KHONG_PHU_HOP],
       [TrangThaiUngTuyen.DA_XEM]: [TrangThaiUngTuyen.KHONG_PHU_HOP],
       [TrangThaiUngTuyen.DUOC_CHON_SO_BO]: [TrangThaiUngTuyen.KHONG_PHU_HOP],
-      [TrangThaiUngTuyen.MOI_PHONG_VAN]: [
-        TrangThaiUngTuyen.DA_PHONG_VAN,
-      ],
+      [TrangThaiUngTuyen.MOI_PHONG_VAN]: [TrangThaiUngTuyen.DA_PHONG_VAN],
       [TrangThaiUngTuyen.DA_PHONG_VAN]: [
         TrangThaiUngTuyen.TRUNG_TUYEN,
         TrangThaiUngTuyen.KHONG_PHU_HOP,
@@ -1043,13 +1190,13 @@ export class PortalService {
             ? 'K\u1ebft qu\u1ea3 h\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n'
             : status === TrangThaiUngTuyen.DA_PHONG_VAN
               ? 'Buổi phỏng vấn đã được ghi nhận'
-            : 'Tr\u1ea1ng th\u00e1i h\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n \u0111\u00e3 thay \u0111\u1ed5i';
+              : 'Tr\u1ea1ng th\u00e1i h\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n \u0111\u00e3 thay \u0111\u1ed5i';
         const notificationContent =
           status === TrangThaiUngTuyen.KHONG_PHU_HOP
             ? `H\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n v\u1ecb tr\u00ed ${application.tinTuyenDung.viTriTuyenDung} \u0111\u00e3 \u0111\u01b0\u1ee3c Nh\u00e0 tuy\u1ec3n d\u1ee5ng c\u1eadp nh\u1eadt k\u1ebft qu\u1ea3. Nh\u1ea5n \u0111\u1ec3 xem chi ti\u1ebft.`
             : status === TrangThaiUngTuyen.DA_PHONG_VAN
               ? `Nhà tuyển dụng ${application.tinTuyenDung.nhaTuyenDung.tenDonVi} đã ghi nhận buổi phỏng vấn cho vị trí ${application.tinTuyenDung.viTriTuyenDung} đã hoàn thành.`
-            : `H\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n v\u1ecb tr\u00ed ${application.tinTuyenDung.viTriTuyenDung} \u0111\u00e3 chuy\u1ec3n sang ${status}.`;
+              : `H\u1ed3 s\u01a1 \u1ee9ng tuy\u1ec3n v\u1ecb tr\u00ed ${application.tinTuyenDung.viTriTuyenDung} \u0111\u00e3 chuy\u1ec3n sang ${status}.`;
         const notificationLink =
           status === TrangThaiUngTuyen.KHONG_PHU_HOP
             ? `/viec-lam-da-ung-tuyen?applicationId=${id}&status=rejected`
@@ -1648,51 +1795,50 @@ export class PortalService {
       activeJobs,
       hiredApplications,
       vacancyAggregate,
-    ] =
-      await this.prisma.$transaction([
-        this.prisma.taiKhoan.count({
-          where: {
-            vaiTro: VaiTroTaiKhoan.NGUOI_LAO_DONG,
-            ...(createdAt ? { ngayTao: createdAt } : {}),
-          },
-        }),
-        this.prisma.taiKhoan.count({
-          where: {
-            vaiTro: VaiTroTaiKhoan.NHA_TUYEN_DUNG,
-            ...(createdAt ? { ngayTao: createdAt } : {}),
-          },
-        }),
-        this.prisma.tinTuyenDung.count({
-          where: createdAt ? { ngayTao: createdAt } : {},
-        }),
-        this.prisma.ungTuyen.count({
-          where: createdAt ? { ngayNop: createdAt } : {},
-        }),
-        this.prisma.tinTuyenDung.count({
-          where: {
-            trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
-            ...(createdAt ? { ngayTao: createdAt } : {}),
-          },
-        }),
-        this.prisma.tinTuyenDung.count({
-          where: {
-            trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
-            trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
-            thoiHanNhanHoSo: { gte: now },
-            ...(createdAt ? { ngayTao: createdAt } : {}),
-          },
-        }),
-        this.prisma.ungTuyen.count({
-          where: {
-            trangThaiHienTai: TrangThaiUngTuyen.TRUNG_TUYEN,
-            ...(createdAt ? { ngayNop: createdAt } : {}),
-          },
-        }),
-        this.prisma.tinTuyenDung.aggregate({
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _sum: { soLuongTuyen: true },
-        }),
-      ]);
+    ] = await this.prisma.$transaction([
+      this.prisma.taiKhoan.count({
+        where: {
+          vaiTro: VaiTroTaiKhoan.NGUOI_LAO_DONG,
+          ...(createdAt ? { ngayTao: createdAt } : {}),
+        },
+      }),
+      this.prisma.taiKhoan.count({
+        where: {
+          vaiTro: VaiTroTaiKhoan.NHA_TUYEN_DUNG,
+          ...(createdAt ? { ngayTao: createdAt } : {}),
+        },
+      }),
+      this.prisma.tinTuyenDung.count({
+        where: createdAt ? { ngayTao: createdAt } : {},
+      }),
+      this.prisma.ungTuyen.count({
+        where: createdAt ? { ngayNop: createdAt } : {},
+      }),
+      this.prisma.tinTuyenDung.count({
+        where: {
+          trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
+          ...(createdAt ? { ngayTao: createdAt } : {}),
+        },
+      }),
+      this.prisma.tinTuyenDung.count({
+        where: {
+          trangThaiKiemDuyet: TrangThaiKiemDuyet.DA_DUYET,
+          trangThaiHienThi: TrangThaiHienThiTin.DANG_HIEN_THI,
+          thoiHanNhanHoSo: { gte: now },
+          ...(createdAt ? { ngayTao: createdAt } : {}),
+        },
+      }),
+      this.prisma.ungTuyen.count({
+        where: {
+          trangThaiHienTai: TrangThaiUngTuyen.TRUNG_TUYEN,
+          ...(createdAt ? { ngayNop: createdAt } : {}),
+        },
+      }),
+      this.prisma.tinTuyenDung.aggregate({
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _sum: { soLuongTuyen: true },
+      }),
+    ]);
     const [
       userByStatus,
       employerByStatus,
@@ -1702,63 +1848,80 @@ export class PortalService {
       jobByCategory,
       applicationByStatus,
       applicationsWithJob,
-    ] =
-      await this.prisma.$transaction([
-        this.prisma.taiKhoan.groupBy({
-          by: ['trangThaiTaiKhoan'],
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _count: true,
-          orderBy: { trangThaiTaiKhoan: 'asc' },
-        }),
-        this.prisma.hoSoNhaTuyenDung.groupBy({
-          by: ['trangThaiDuyet'],
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _count: true,
-          orderBy: { trangThaiDuyet: 'asc' },
-        }),
-        this.prisma.tinTuyenDung.groupBy({
-          by: ['trangThaiKiemDuyet'],
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _count: true,
-          orderBy: { trangThaiKiemDuyet: 'asc' },
-        }),
-        this.prisma.tinTuyenDung.groupBy({
-          by: ['trangThaiHienThi'],
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _count: true,
-          orderBy: { trangThaiHienThi: 'asc' },
-        }),
-        this.prisma.tinTuyenDung.groupBy({
-          by: ['hinhThucLamViec'],
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _count: true,
-          orderBy: { hinhThucLamViec: 'asc' },
-        }),
-        this.prisma.tinTuyenDung.groupBy({
-          by: ['nganhNgheId'],
-          where: createdAt ? { ngayTao: createdAt } : {},
-          _count: true,
-          orderBy: { nganhNgheId: 'asc' },
-        }),
-        this.prisma.ungTuyen.groupBy({
-          by: ['trangThaiHienTai'],
-          where: createdAt ? { ngayNop: createdAt } : {},
-          _count: true,
-          orderBy: { trangThaiHienTai: 'asc' },
-        }),
-        this.prisma.ungTuyen.findMany({
-          where: createdAt ? { ngayNop: createdAt } : {},
-          select: {
-            tinTuyenDung: {
-              select: {
-                id: true,
-                viTriTuyenDung: true,
-                nhaTuyenDung: { select: { tenDonVi: true } },
-              },
+      accountActivity,
+      jobActivity,
+      applicationActivity,
+    ] = await this.prisma.$transaction([
+      this.prisma.taiKhoan.groupBy({
+        by: ['trangThaiTaiKhoan'],
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _count: true,
+        orderBy: { trangThaiTaiKhoan: 'asc' },
+      }),
+      this.prisma.hoSoNhaTuyenDung.groupBy({
+        by: ['trangThaiDuyet'],
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _count: true,
+        orderBy: { trangThaiDuyet: 'asc' },
+      }),
+      this.prisma.tinTuyenDung.groupBy({
+        by: ['trangThaiKiemDuyet'],
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _count: true,
+        orderBy: { trangThaiKiemDuyet: 'asc' },
+      }),
+      this.prisma.tinTuyenDung.groupBy({
+        by: ['trangThaiHienThi'],
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _count: true,
+        orderBy: { trangThaiHienThi: 'asc' },
+      }),
+      this.prisma.tinTuyenDung.groupBy({
+        by: ['hinhThucLamViec'],
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _count: true,
+        orderBy: { hinhThucLamViec: 'asc' },
+      }),
+      this.prisma.tinTuyenDung.groupBy({
+        by: ['nganhNgheId'],
+        where: createdAt ? { ngayTao: createdAt } : {},
+        _count: true,
+        orderBy: { nganhNgheId: 'asc' },
+      }),
+      this.prisma.ungTuyen.groupBy({
+        by: ['trangThaiHienTai'],
+        where: createdAt ? { ngayNop: createdAt } : {},
+        _count: true,
+        orderBy: { trangThaiHienTai: 'asc' },
+      }),
+      this.prisma.ungTuyen.findMany({
+        where: createdAt ? { ngayNop: createdAt } : {},
+        select: {
+          tinTuyenDung: {
+            select: {
+              id: true,
+              viTriTuyenDung: true,
+              nhaTuyenDung: { select: { tenDonVi: true } },
             },
           },
-        }),
-      ]);
+        },
+      }),
+      this.prisma.taiKhoan.findMany({
+        where: createdAt ? { ngayTao: createdAt } : {},
+        select: { ngayTao: true },
+        orderBy: { ngayTao: 'asc' },
+      }),
+      this.prisma.tinTuyenDung.findMany({
+        where: createdAt ? { ngayTao: createdAt } : {},
+        select: { ngayTao: true },
+        orderBy: { ngayTao: 'asc' },
+      }),
+      this.prisma.ungTuyen.findMany({
+        where: createdAt ? { ngayNop: createdAt } : {},
+        select: { ngayNop: true },
+        orderBy: { ngayNop: 'asc' },
+      }),
+    ]);
 
     const categoryIds = jobByCategory.map((item) => item.nganhNgheId);
     const categories = categoryIds.length
@@ -1789,6 +1952,22 @@ export class PortalService {
     const recruitmentRate = applications
       ? Number(((hiredApplications / applications) * 100).toFixed(2))
       : 0;
+    const approvalRate = jobs
+      ? Number(((approvedJobs / jobs) * 100).toFixed(2))
+      : 0;
+    const activeJobRate = approvedJobs
+      ? Number(((activeJobs / approvedJobs) * 100).toFixed(2))
+      : 0;
+    const vacancyFulfillmentRate = totalVacancies
+      ? Number(((hiredApplications / totalVacancies) * 100).toFixed(2))
+      : 0;
+    const trend = this.buildStatisticsTrend(
+      accountActivity.map((item) => item.ngayTao),
+      jobActivity.map((item) => item.ngayTao),
+      applicationActivity.map((item) => item.ngayNop),
+      query.from,
+      query.to,
+    );
     return {
       success: true,
       data: {
@@ -1801,6 +1980,10 @@ export class PortalService {
         hiredApplications,
         totalVacancies,
         recruitmentRate,
+        approvalRate,
+        activeJobRate,
+        vacancyFulfillmentRate,
+        trend,
         period: { from: query.from ?? null, to: query.to ?? null },
         users: {
           total: workers + employers,
@@ -1844,10 +2027,51 @@ export class PortalService {
     };
   }
 
+  private buildStatisticsTrend(
+    accountDates: Date[],
+    jobDates: Date[],
+    applicationDates: Date[],
+    from?: string,
+    to?: string,
+  ) {
+    const end = to ? new Date(`${to}T23:59:59.999Z`) : new Date();
+    const start = from
+      ? new Date(`${from}T00:00:00.000Z`)
+      : new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - 5, 1));
+    const monthKeys: string[] = [];
+    const cursor = new Date(
+      Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1),
+    );
+    const last = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
+    while (cursor <= last && monthKeys.length < 24) {
+      monthKeys.push(
+        `${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}`,
+      );
+      cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+    }
+    const countByMonth = (dates: Date[]) => {
+      const counts = new Map(monthKeys.map((key) => [key, 0]));
+      for (const date of dates) {
+        const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+        if (counts.has(key)) counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      return counts;
+    };
+    const accounts = countByMonth(accountDates);
+    const jobs = countByMonth(jobDates);
+    const applications = countByMonth(applicationDates);
+    return monthKeys.map((key) => ({
+      period: key,
+      accounts: accounts.get(key) ?? 0,
+      jobs: jobs.get(key) ?? 0,
+      applications: applications.get(key) ?? 0,
+    }));
+  }
+
   async exportStatistics(query: Record<string, string | undefined> = {}) {
     const { data } = await this.statistics(query);
     const type = this.reportType(query.type);
-    const format = query.format === 'json' ? 'json' : 'csv';
+    const format = query.format === 'pdf' ? 'pdf' : 'xlsx';
     const rowsByType: Record<
       'summary' | 'users' | 'employers' | 'jobs' | 'applications',
       Array<[string, string, number]>
@@ -1857,11 +2081,18 @@ export class PortalService {
         ['Tài khoản', 'Nhà tuyển dụng', data.employers],
         ['Tin tuyển dụng', 'Tổng số', data.jobs],
         ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
+        ['Tin tuyển dụng', 'Tỷ lệ được duyệt (%)', data.approvalRate],
         ['Tin tuyển dụng', 'Đang hiển thị và còn hạn', data.activeJobs],
+        ['Tin tuyển dụng', 'Tỷ lệ đang hoạt động (%)', data.activeJobRate],
         ['Tin tuyển dụng', 'Tổng nhu cầu tuyển', data.totalVacancies],
         ['Ứng tuyển', 'Tổng số', data.applications],
         ['Ứng tuyển', 'Trúng tuyển', data.hiredApplications],
         ['Ứng tuyển', 'Tỷ lệ trúng tuyển (%)', data.recruitmentRate],
+        [
+          'Ứng tuyển',
+          'Mức đáp ứng nhu cầu tuyển (%)',
+          data.vacancyFulfillmentRate,
+        ],
         ...this.rowsFromStatisticsRecord(
           'Trạng thái tài khoản',
           data.users.byStatus,
@@ -1897,7 +2128,9 @@ export class PortalService {
       jobs: [
         ['Tin tuyển dụng', 'Tổng số', data.jobs],
         ['Tin tuyển dụng', 'Đã duyệt', data.approvedJobs],
+        ['Tin tuyển dụng', 'Tỷ lệ được duyệt (%)', data.approvalRate],
         ['Tin tuyển dụng', 'Đang hiển thị và còn hạn', data.activeJobs],
+        ['Tin tuyển dụng', 'Tỷ lệ đang hoạt động (%)', data.activeJobRate],
         ['Tin tuyển dụng', 'Tổng nhu cầu tuyển', data.totalVacancies],
         ...this.rowsFromStatisticsRecord(
           'Trạng thái tin',
@@ -1920,6 +2153,11 @@ export class PortalService {
         ['Ứng tuyển', 'Tổng số', data.applications],
         ['Ứng tuyển', 'Trúng tuyển', data.hiredApplications],
         ['Ứng tuyển', 'Tỷ lệ trúng tuyển (%)', data.recruitmentRate],
+        [
+          'Ứng tuyển',
+          'Mức đáp ứng nhu cầu tuyển (%)',
+          data.vacancyFulfillmentRate,
+        ],
         ...this.rowsFromStatisticsRecord(
           'Trạng thái ứng tuyển',
           data.applicationStatistics.byStatus,
@@ -1935,25 +2173,259 @@ export class PortalService {
       ],
     };
     const rows = rowsByType[type];
+    const reportTitle = this.reportTitle(type);
+    const buffer =
+      format === 'pdf'
+        ? await this.createStatisticsPdf(
+            reportTitle,
+            data.period,
+            rows,
+            data.trend,
+          )
+        : await this.createStatisticsExcel(
+            reportTitle,
+            data.period,
+            rows,
+            data.trend,
+          );
+    return {
+      buffer,
+      extension: format,
+      mimeType:
+        format === 'pdf'
+          ? 'application/pdf'
+          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    };
+  }
 
-    if (format === 'json') {
-      return JSON.stringify(
-        {
-          period: data.period,
-          type,
-          rows: rows.map(([group, label, value]) => ({ group, label, value })),
-        },
-        null,
-        2,
-      );
-    }
+  private reportTitle(type: ReturnType<PortalService['reportType']>) {
+    return {
+      summary: 'Báo cáo tổng hợp hệ thống',
+      users: 'Báo cáo tài khoản người dùng',
+      employers: 'Báo cáo nhà tuyển dụng',
+      jobs: 'Báo cáo tin tuyển dụng',
+      applications: 'Báo cáo hồ sơ ứng tuyển',
+    }[type];
+  }
 
-    const csv = [['Nhóm', 'Chỉ tiêu', 'Số lượng'], ...rows]
-      .map((row) =>
-        row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(','),
-      )
-      .join('\r\n');
-    return `\uFEFF${csv}`;
+  private async createStatisticsExcel(
+    title: string,
+    period: { from: string | null; to: string | null },
+    rows: Array<[string, string, number]>,
+    trend: Array<{
+      period: string;
+      accounts: number;
+      jobs: number;
+      applications: number;
+    }>,
+  ) {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'Việc làm Thanh niên Hà Nội';
+    workbook.created = new Date();
+    const sheet = workbook.addWorksheet('Báo cáo', {
+      views: [{ state: 'frozen', ySplit: 5 }],
+      pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1 },
+    });
+    sheet.mergeCells('A1:C1');
+    sheet.getCell('A1').value = title.toUpperCase();
+    sheet.getCell('A1').font = {
+      bold: true,
+      size: 18,
+      color: { argb: 'FF0A3970' },
+    };
+    sheet.getCell('A1').alignment = { horizontal: 'center' };
+    sheet.mergeCells('A2:C2');
+    sheet.getCell('A2').value =
+      `Thời gian: ${period.from ?? 'Tất cả'} - ${period.to ?? 'Hiện tại'}`;
+    sheet.getCell('A2').alignment = { horizontal: 'center' };
+    sheet.mergeCells('A3:C3');
+    sheet.getCell('A3').value =
+      `Ngày xuất: ${new Date().toLocaleString('vi-VN')}`;
+    sheet.getCell('A3').alignment = { horizontal: 'center' };
+    const header = sheet.getRow(5);
+    header.values = ['Nhóm dữ liệu', 'Chỉ tiêu', 'Giá trị'];
+    header.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    header.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1269D3' },
+    };
+    rows.forEach((row) => sheet.addRow(row));
+    sheet.columns = [{ width: 28 }, { width: 48 }, { width: 18 }];
+    sheet.eachRow((row, rowNumber) => {
+      if (rowNumber >= 5) {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFDCE6F1' } },
+            left: { style: 'thin', color: { argb: 'FFDCE6F1' } },
+            bottom: { style: 'thin', color: { argb: 'FFDCE6F1' } },
+            right: { style: 'thin', color: { argb: 'FFDCE6F1' } },
+          };
+          cell.alignment = { vertical: 'middle', wrapText: true };
+        });
+      }
+    });
+    const chart = await this.statisticsChartPng(trend);
+    const imageId = workbook.addImage({
+      base64: chart.toString('base64'),
+      extension: 'png',
+    });
+    const chartRow = Math.max(8, rows.length + 8);
+    sheet.addImage(imageId, {
+      tl: { col: 0, row: chartRow - 1 },
+      ext: { width: 900, height: 360 },
+    });
+    sheet.getRow(chartRow).height = 270;
+    const trendSheet = workbook.addWorksheet('Dữ liệu biểu đồ');
+    trendSheet.addRow([
+      'Tháng',
+      'Tài khoản mới',
+      'Tin tuyển dụng',
+      'Lượt ứng tuyển',
+    ]);
+    trend.forEach((item) =>
+      trendSheet.addRow([
+        item.period,
+        item.accounts,
+        item.jobs,
+        item.applications,
+      ]),
+    );
+    trendSheet.columns = [
+      { width: 15 },
+      { width: 20 },
+      { width: 20 },
+      { width: 20 },
+    ];
+    trendSheet.getRow(1).font = { bold: true };
+    const output = await workbook.xlsx.writeBuffer();
+    return Buffer.from(output);
+  }
+
+  private async statisticsChartPng(
+    trend: Array<{
+      period: string;
+      accounts: number;
+      jobs: number;
+      applications: number;
+    }>,
+  ) {
+    const items = trend.length
+      ? trend
+      : [{ period: '-', accounts: 0, jobs: 0, applications: 0 }];
+    const max = Math.max(
+      1,
+      ...items.flatMap((item) => [item.accounts, item.jobs, item.applications]),
+    );
+    const width = 900;
+    const height = 360;
+    const chartHeight = 230;
+    const groupWidth = 800 / items.length;
+    const bars = items
+      .map((item, index) => {
+        const x = 65 + index * groupWidth;
+        const values = [item.accounts, item.jobs, item.applications];
+        const colors = ['#176bd6', '#22a17a', '#f1a33c'];
+        return (
+          values
+            .map((value, valueIndex) => {
+              const barHeight = (value / max) * chartHeight;
+              return `<rect x="${x + valueIndex * 16}" y="${295 - barHeight}" width="12" height="${barHeight}" rx="3" fill="${colors[valueIndex]}"/>`;
+            })
+            .join('') +
+          `<text x="${x + 16}" y="320" text-anchor="middle" font-size="12" fill="#60718a">${item.period}</text>`
+        );
+      })
+      .join('');
+    const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100%" height="100%" fill="#ffffff"/>
+      <text x="32" y="35" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#092c57">Xu hướng hoạt động theo tháng</text>
+      <rect x="510" y="23" width="11" height="11" rx="2" fill="#176bd6"/><text x="527" y="33" font-size="12" fill="#60718a">Tài khoản</text>
+      <rect x="610" y="23" width="11" height="11" rx="2" fill="#22a17a"/><text x="627" y="33" font-size="12" fill="#60718a">Tin tuyển dụng</text>
+      <rect x="742" y="23" width="11" height="11" rx="2" fill="#f1a33c"/><text x="759" y="33" font-size="12" fill="#60718a">Ứng tuyển</text>
+      <line x1="55" y1="295" x2="865" y2="295" stroke="#dce6f1"/>${bars}
+    </svg>`;
+    return sharp(Buffer.from(svg)).png().toBuffer();
+  }
+
+  private async createStatisticsPdf(
+    title: string,
+    period: { from: string | null; to: string | null },
+    rows: Array<[string, string, number]>,
+    trend: Array<{
+      period: string;
+      accounts: number;
+      jobs: number;
+      applications: number;
+    }>,
+  ) {
+    const chart = await this.statisticsChartPng(trend);
+    return new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 42,
+        bufferPages: true,
+      });
+      const chunks: Buffer[] = [];
+      doc.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+      const font = [
+        path.join(process.cwd(), 'assets/fonts/DejaVuSans.ttf'),
+        'C:/Windows/Fonts/arial.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+      ].find((candidate) => existsSync(candidate));
+      if (font) doc.font(font);
+      doc
+        .fillColor('#092c57')
+        .fontSize(17)
+        .text(title.toUpperCase(), { align: 'center' });
+      doc
+        .moveDown(0.4)
+        .fillColor('#60718a')
+        .fontSize(9)
+        .text(
+          `Thời gian: ${period.from ?? 'Tất cả'} - ${period.to ?? 'Hiện tại'} | Ngày xuất: ${new Date().toLocaleString('vi-VN')}`,
+          { align: 'center' },
+        );
+      doc.moveDown(1).image(chart, { fit: [510, 205], align: 'center' });
+      doc.moveDown(1);
+      const widths = [130, 275, 80];
+      const drawRow = (values: Array<string | number>, header = false) => {
+        const rowHeight = 28;
+        if (doc.y + rowHeight > 780) doc.addPage();
+        const y = doc.y;
+        let x = 42;
+        values.forEach((value, index) => {
+          doc
+            .rect(x, y, widths[index], rowHeight)
+            .fillAndStroke(header ? '#1269d3' : '#ffffff', '#dce6f1');
+          doc
+            .fillColor(header ? '#ffffff' : '#263d59')
+            .fontSize(8)
+            .text(String(value), x + 5, y + 8, {
+              width: widths[index] - 10,
+              ellipsis: true,
+            });
+          x += widths[index];
+        });
+        doc.y = y + rowHeight;
+      };
+      drawRow(['Nhóm dữ liệu', 'Chỉ tiêu', 'Giá trị'], true);
+      rows.forEach((row) => drawRow(row));
+      const pageCount = doc.bufferedPageRange().count;
+      for (let index = 0; index < pageCount; index += 1) {
+        doc.switchToPage(index);
+        doc
+          .fillColor('#7a899d')
+          .fontSize(8)
+          .text(`Trang ${index + 1}/${pageCount}`, 42, 810, {
+            align: 'right',
+            width: 510,
+          });
+      }
+      doc.end();
+    });
   }
 
   private reportType(
@@ -2219,7 +2691,7 @@ export class PortalService {
 
     if (profile.nganhNgheMongMuonId === job.nganhNgheId) {
       score += 25;
-      reasons.push('Phu hop nganh nghe ban quan tam.');
+      reasons.push('Phù hợp ngành nghề bạn quan tâm.');
     }
 
     const desiredPosition = this.normalizeText(profile.viTriMongMuon);
@@ -2233,7 +2705,7 @@ export class PortalService {
         jobPosition.includes(desiredPosition)
       ) {
         score += 25;
-        reasons.push('Gan voi vi tri cong viec mong muon.');
+        reasons.push('Gần với vị trí công việc mong muốn.');
       } else {
         const desiredTokens = new Set(desiredPosition.split(' '));
         const jobTokens = new Set(jobPosition.split(' '));
@@ -2244,7 +2716,7 @@ export class PortalService {
         const positionScore = Math.round(ratio * 25);
         if (positionScore > 0) {
           score += positionScore;
-          reasons.push('Co tu khoa vi tri cong viec tuong dong.');
+          reasons.push('Có từ khóa vị trí công việc tương đồng.');
         }
       }
     }
@@ -2263,7 +2735,7 @@ export class PortalService {
       ).length;
       if (matchedSkills > 0) {
         score += Math.round((matchedSkills / requiredSkills.length) * 20);
-        reasons.push(`Co ${matchedSkills} ky nang phu hop.`);
+        reasons.push(`Có ${matchedSkills} kỹ năng phù hợp.`);
       }
     }
 
@@ -2272,7 +2744,7 @@ export class PortalService {
       profile.chapNhanLamTuXa
     ) {
       score += 15;
-      reasons.push('Phu hop voi nhu cau lam viec tu xa.');
+      reasons.push('Phù hợp với nhu cầu làm việc từ xa.');
     } else {
       if (
         profile.tinhThanhPhoMongMuon &&
@@ -2280,7 +2752,7 @@ export class PortalService {
           this.normalizeText(job.tinhThanhPho)
       ) {
         score += 10;
-        reasons.push('Dung tinh/thanh pho mong muon.');
+        reasons.push('Đúng tỉnh/thành phố mong muốn.');
       }
       if (
         profile.quanHuyenMongMuon &&
@@ -2288,7 +2760,7 @@ export class PortalService {
           this.normalizeText(job.quanHuyen)
       ) {
         score += 5;
-        reasons.push('Dung quan/huyen mong muon.');
+        reasons.push('Đúng quận/huyện mong muốn.');
       }
     }
 
@@ -2301,7 +2773,7 @@ export class PortalService {
         profile.phuongThucLamViecMongMuon === job.phuongThucLamViec)
     ) {
       score += 5;
-      reasons.push('Phu hop hinh thuc hoac phuong thuc lam viec.');
+      reasons.push('Phù hợp hình thức hoặc phương thức làm việc.');
     }
 
     return {
@@ -2313,7 +2785,7 @@ export class PortalService {
 
   private salaryMatchScore(profile: any, job: any, reasons: string[]) {
     if (job.coTheThoaThuan) {
-      reasons.push('Muc luong co the thoa thuan.');
+      reasons.push('Mức lương có thể thỏa thuận.');
       return 5;
     }
     const desiredFrom = Number(profile.mucLuongMongMuonTu ?? 0);
@@ -2322,13 +2794,13 @@ export class PortalService {
     const jobTo = Number(job.mucLuongDen ?? jobFrom);
     if (!desiredFrom && !desiredTo) return 0;
     if (jobTo >= (desiredTo || desiredFrom)) {
-      reasons.push('Muc luong dap ung mong muon.');
+      reasons.push('Mức lương đáp ứng mong muốn.');
       return 10;
     }
     const overlapFrom = Math.max(jobFrom, desiredFrom);
     const overlapTo = Math.min(jobTo, desiredTo || desiredFrom);
     if (overlapTo >= overlapFrom) {
-      reasons.push('Khoang luong co giao voi mong muon.');
+      reasons.push('Khoảng lương phù hợp với mong muốn.');
       return 7;
     }
     return 0;
@@ -2362,7 +2834,9 @@ export class PortalService {
   }
 
   private trimOrNull(value: unknown) {
-    const text = String(value ?? '').trim().replace(/\s+/g, ' ');
+    const text = String(value ?? '')
+      .trim()
+      .replace(/\s+/g, ' ');
     return text || null;
   }
 
@@ -2375,7 +2849,10 @@ export class PortalService {
     return text || null;
   }
 
-  private enumOrNull<T extends Record<string, string>>(value: unknown, source: T) {
+  private enumOrNull<T extends Record<string, string>>(
+    value: unknown,
+    source: T,
+  ) {
     return Object.values(source).includes(value as T[keyof T])
       ? (value as T[keyof T])
       : null;
@@ -2407,7 +2884,9 @@ export class PortalService {
     const seen = new Set<string>();
     const result: string[] = [];
     for (const raw of skills) {
-      const name = String(raw ?? '').trim().replace(/\s+/g, ' ');
+      const name = String(raw ?? '')
+        .trim()
+        .replace(/\s+/g, ' ');
       const key = this.normalizeText(name);
       if (!name || name.length < 2 || name.length > 50 || seen.has(key)) {
         continue;
@@ -2484,9 +2963,7 @@ export class PortalService {
         message: 'Hình thức làm việc không hợp lệ.',
       });
     }
-    if (
-      !Object.values(PhuongThucLamViec).includes(body.phuongThucLamViec)
-    ) {
+    if (!Object.values(PhuongThucLamViec).includes(body.phuongThucLamViec)) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'INVALID_WORK_MODE',
         message: 'Phuong thuc lam viec khong hop le.',
@@ -2565,11 +3042,9 @@ export class PortalService {
       viTriTuyenDung:
         this.trimOrNull(body.viTriTuyenDung) ?? 'Ban nhap tin tuyen dung',
       moTaCongViec:
-        this.cleanText(body.moTaCongViec) ??
-        (isDraft ? 'Dang cap nhat' : ''),
+        this.cleanText(body.moTaCongViec) ?? (isDraft ? 'Dang cap nhat' : ''),
       yeuCauUngVien:
-        this.cleanText(body.yeuCauUngVien) ??
-        (isDraft ? 'Dang cap nhat' : ''),
+        this.cleanText(body.yeuCauUngVien) ?? (isDraft ? 'Dang cap nhat' : ''),
       quyenLoi: this.cleanText(body.quyenLoi),
       mucLuongTu: body.coTheThoaThuan ? null : this.decimal(body.mucLuongTu),
       mucLuongDen: body.coTheThoaThuan ? null : this.decimal(body.mucLuongDen),
@@ -2723,7 +3198,8 @@ export class PortalService {
     if (job.trang_thai_kiem_duyet !== TrangThaiKiemDuyet.DA_DUYET) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_APPROVED',
-        message: 'Tin tuyển dụng chưa được duyệt nên không thể xác nhận trúng tuyển.',
+        message:
+          'Tin tuyển dụng chưa được duyệt nên không thể xác nhận trúng tuyển.',
       });
     }
     if (
@@ -2733,7 +3209,8 @@ export class PortalService {
     ) {
       throw new ApiError(HttpStatus.BAD_REQUEST, {
         code: 'JOB_NOT_OPEN_FOR_HIRING',
-        message: 'Tin tuyển dụng không còn ở trạng thái cho phép xác nhận trúng tuyển.',
+        message:
+          'Tin tuyển dụng không còn ở trạng thái cho phép xác nhận trúng tuyển.',
       });
     }
 
@@ -2821,7 +3298,8 @@ export class PortalService {
     ) {
       throw new ApiError(HttpStatus.CONFLICT, {
         code: 'INTERVIEW_INVITATION_CANCELLED',
-        message: 'Lời mời phỏng vấn đã được hủy, không thể xác nhận đã phỏng vấn.',
+        message:
+          'Lời mời phỏng vấn đã được hủy, không thể xác nhận đã phỏng vấn.',
       });
     }
 

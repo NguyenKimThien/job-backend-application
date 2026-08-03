@@ -221,6 +221,7 @@ function accountMenuItems(role?: AccountRole) {
         href: '/nha-tuyen-dung/tin-tuyen-dung/tao-moi',
         label: 'Đăng tin tuyển dụng',
       },
+      { href: '/nha-tuyen-dung/thong-ke', label: 'Thống kê tuyển dụng' },
       { href: '/doi-mat-khau', label: 'Cài đặt tài khoản' },
     ];
   }

@@ -31,6 +31,15 @@ type StatisticsData = {
   hiredApplications: number;
   totalVacancies: number;
   recruitmentRate: number;
+  approvalRate: number;
+  activeJobRate: number;
+  vacancyFulfillmentRate: number;
+  trend?: Array<{
+    period: string;
+    accounts: number;
+    jobs: number;
+    applications: number;
+  }>;
   users?: {
     byStatus?: Record<string, number>;
     total?: number;
@@ -60,13 +69,8 @@ type ReportRow = {
   value: number;
 };
 
-type ReportType =
-  | 'summary'
-  | 'users'
-  | 'employers'
-  | 'jobs'
-  | 'applications';
-type ReportFormat = 'csv' | 'json';
+type ReportType = 'summary' | 'users' | 'employers' | 'jobs' | 'applications';
+type ReportFormat = 'xlsx' | 'pdf';
 
 const accountStatusLabels: Record<string, string> = {
   CHO_XAC_THUC_EMAIL: 'Chờ xác thực',
@@ -81,6 +85,14 @@ const jobStatusLabels: Record<string, string> = {
   DA_DUYET: 'Đã duyệt',
   TU_CHOI: 'Từ chối',
   YEU_CAU_BO_SUNG: 'Cần chỉnh sửa',
+};
+
+const employerStatusLabels: Record<string, string> = {
+  BAN_NHAP: 'Bản nháp',
+  CHO_DUYET: 'Chờ duyệt',
+  DA_DUYET: 'Đã duyệt',
+  TU_CHOI: 'Từ chối',
+  YEU_CAU_BO_SUNG: 'Cần bổ sung',
 };
 
 const applicationStatusLabels: Record<string, string> = {
@@ -119,7 +131,7 @@ export default function StatisticsPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [reportType, setReportType] = useState<ReportType>('summary');
-  const [reportFormat, setReportFormat] = useState<ReportFormat>('csv');
+  const [reportFormat, setReportFormat] = useState<ReportFormat>('xlsx');
 
   useEffect(() => {
     void loadStatistics();
@@ -289,6 +301,70 @@ export default function StatisticsPage() {
               />
             </AdminStatsGrid>
 
+            <section
+              className="admin-analytics-grid"
+              aria-label="Chỉ số hiệu quả"
+            >
+              <EfficiencyCard
+                label="Tỷ lệ tin được duyệt"
+                note={`${data.approvedJobs.toLocaleString('vi-VN')} trên ${data.jobs.toLocaleString('vi-VN')} tin`}
+                value={data.approvalRate}
+              />
+              <EfficiencyCard
+                label="Tỷ lệ tin đang hoạt động"
+                note={`${data.activeJobs.toLocaleString('vi-VN')} tin còn nhận hồ sơ`}
+                value={data.activeJobRate}
+              />
+              <EfficiencyCard
+                label="Tỷ lệ ứng tuyển thành công"
+                note={`${data.hiredApplications.toLocaleString('vi-VN')} hồ sơ trúng tuyển`}
+                value={data.recruitmentRate}
+              />
+              <EfficiencyCard
+                label="Mức đáp ứng nhu cầu tuyển"
+                note={`${data.hiredApplications.toLocaleString('vi-VN')} / ${data.totalVacancies.toLocaleString('vi-VN')} vị trí`}
+                value={data.vacancyFulfillmentRate}
+              />
+            </section>
+
+            <div className="admin-analytics-layout">
+              <section className="content-card admin-trend-card">
+                <div className="admin-section-heading">
+                  <div>
+                    <h2>Xu hướng hoạt động</h2>
+                    <p>Tài khoản mới, tin đăng và lượt ứng tuyển theo tháng.</p>
+                  </div>
+                </div>
+                <TrendChart items={data.trend ?? []} />
+              </section>
+              <section className="content-card admin-top-jobs-card">
+                <div className="admin-section-heading">
+                  <div>
+                    <h2>Tin thu hút nhiều ứng viên</h2>
+                    <p>Xếp hạng theo số hồ sơ đã tiếp nhận.</p>
+                  </div>
+                </div>
+                {(data.applicationStatistics?.topJobs ?? []).length ? (
+                  <ol>
+                    {(data.applicationStatistics?.topJobs ?? [])
+                      .slice(0, 5)
+                      .map((item) => (
+                        <li key={item.label}>
+                          <span>{item.label}</span>
+                          <strong>
+                            {item.value.toLocaleString('vi-VN')} hồ sơ
+                          </strong>
+                        </li>
+                      ))}
+                  </ol>
+                ) : (
+                  <p className="admin-chart-empty">
+                    Chưa có dữ liệu ứng tuyển.
+                  </p>
+                )}
+              </section>
+            </div>
+
             <div className="content-card admin-table-card admin-report-panel">
               <header className="admin-report-head">
                 <div>
@@ -330,9 +406,7 @@ export default function StatisticsPage() {
                     >
                       <option value="summary">Báo cáo tổng hợp</option>
                       <option value="users">Báo cáo người dùng</option>
-                      <option value="employers">
-                        Báo cáo nhà tuyển dụng
-                      </option>
+                      <option value="employers">Báo cáo nhà tuyển dụng</option>
                       <option value="jobs">Báo cáo tin tuyển dụng</option>
                       <option value="applications">Báo cáo ứng tuyển</option>
                     </select>
@@ -345,8 +419,8 @@ export default function StatisticsPage() {
                       }
                       value={reportFormat}
                     >
-                      <option value="csv">CSV</option>
-                      <option value="json">JSON</option>
+                      <option value="xlsx">Excel (.xlsx)</option>
+                      <option value="pdf">PDF</option>
                     </select>
                   </label>
                   <button
@@ -409,6 +483,93 @@ export default function StatisticsPage() {
   );
 }
 
+function EfficiencyCard({
+  label,
+  note,
+  value,
+}: {
+  label: string;
+  note: string;
+  value: number;
+}) {
+  const safeValue = Number.isFinite(value) ? Math.max(0, value) : 0;
+  return (
+    <article className="content-card admin-efficiency-card">
+      <div>
+        <span>{label}</span>
+        <strong>{safeValue.toLocaleString('vi-VN')}%</strong>
+      </div>
+      <i aria-hidden="true">
+        <b style={{ width: `${Math.min(safeValue, 100)}%` }} />
+      </i>
+      <small>{note}</small>
+    </article>
+  );
+}
+
+function TrendChart({
+  items,
+}: {
+  items: NonNullable<StatisticsData['trend']>;
+}) {
+  const maximum = Math.max(
+    1,
+    ...items.flatMap((item) => [item.accounts, item.jobs, item.applications]),
+  );
+  if (!items.length) {
+    return (
+      <p className="admin-chart-empty">Chưa có dữ liệu trong giai đoạn này.</p>
+    );
+  }
+  return (
+    <div className="admin-trend-chart">
+      <div className="admin-chart-legend">
+        <span>
+          <i className="accounts" />
+          Tài khoản
+        </span>
+        <span>
+          <i className="jobs" />
+          Tin tuyển dụng
+        </span>
+        <span>
+          <i className="applications" />
+          Ứng tuyển
+        </span>
+      </div>
+      <div className="admin-trend-columns">
+        {items.map((item) => (
+          <div className="admin-trend-month" key={item.period}>
+            <div className="admin-trend-bars">
+              <i
+                className="accounts"
+                style={{ height: `${(item.accounts / maximum) * 100}%` }}
+                title={`${item.accounts} tài khoản`}
+              />
+              <i
+                className="jobs"
+                style={{ height: `${(item.jobs / maximum) * 100}%` }}
+                title={`${item.jobs} tin`}
+              />
+              <i
+                className="applications"
+                style={{ height: `${(item.applications / maximum) * 100}%` }}
+                title={`${item.applications} ứng tuyển`}
+              />
+            </div>
+            <span>{formatPeriod(item.period)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function formatPeriod(value: string) {
+  const [year, month] = value.split('-');
+  return `${month}/${year.slice(-2)}`;
+}
+
 const reportFileNames: Record<ReportType, string> = {
   summary: 'tong-hop',
   users: 'nguoi-dung',
@@ -439,7 +600,7 @@ function buildRows(data: StatisticsData, type: ReportType): ReportRow[] {
       ...rowsFromRecord(
         'Nhà tuyển dụng',
         data.employerStatistics?.byStatus,
-        jobStatusLabels,
+        employerStatusLabels,
       ),
       ...rowsFromRecord(
         'Tin tuyển dụng',
@@ -460,7 +621,7 @@ function buildRows(data: StatisticsData, type: ReportType): ReportRow[] {
     employers: rowsFromRecord(
       'Nhà tuyển dụng',
       data.employerStatistics?.byStatus,
-      jobStatusLabels,
+      employerStatusLabels,
     ),
     jobs: [
       ...rowsFromRecord(
@@ -478,11 +639,7 @@ function buildRows(data: StatisticsData, type: ReportType): ReportRow[] {
         data.jobStatistics?.byWorkType,
         workTypeLabels,
       ),
-      ...rowsFromRecord(
-        'Ngành nghề',
-        data.jobStatistics?.byCategory,
-        {},
-      ),
+      ...rowsFromRecord('Ngành nghề', data.jobStatistics?.byCategory, {}),
     ],
     applications: [
       ...rowsFromRecord(

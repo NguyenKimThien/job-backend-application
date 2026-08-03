@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PublicHeader from '@/components/PublicHeader';
+import { ACCESS_TOKEN_KEY, ACCOUNT_KEY } from '@/lib/backend-api';
 import {
   ApiJob,
   jobTypeLabel,
@@ -38,6 +39,24 @@ type Job = {
   deadlineAt: number | null;
   initials: string;
   tags: string[];
+  matchScore?: number;
+  matchReasons?: string[];
+};
+
+type Account = {
+  vaiTro?: 'NGUOI_LAO_DONG' | 'NHA_TUYEN_DUNG' | 'QUAN_TRI_VIEN';
+};
+
+type RecommendedApiJob = ApiJob & {
+  diemPhuHop?: number;
+  lyDoPhuHop?: string[];
+};
+
+type RecommendedJobsResponse = {
+  needsPreferences: boolean;
+  message?: string;
+  items: RecommendedApiJob[];
+  total: number;
 };
 
 type CategoryOption = {
@@ -123,6 +142,7 @@ const workTypeOptions = [
 ];
 
 const sortOptions = [
+  { label: 'Phù hợp nhất', value: 'recommended' },
   { label: 'Mới nhất', value: 'newest' },
   { label: 'Mức lương cao nhất', value: 'salary' },
 ] as const;
@@ -161,6 +181,26 @@ function JobsPageContent() {
   const [message, setMessage] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [isWorker, setIsWorker] = useState(false);
+  const [recommendedJobs, setRecommendedJobs] = useState<RecommendedApiJob[]>(
+    [],
+  );
+  const [recommendationMessage, setRecommendationMessage] = useState('');
+  const [recommendationLoading, setRecommendationLoading] = useState(false);
+
+  useEffect(() => {
+    const token = window.localStorage.getItem(ACCESS_TOKEN_KEY);
+    const stored = window.localStorage.getItem(ACCOUNT_KEY);
+    if (!token || !stored) return;
+
+    try {
+      const account = JSON.parse(stored) as Account;
+      const worker = account.vaiTro === 'NGUOI_LAO_DONG';
+      setIsWorker(worker);
+    } catch {
+      setIsWorker(false);
+    }
+  }, []);
 
   useEffect(() => {
     const nextKeyword = searchParams.get('tuKhoa') ?? '';
@@ -172,13 +212,18 @@ function JobsPageContent() {
       experience: searchParams.get('kinhNghiem') || defaults.experience,
       type: searchParams.get('hinhThuc') || defaults.type,
     };
-    const nextSort = parseSort(searchParams.get('sapXep'));
+    const sortParam = searchParams.get('sapXep');
+    const nextSort = sortParam
+      ? parseSort(sortParam)
+      : isWorker
+        ? 'recommended'
+        : defaultSort;
 
     setKeyword(nextKeyword);
     setSearchTerm(nextKeyword);
     setFilters(nextFilters);
     setSort(nextSort);
-  }, [searchKey, searchParams]);
+  }, [isWorker, searchKey, searchParams]);
 
   useEffect(() => {
     portalFetch<CategoryOption[]>('/categories')
@@ -193,6 +238,37 @@ function JobsPageContent() {
       .then((items) => setSaved(items.map((job) => job.id)))
       .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    if (!isWorker) {
+      setRecommendedJobs([]);
+      setRecommendationMessage('');
+      return;
+    }
+
+    let ignore = false;
+    setRecommendationLoading(true);
+    portalFetch<RecommendedJobsResponse>('/jobs/recommended?pageSize=20')
+      .then((data) => {
+        if (ignore) return;
+        setRecommendedJobs(data.items ?? []);
+        setRecommendationMessage(
+          data.needsPreferences ? (data.message ?? '') : '',
+        );
+      })
+      .catch(() => {
+        if (ignore) return;
+        setRecommendedJobs([]);
+        setRecommendationMessage('Không thể tải đề xuất việc làm lúc này.');
+      })
+      .finally(() => {
+        if (!ignore) setRecommendationLoading(false);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [isWorker]);
 
   useEffect(() => {
     const query = buildJobsQuery(searchTerm, filters);
@@ -238,16 +314,35 @@ function JobsPageContent() {
   const activeFilters = useMemo(() => buildActiveFilters(filters), [filters]);
 
   const shownJobs = useMemo(() => {
-    const locallyFiltered = jobs.filter((job) =>
-      matchesLocalFilters(job, filters),
+    const recommendations = new Map(
+      recommendedJobs.map((job) => [job.id, job] as const),
     );
+    const locallyFiltered = jobs
+      .filter((job) => matchesLocalFilters(job, filters))
+      .map((job) => {
+        const recommendation = recommendations.get(job.id);
+        return recommendation
+          ? {
+              ...job,
+              matchScore: recommendation.diemPhuHop ?? 0,
+              matchReasons: recommendation.lyDoPhuHop ?? [],
+            }
+          : job;
+      });
+
+    if (sort === 'recommended' && isWorker) {
+      return [...locallyFiltered].sort(
+        (a, b) =>
+          (b.matchScore ?? 0) - (a.matchScore ?? 0) || b.postedAt - a.postedAt,
+      );
+    }
 
     if (sort === 'salary') {
       return [...locallyFiltered].sort((a, b) => b.salaryValue - a.salaryValue);
     }
 
     return [...locallyFiltered].sort((a, b) => b.postedAt - a.postedAt);
-  }, [filters, jobs, sort]);
+  }, [filters, isWorker, jobs, recommendedJobs, sort]);
 
   const hasFilters = activeFilters.length > 0;
   const resultLabel = buildResultLabel(shownJobs.length, searchTerm);
@@ -386,6 +481,28 @@ function JobsPageContent() {
             onClearAll={clearOnlyFilters}
             onRemove={(key) => updateFilter(key, defaults[key])}
           />
+
+          {isWorker && !searchTerm && !hasFilters && (
+            <div className="jobs-recommendation-note" role="status">
+              <Icon name="sparkles" />
+              <div>
+                <strong>
+                  {recommendationLoading
+                    ? 'Đang tìm việc làm phù hợp với bạn...'
+                    : recommendationMessage
+                      ? 'Chưa đủ thông tin để đề xuất chính xác'
+                      : 'Việc làm phù hợp với bạn được ưu tiên lên đầu'}
+                </strong>
+                <p>
+                  {recommendationMessage ||
+                    'Thứ tự dựa trên ngành nghề, vị trí, kỹ năng, địa điểm, mức lương và hình thức làm việc trong hồ sơ.'}
+                </p>
+              </div>
+              {recommendationMessage && (
+                <Link href="/ho-so">Cập nhật hồ sơ</Link>
+              )}
+            </div>
+          )}
 
           <div
             className="directory-job-list"
@@ -763,6 +880,13 @@ function JobCard({
           )}
         </div>
 
+        {(job.matchScore ?? 0) > 0 && (
+          <div className="directory-job-match">
+            <strong>Phù hợp {job.matchScore}%</strong>
+            {job.matchReasons?.[0] && <span>{job.matchReasons[0]}</span>}
+          </div>
+        )}
+
         <div className="job-footer">
           <div className="job-dates">
             <span>
@@ -1090,6 +1214,7 @@ type IconName =
   | 'mapPin'
   | 'search'
   | 'sliders'
+  | 'sparkles'
   | 'userCheck'
   | 'wallet'
   | 'x';
@@ -1125,6 +1250,9 @@ function Icon({
       <path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" />
     ),
     sliders: <path d="M4 7h10m4 0h2M4 17h2m4 0h10M14 5v4M8 15v4" />,
+    sparkles: (
+      <path d="m12 3 1.3 3.7L17 8l-3.7 1.3L12 13l-1.3-3.7L7 8l3.7-1.3L12 3Zm6 10 .8 2.2L21 16l-2.2.8L18 19l-.8-2.2L15 16l2.2-.8L18 13ZM5 14l.9 2.6L8.5 17l-2.6.9L5 20.5l-.9-2.6L1.5 17l2.6-.4L5 14Z" />
+    ),
     userCheck: (
       <path d="M15 19a5 5 0 0 0-10 0m5-8a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 1 2 2 4-5" />
     ),

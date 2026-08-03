@@ -90,6 +90,16 @@ export class PublicPortalController {
     return this.portal.jobs(query);
   }
 
+  @Get('jobs/recommended')
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
+  recommendedJobs(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.portal.recommendedJobs(request.user.sub, query);
+  }
+
   @Get('jobs/:id')
   job(@Param('id', ParseIntPipe) id: number) {
     return this.portal.jobDetail(id);
@@ -202,15 +212,6 @@ export class ProtectedPortalController {
     return this.portal.workerApplications(request.user.sub);
   }
 
-  @Get('jobs/recommended')
-  @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
-  recommendedJobs(
-    @Req() request: AuthenticatedRequest,
-    @Query() query: Record<string, string | undefined>,
-  ) {
-    return this.portal.recommendedJobs(request.user.sub, query);
-  }
-
   @Get('worker/saved-jobs')
   @Roles(VaiTroTaiKhoan.NGUOI_LAO_DONG)
   @Permissions(PERMISSIONS.XEM_VIEC_LAM_DA_LUU)
@@ -260,6 +261,16 @@ export class ProtectedPortalController {
   @Permissions(PERMISSIONS.XEM_TIN_TUYEN_DUNG)
   employerJobs(@Req() request: AuthenticatedRequest) {
     return this.portal.employerJobs(request.user.sub);
+  }
+
+  @Get('employer/statistics')
+  @Roles(VaiTroTaiKhoan.NHA_TUYEN_DUNG)
+  @Permissions(PERMISSIONS.XEM_TIN_TUYEN_DUNG)
+  employerStatistics(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: Record<string, string | undefined>,
+  ) {
+    return this.portal.employerStatistics(request.user.sub, query);
   }
 
   @Post('employer/jobs')
@@ -548,18 +559,14 @@ export class ProtectedPortalController {
     @Query() query: Record<string, string | undefined>,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const format = query.format === 'json' ? 'json' : 'csv';
-    response.setHeader(
-      'Content-Type',
-      format === 'json'
-        ? 'application/json; charset=utf-8'
-        : 'text/csv; charset=utf-8',
-    );
+    const report = await this.portal.exportStatistics(query);
+    response.setHeader('Content-Type', report.mimeType);
     response.setHeader(
       'Content-Disposition',
-      `attachment; filename="bao-cao-viec-lam-${new Date().toISOString().slice(0, 10)}.${format}"`,
+      `attachment; filename="bao-cao-viec-lam-${new Date().toISOString().slice(0, 10)}.${report.extension}"`,
     );
-    return this.portal.exportStatistics(query);
+    response.setHeader('Content-Length', String(report.buffer.length));
+    return new StreamableFile(report.buffer);
   }
 }
 

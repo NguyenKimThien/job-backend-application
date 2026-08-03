@@ -12,6 +12,10 @@ Frontend và backend dùng chung một `package.json` và một thư mục
 - Database: PostgreSQL.
 - Xác thực: JWT, bcrypt và OTP qua email.
 - Phân quyền: RBAC kết hợp quyền riêng theo từng tài khoản.
+- Đề xuất việc làm: chấm điểm theo nguyện vọng trong hồ sơ người lao động và
+  ưu tiên việc phù hợp trên trang chủ, trang danh sách việc làm.
+- Thống kê nhà tuyển dụng: tổng quan tin đăng, trạng thái hồ sơ, xu hướng theo
+  tháng, hiệu quả từng tin và tiến độ hoàn thành chỉ tiêu tuyển dụng.
 
 ## 2. Cấu trúc dự án
 
@@ -244,7 +248,10 @@ tuyển của người dùng.
 - Cấp hoặc giới hạn quyền theo từng tài khoản.
 - Quản lý danh mục ngành nghề.
 - Kiểm duyệt hồ sơ nhà tuyển dụng và tin tuyển dụng.
-- Xem thống kê và xuất báo cáo.
+- Xem thống kê tổng quan, các tỷ lệ hiệu quả, xu hướng hoạt động theo tháng và
+  các tin tuyển dụng thu hút nhiều ứng viên.
+- Lọc báo cáo theo thời gian, chọn nhóm dữ liệu và xuất Excel có biểu đồ hoặc
+  PDF trình bày sẵn để in.
 
 ## 12. Email OTP
 

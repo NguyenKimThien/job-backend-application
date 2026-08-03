@@ -939,6 +939,9 @@ function JobPostActions({
                 {isPending ? 'Đang cập nhật...' : 'Đóng tin tuyển dụng'}
               </button>
             )}
+            {!hasApplicants && canCloseJobPost && (
+              <span className="employer-job-action-divider" role="separator" />
+            )}
             {!hasApplicants && (
               <Link
                 href={`/nha-tuyen-dung/tin-tuyen-dung/${job.id}/ung-vien`}

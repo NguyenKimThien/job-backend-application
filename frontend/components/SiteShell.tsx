@@ -47,6 +47,7 @@ const menus: Record<ShellRole, MenuItem[]> = {
   employer: [
     { href: '/nha-tuyen-dung/ho-so', label: 'Hồ sơ doanh nghiệp' },
     { href: '/nha-tuyen-dung/tin-tuyen-dung', label: 'Tin tuyển dụng' },
+    { href: '/nha-tuyen-dung/thong-ke', label: 'Thống kê' },
     { href: '/thong-bao', label: 'Thông báo' },
   ],
   admin: [
